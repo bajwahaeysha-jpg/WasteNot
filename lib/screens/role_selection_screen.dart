@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../routes/app_routes.dart';
+import 'package:wastenot/screens/login_screen.dart';
 
 class RoleSelectionScreen extends StatefulWidget {
   const RoleSelectionScreen({super.key});
@@ -68,6 +69,13 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                       description: "Receive & distribute food",
                       icon: Icons.apartment,
                     ),
+const SizedBox(height: 20),
+
+_roleCard(
+  title: "Admin",
+  description: "Manage system & alerts",
+  icon: Icons.admin_panel_settings,
+),
 
                     const SizedBox(height: 60),
 
@@ -93,14 +101,19 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                             ),
                           ),
                           onPressed: isEnabled
-                              ? () {
-                                  Navigator.pushNamed(
-                                    context,
-                                    AppRoutes.login,
-                                    arguments: selectedRole,
-                                  );
-                                }
-                              : null,
+    ? () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const LoginScreen(),
+            settings: RouteSettings(
+              arguments: selectedRole, // 👈 pass role
+            ),
+          ),
+        );
+      }
+    : null,
+
                           child: const Text("Continue"),
                         ),
                       ),

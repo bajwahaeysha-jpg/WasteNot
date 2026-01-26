@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
-import 'package:wastenot/features/admin/home/components/header.dart';
+import 'components/header.dart';
 import 'components/stats_section.dart';
-import 'package:wastenot/features/admin/home/components/quick_actions_section.dart';
+import 'components/quick_actions_section.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   final Map<String, dynamic> user;

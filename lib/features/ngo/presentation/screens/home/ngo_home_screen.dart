@@ -16,8 +16,12 @@ import '../home/goal/ngo_goal_screen.dart';
 
 
 class NgoHomeScreen extends StatefulWidget {
-  const NgoHomeScreen({super.key});
+  final Map<String, dynamic> user;
 
+  const NgoHomeScreen({
+    super.key,
+    required this.user,
+  });
   @override
   State<NgoHomeScreen> createState() => _NgoHomeScreenState();
   }

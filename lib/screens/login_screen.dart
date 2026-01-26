@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../routes/app_routes.dart';
+import 'package:wastenot/features/admin/navigation/admin_bottom_navigation.dart';
+import 'package:wastenot/features/donor/presentation/donor_navigation_screen.dart';
+import 'package:wastenot/features/ngo/presentation/screens/home/ngo_home_screen.dart';
 import '../../services/local_auth_service.dart';
-import '../admin/navigation/admin_bottom_navigation.dart';
+import '../features/admin/navigation/admin_bottom_navigation.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -22,37 +25,58 @@ class _LoginScreenState extends State<LoginScreen> {
   static const Color mainGreen = Color(0xFF0B4B3F);
   static const Color sponsorBlue = Color(0xFF1E88E5); // 🔵 SOS text color
 
-  void _login(String role) async {
-    if (!_formKey.currentState!.validate()) return;
+  void _login(String role) {
+  if (!_formKey.currentState!.validate()) return;
 
-    final user = await LocalAuthService.getUser();
-
-    if (user == null ||
-        user['email'] != _emailController.text.trim() ||
-        user['password'] != _passwordController.text.trim()) {
-      setState(() => _error = "Invalid email or password");
-      return;
-    }
-
-    if (!mounted) return;
-
+  if (role == 'Donor') {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (_) => AdminBottomNavigation(
+        builder: (_) => DonorNavigationScreen(
           user: {
-            'name': _nameController.text.trim(),
-            'role': role,
+            'name': _nameController.text,
+            'role': 'Donor',
           },
         ),
       ),
     );
   }
 
+  if (role == 'NGO') {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => NgoHomeScreen(
+          user: {
+            'name': _nameController.text,
+            'role': 'NGO',
+          },
+        ),
+      ),
+    );
+  }
+
+  if (role == 'Admin') {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AdminBottomNavigation(
+          user: {
+            'name': _nameController.text,
+            'role': 'Admin',
+          },
+        ),
+      ),
+    );
+  }
+}
+
+
   @override
   Widget build(BuildContext context) {
-    final args = ModalRoute.of(context)?.settings.arguments as Map?;
-    final role = args?['role'] ?? 'User';
+    final String role =
+    ModalRoute.of(context)!.settings.arguments as String;
+
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9F8),

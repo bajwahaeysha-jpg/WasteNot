@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:wastenot/features/admin/more/settings/accounts/account_screen.dart';
-import 'package:wastenot/features/admin/more/settings/notifications/notifications_settings_screen.dart';
-import 'package:wastenot/features/admin/more/settings/privacy/privacy_screen.dart';
-import 'package:wastenot/features/admin/more/settings/rate/rate_us_screen.dart';
-import 'package:wastenot/features/admin/more/settings/contacts/contact_us_screen.dart';
-import 'package:wastenot/features/admin/more/settings/about/about_screen.dart';
-import 'package:wastenot/features/admin/more/settings/FAQ/faq_screen.dart';
-import 'package:wastenot/features/admin/more/settings/Privacy_Policy/privacy_policy_screen.dart';
+
+import 'accounts/account_screen.dart';
+import 'notifications/notifications_settings_screen.dart';
+import 'privacy/privacy_screen.dart';
+import 'rate/rate_us_screen.dart';
+import 'contacts/contact_us_screen.dart';
+import 'about/about_screen.dart';
+import 'FAQ/faq_screen.dart';
+import 'Privacy_Policy/privacy_policy_screen.dart';
 import '../../../../screens/login_screen.dart';
 
 class SettingsScreen extends StatelessWidget {

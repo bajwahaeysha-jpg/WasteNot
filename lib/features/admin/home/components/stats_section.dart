@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:wastenot/features/admin/donors/all_donors_screen.dart';
-import 'package:wastenot/features/admin/donations/all_donations_screen.dart';
-import 'package:wastenot/features/admin/ngos/all_ngos_screen.dart';
-import 'package:wastenot/features/admin/meals/all_meals_screen.dart';
+import '../../donors/all_donors_screen.dart';
+import '../../donations/all_donations_screen.dart';
 import '../../alerts/alert_screen.dart';
 import '../../../../widgets/dashboard_stat_card.dart';
 import '../../../../widgets/pressable_scale.dart';
+import '../../ngos/all_ngos_screen.dart';
+import '../../meals/all_meals_screen.dart';
 
 class StatsSection extends StatelessWidget {
   const StatsSection({super.key});

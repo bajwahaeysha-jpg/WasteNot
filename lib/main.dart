@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'wastenot/donor/presentation/donor_navigation_screen.dart';
+import 'package:wastenot/screens/welcome_screen.dart';
 
 void main() {
   runApp(const WasteNotApp());
@@ -11,9 +11,10 @@ class WasteNotApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'WasteNot',
-      home: const DonorNavigationScreen(),
-    );
+  debugShowCheckedModeBanner: false,
+  title: 'WasteNot',
+  home: const WelcomeScreen(),
+);
+
   }
-}
+}     

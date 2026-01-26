@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import 'alert_details_screen.dart';
-import 'package:wastenot/features/admin/alerts/alert_model.dart';
+import '../models/alert/alert_model.dart';
+
 class AlertScreen extends StatelessWidget {
   const AlertScreen({super.key});
 

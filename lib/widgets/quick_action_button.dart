@@ -19,7 +19,7 @@ class QuickActionButton extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 24,
-            backgroundColor: AppColors.primaryGreen,
+            backgroundColor: AppColors.primary,
             child: const Icon(Icons.flash_on, color: Colors.white),
           ),
           const SizedBox(height: 6),

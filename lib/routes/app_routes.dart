@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-
+import 'package:wastenot/features/ngo/presentation/screens/home/ngo_home_screen.dart';
+import 'package:wastenot/features/donor/presentation/home/screens/donor_home_screen.dart';
 import '../screens/welcome_screen.dart';
 import '../screens/role_selection_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/signup_screen.dart';
-import '../admin/home/admin_home_screen.dart';
+import '../features/admin/home/admin_home_screen.dart';
 import '../services/local_auth_service.dart';
 
 class AppRoutes {
@@ -41,12 +42,23 @@ class AppRoutes {
                       );
                     }
 
-                    return AdminHomeScreen(
-                      user: {
-                        'name': userSnap.data!['name'],
-                        'role': userSnap.data!['role'],
-                      },
-                    );
+                    final user = userSnap.data!;
+final role = user['role'];
+
+if (role == 'Admin') {
+  return AdminHomeScreen(user: user);
+}
+
+if (role == 'Donor') {
+  return DonorHomeScreen(user: user);
+}
+
+if (role == 'NGO') {
+  return NgoHomeScreen(user: user);
+}
+
+return const WelcomeScreen();
+
                   },
                 );
               }
