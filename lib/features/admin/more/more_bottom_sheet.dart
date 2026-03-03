@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'profile/admin_profile_screen.dart';
 import 'settings/settings_screen.dart';
 import 'support/admin_support_screen.dart';
-import 'action_center/action_center_screen.dart';
 
 class AdminMoreSheet extends StatelessWidget {
   const AdminMoreSheet({super.key});
@@ -24,8 +23,7 @@ class AdminMoreSheet extends StatelessWidget {
                 const SettingsScreen()),
             _item(context, Icons.support_agent_outlined, "Support",
                 const AdminSupportScreen()),
-            _item(context, Icons.flash_on_outlined, "Action Center",
-                const ActionCenterScreen()),
+          
           ],
         ),
       ),

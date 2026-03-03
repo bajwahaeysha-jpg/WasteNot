@@ -140,10 +140,10 @@ class _Stat extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(18),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(.05), blurRadius: 6)],
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: .05), blurRadius: 6)],
         ),
         child: Column(children: [
-          CircleAvatar(backgroundColor: color.withOpacity(.15), child: Icon(icon, color: color)),
+          CircleAvatar(backgroundColor: color.withValues(alpha: .15), child: Icon(icon, color: color)),
           const SizedBox(height: 8),
           Text(value.toString(), style: const TextStyle(fontWeight: FontWeight.bold)),
           Text(title, style: const TextStyle(fontSize: 12)),
@@ -181,7 +181,7 @@ class DonationCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(18),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(.04), blurRadius: 6)],
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: .04), blurRadius: 6)],
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [

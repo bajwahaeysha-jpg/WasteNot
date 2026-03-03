@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'request_detail_screen.dart';
 
 class RequestsScreen extends StatefulWidget {
   const RequestsScreen({super.key});
@@ -8,31 +9,37 @@ class RequestsScreen extends StatefulWidget {
 }
 
 class _RequestsScreenState extends State<RequestsScreen> {
-  final requests = [
+  static const Color mainGreen = Color(0xFF0F5F54);
+
+  final List<Map<String, dynamic>> requests = [
     {
-      "id": "RQ-1001",
-      "donor": "Green Leaf Restaurant",
-      "location": "Johar Town",
-      "meals": 120,
-      "status": "Pending",
+      "type": "ngo",
+      "title": "Khair Foundation wants to join WasteNot",
+      "name": "Khair Foundation",
+      "email": "info@khair.org",
+      "phone": "+92 300 1112233",
+      "location": "Lahore",
+      "logo": "assets/images/ngo1.png",
     },
     {
-      "id": "RQ-1002",
-      "donor": "Sunrise Bakery",
+      "type": "ngo",
+      "title": "Al-Khidmat Foundation wants to join WasteNot",
+      "name": "Al-Khidmat Foundation",
+      "email": "info@AlKhidmat.org",
+      "phone": "+92 300 1112233",
+      "location": "Lahore",
+      "logo": "assets/images/ngo4.png",
+    },
+    {
+      "type": "donor",
+      "title": "Allah Malak wants to join WasteNot",
+      "name": "Allah Malak",
+      "business": "Resturant",
+      "phone": "+92 321 9876543",
       "location": "DHA Phase 5",
-      "meals": 85,
-      "status": "Pending",
-    },
-    {
-      "id": "RQ-1003",
-      "donor": "City Hotel",
-      "location": "Gulberg",
-      "meals": 60,
-      "status": "Approved",
+      "logo": "assets/images/allah_malak.png",
     },
   ];
-
-  static const Color mainGreen = Color(0xFF0F5F54);
 
   @override
   Widget build(BuildContext context) {
@@ -42,174 +49,93 @@ class _RequestsScreenState extends State<RequestsScreen> {
         backgroundColor: mainGreen,
         elevation: 0,
         title: const Text(
-          "Food Requests",
+          "Requests",
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        padding: const EdgeInsets.all(16),
         itemCount: requests.length,
-        itemBuilder: (_, i) => _requestCard(requests[i]),
+        itemBuilder: (_, i) => _requestTile(context, requests[i], i),
       ),
     );
   }
 
-  // ───────────── REQUEST CARD ─────────────
-
-  Widget _requestCard(Map r) {
-    final bool pending = r['status'] == "Pending";
-    final Color statusColor =
-        pending ? Colors.orange : (r['status'] == "Approved" ? Colors.green : Colors.red);
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 8,
-            offset: Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-
-          /// 🆔 ID + STATUS
-          Row(
-            children: [
-              Text(
-                r['id'],
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                ),
-              ),
-              const Spacer(),
-              _statusBadge(r['status'], statusColor),
-            ],
-          ),
-
-          const SizedBox(height: 12),
-
-          /// 🏪 DONOR INFO
-          _infoRow(Icons.storefront, r['donor']),
-          _infoRow(Icons.location_on, r['location']),
-
-          const SizedBox(height: 8),
-
-          /// 🍽️ MEALS
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: mainGreen.withValues(alpha:0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              "${r['meals']} meals requested",
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                color: mainGreen,
-              ),
+  Widget _requestTile(BuildContext context, Map<String, dynamic> r, int index) {
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => RequestDetailScreen(
+              request: r,
+              onDelete: () {
+                setState(() {
+                  requests.removeAt(index);
+                });
+                Navigator.pop(context); // close detail screen
+              },
             ),
           ),
-
-          if (pending) ...[
-            const SizedBox(height: 16),
-
-            /// ✅ ACTIONS
-            Row(
-              children: [
-                _actionButton(
-                  label: "Reject",
-                  color: Colors.red.shade600,
-                  onTap: () {
-                    setState(() => r['status'] = "Rejected");
-                  },
-                ),
-                const SizedBox(width: 12),
-                _actionButton(
-                  label: "Approve",
-                  color: mainGreen,
-                  onTap: () {
-                    setState(() => r['status'] = "Approved");
-                  },
-                ),
-              ],
-            ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 14),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: const [
+            BoxShadow(color: Colors.black12, blurRadius: 8),
           ],
-        ],
-      ),
-    );
-  }
-
-  // ───────────── STATUS BADGE ─────────────
-
-  Widget _statusBadge(String status, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha:0.15),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        status,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: color,
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 22,
+              backgroundImage: AssetImage(r['logo']),
+              backgroundColor: Colors.grey.shade200,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    r['title'],
+                    style: const TextStyle(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  _badge(r['type']),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+          ],
         ),
       ),
     );
   }
 
-  // ───────────── INFO ROW ─────────────
+  Widget _badge(String type) {
+    final bool isNgo = type == "ngo";
 
-  Widget _infoRow(IconData icon, String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        children: [
-          Icon(icon, size: 16, color: Colors.grey),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(color: Colors.black87),
-            ),
-          ),
-        ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: isNgo ? Colors.blue.withValues(alpha:.12) : mainGreen.withValues(alpha:.12),
+        borderRadius: BorderRadius.circular(12),
       ),
-    );
-  }
-
-  // ───────────── ACTION BUTTON ─────────────
-
-  Widget _actionButton({
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return Expanded(
-      child: SizedBox(
-        height: 44,
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: color,
-            foregroundColor: Colors.white,
-            elevation: 1.5,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-            ),
-            textStyle: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-          onPressed: onTap,
-          child: Text(label),
+      child: Text(
+        isNgo ? "NGO REQUEST" : "DONOR REQUEST",
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: isNgo ? Colors.blue : mainGreen,
         ),
       ),
     );

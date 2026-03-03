@@ -70,7 +70,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
         (a, b) => (b['pinned'] ? 1 : 0) - (a['pinned'] ? 1 : 0));
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9F8),
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: const Color(0xFF0F5F54),
         title: const Text("Messages", style: TextStyle(color: Colors.white)),
@@ -78,54 +78,82 @@ class _MessagesScreenState extends State<MessagesScreen> {
       ),
       body: Column(
         children: [
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
 
           /// 🔍 SEARCH BAR
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(30),
-                boxShadow: const [
-                  BoxShadow(color: Colors.black12, blurRadius: 4)
-                ],
-              ),
-              child: TextField(
-                controller: _searchController,
-                onChanged: _search,
-                decoration: const InputDecoration(
-                  hintText: "Search messages...",
-                  border: InputBorder.none,
-                  icon: Icon(Icons.search),
+            child: TextField(
+              controller: _searchController,
+              onChanged: _search,
+              decoration: InputDecoration(
+                hintText: "Search messages...",
+                prefixIcon: const Icon(Icons.search),
+                filled: true,
+                fillColor: Colors.grey.shade200,
+                contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: BorderSide.none,
                 ),
               ),
             ),
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
 
           /// 💬 CHAT LIST
           Expanded(
-            child: ListView.builder(
+            child: ListView.separated(
               itemCount: _filteredChats.length,
+              separatorBuilder: (_, __) =>
+                  const Divider(height: 1, indent: 80),
               itemBuilder: (context, index) {
                 final chat = _filteredChats[index];
-                return _ChatTile(
-                  name: chat['name'],
-                  message: chat['last'],
-                  time: chat['time'],
-                  color: chat['color'],
-                  pinned: chat['pinned'],
-                  image: chat['image'],
-                  onLongPress: () => _showOptions(chat),
+
+                return ListTile(
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) => ChatScreen(name: chat['name']),
                     ),
                   ),
+                  onLongPress: () => _showOptions(chat),
+
+                  /// 🖼️ IMAGE
+                  leading: CircleAvatar(
+                    radius: 26,
+                    backgroundImage: AssetImage(chat['image']),
+                  ),
+
+                  /// 📝 TITLE + MESSAGE
+                  title: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          chat['name'],
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      Text(
+                        chat['time'],
+                        style: const TextStyle(
+                            fontSize: 12, color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                  subtitle: Text(
+                    chat['last'],
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+
+                  /// 📌 PIN
+                  trailing: chat['pinned']
+                      ? const Icon(Icons.push_pin,
+                          size: 18, color: Colors.orange)
+                      : null,
                 );
               },
             ),
@@ -139,9 +167,6 @@ class _MessagesScreenState extends State<MessagesScreen> {
   void _showOptions(Map chat) {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
       builder: (_) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -171,133 +196,6 @@ class _MessagesScreenState extends State<MessagesScreen> {
             },
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// ───────────── CHAT TILE (ENHANCED UI) ─────────────
-
-class _ChatTile extends StatelessWidget {
-  final String name, message, time;
-  final Color color;
-  final bool pinned;
-  final String image;
-  final VoidCallback onTap;
-  final VoidCallback onLongPress;
-
-  const _ChatTile({
-    required this.name,
-    required this.message,
-    required this.time,
-    required this.color,
-    required this.pinned,
-    required this.image,
-    required this.onTap,
-    required this.onLongPress,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      onLongPress: onLongPress,
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            /// 🖼️ NGO IMAGE
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: color.withValues(alpha: .4),
-                  width: 1.5,
-                ),
-              ),
-              child: ClipOval(
-                child: Image.asset(
-                  image,
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-
-            const SizedBox(width: 12),
-
-            /// 💬 TEXT
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          name,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      Text(
-                        time,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    message,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Colors.black54,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            /// 📌 PIN ICON
-            if (pinned)
-              Padding(
-                padding: const EdgeInsets.only(left: 6),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withValues(alpha: .15),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.push_pin,
-                    size: 14,
-                    color: Colors.orange,
-                  ),
-                ),
-              ),
-          ],
-        ),
       ),
     );
   }

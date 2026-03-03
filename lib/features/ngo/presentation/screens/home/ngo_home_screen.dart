@@ -428,7 +428,7 @@ Container(
     elevation: 0,
 
     selectedItemColor: AppColors.primary,
-    unselectedItemColor: AppColors.primary.withOpacity(0.35),
+    unselectedItemColor: AppColors.primary.withValues(alpha: .35),
 
     showUnselectedLabels: true,
     type: BottomNavigationBarType.fixed,

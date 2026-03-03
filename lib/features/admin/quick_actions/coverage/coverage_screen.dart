@@ -1,110 +1,146 @@
 import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 class CoverageScreen extends StatelessWidget {
   const CoverageScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final zones = [
-      {"area": "Johar Town", "coverage": 92, "status": "High"},
-      {"area": "DHA Phase 5", "coverage": 76, "status": "Medium"},
-      {"area": "Gulberg", "coverage": 58, "status": "Low"},
-      {"area": "Model Town", "coverage": 85, "status": "High"},
-      {"area": "Multan City", "coverage": 63, "status": "Medium"},
+    final coverageData = [
+      {"area": "Johar Town", "percent": 45.0, "color": Colors.blue},
+      {"area": "Cantt", "percent": 30.0, "color": Colors.green},
+      {"area": "Gulberg", "percent": 15.0, "color": Colors.orange},
+      {"area": "DHA", "percent": 10.0, "color": Colors.red},
     ];
 
+    // Find highest and lowest coverage
+    final highest = coverageData.reduce((a, b) =>
+        (a["percent"] as double) > (b["percent"] as double) ? a : b);
+    final lowest = coverageData.reduce((a, b) =>
+        (a["percent"] as double) < (b["percent"] as double) ? a : b);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9F8),
+      backgroundColor: const Color(0xFFF4F6F5),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0F5F54),
-        title: const Text("Coverage", style: TextStyle(color: Colors.white)),
+        title: const Text(
+          "Coverage Analytics",
+          style: TextStyle(color: Colors.white),
+        ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-       children: [
-  _summaryCard(),
-  const SizedBox(height: 16),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
 
-  ...zones.map((z) => _zoneCard(z)),
-],
+            const Text(
+              "Area-wise Coverage",
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              "Donation distribution performance by area",
+              style: TextStyle(color: Colors.grey),
+            ),
+            const SizedBox(height: 40),
+
+            /// PIE CHART
+            Center(
+              child: SizedBox(
+                height: 280,
+                width: 280,
+                child: PieChart(
+                  PieChartData(
+                    sectionsSpace: 4,
+                    centerSpaceRadius: 70,
+                    sections: coverageData.map((data) {
+                      final double percent = (data["percent"] as double?) ?? 0;
+                      return PieChartSectionData(
+                        value: percent,
+                        color: data["color"] as Color,
+                        radius: 60,
+                        title: "${data["area"]}\n${percent.toInt()}%",
+                        titleStyle: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 30),
+
+            /// HIGHEST & LOWEST COVERAGE
+            const Text(
+              "Highlights",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Column(
+              children: [
+                _legendItem(
+                  color: highest["color"] as Color,
+                  area: highest["area"] as String,
+                  percent: "${(highest["percent"] as double).toInt()}%",
+                ),
+                const SizedBox(height: 12),
+                _legendItem(
+                  color: lowest["color"] as Color,
+                  area: lowest["area"] as String,
+                  percent: "${(lowest["percent"] as double).toInt()}%",
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _summaryCard() {
+  Widget _legendItem({
+    required Color color,
+    required String area,
+    required String percent,
+  }) {
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0F5F54),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text("System Coverage", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-          SizedBox(height: 6),
-          Text("Cities: 12", style: TextStyle(color: Colors.white)),
-          Text("Active Zones: 38", style: TextStyle(color: Colors.white)),
-          Text("Coverage Efficiency: 81%", style: TextStyle(color: Colors.white)),
-        ],
-      ),
-    );
-  }
-
-  Widget _zoneCard(Map z) {
-    Color statusColor;
-    switch (z['status']) {
-      case "High":
-        statusColor = Colors.green;
-        break;
-      case "Medium":
-        statusColor = Colors.orange;
-        break;
-      default:
-        statusColor = Colors.red;
-    }
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
+        boxShadow: const [
+          BoxShadow(color: Colors.black12, blurRadius: 5),
+        ],
       ),
       child: Row(
         children: [
+          CircleAvatar(
+            radius: 8,
+            backgroundColor: color,
+          ),
+          const SizedBox(width: 12),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(z['area'], style: const TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
-                LinearProgressIndicator(
-                  value: z['coverage'] / 100,
-                  color: const Color(0xFF0F5F54),
-                  backgroundColor: Colors.grey.shade200,
-                  minHeight: 8,
-                ),
-                const SizedBox(height: 6),
-                Text("Coverage: ${z['coverage']}%"),
-              ],
+            child: Text(
+              area,
+              style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600),
             ),
           ),
-
-          const SizedBox(width: 10),
-
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: statusColor.withValues(alpha:.15),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              z['status'],
-              style: TextStyle(color: statusColor, fontWeight: FontWeight.w600),
-            ),
+          Text(
+            percent,
+            style: const TextStyle(
+                fontWeight: FontWeight.bold),
           ),
         ],
       ),
