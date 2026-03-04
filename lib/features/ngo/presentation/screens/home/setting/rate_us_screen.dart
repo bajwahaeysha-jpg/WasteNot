@@ -81,7 +81,7 @@ class RateUsScreen extends StatelessWidget {
 
           GestureDetector(
             onTap: () {
-              // TODO: open Play Store link
+              
             },
             child: const Text(
               "Rate on Play Store",

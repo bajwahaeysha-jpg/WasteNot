@@ -150,16 +150,21 @@ class DonationDetailsScreen extends StatelessWidget {
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),
                       ),
-                      onPressed: () async {
-                        final result = await Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const DonationSuccessScreen()),
-                        );
+                     onPressed: () async {
+  final result = await Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => const DonationSuccessScreen(),
+    ),
+  );
 
-                        if (result == true) {
-                          Navigator.pop(context, true);
-                        }
-                      },
+  if (!context.mounted) return;
+
+  if (result == true) {
+    Navigator.pop(context, true);
+  }
+},
+
                       child: const Text("Accept",
                           style: TextStyle(color: Colors.white)),
                     ),

@@ -9,13 +9,15 @@ class AnalyticsScreen extends StatefulWidget {
 }
 
 class _AnalyticsScreenState extends State<AnalyticsScreen> {
+
   String selectedRange = "Month";
-  bool comparisonEnabled = false;
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9F8),
+
       appBar: AppBar(
         backgroundColor: const Color(0xFF0F5F54),
         elevation: 0,
@@ -24,63 +26,102 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w600,
-            letterSpacing: 0.3,
           ),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
+
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        padding: const EdgeInsets.all(16),
+
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+
           children: [
 
-            /// 🔹 OVERVIEW CARDS
+            /// ✅ OVERVIEW CARDS WITH ICONS
             Row(
               children: const [
-                _StatCard(title: "Donations", value: "351.12k"),
+
+                _StatCard(
+                  title: "Donations",
+                  value: "1.0k",
+                  icon: Icons.volunteer_activism,
+                ),
+
                 SizedBox(width: 12),
-                _StatCard(title: "Meals Served", value: "1,351"),
+
+                _StatCard(
+                  title: "Meals Served",
+                  value: "1,351",
+                  icon: Icons.restaurant,
+                ),
               ],
             ),
+
             const SizedBox(height: 12),
+
             Row(
               children: const [
-                _StatCard(title: "Active NGOs", value: "120"),
+
+                _StatCard(
+                  title: "Active NGOs",
+                  value: "120",
+                  icon: Icons.groups,
+                ),
+
                 SizedBox(width: 12),
-                _StatCard(title: "Pending Requests", value: "34"),
+
+                _StatCard(
+                  title: "Pending Requests",
+                  value: "34",
+                  icon: Icons.pending_actions,
+                ),
               ],
             ),
-
-            const SizedBox(height: 22),
-
-            /// 🧠 SMART INSIGHTS
-            SmartInsights(range: selectedRange),
 
             const SizedBox(height: 24),
 
-            /// 📈 PERFORMANCE HEADER
-            Row(
-              children: const [
-                Text(
-                  "Performance",
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Spacer(),
-              ],
+            /// ✅ PERFORMANCE HEADER
+            const Text(
+              "Performance",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
             ),
 
             const SizedBox(height: 14),
 
-            /// 📊 PERFORMANCE TILES
-            const _ProgressTile("Donation Growth", 0.845, "+24.5%"),
-            const _ProgressTile("Meal Coverage", 0.86, "86%"),
-            const _ProgressTile("NGO Engagement", 0.78, "78%"),
+            /// ✅ PERFORMANCE (SCREENSHOT STYLE)
+            Row(
+              children: const [
 
-            const SizedBox(height: 8),
+                _PerformanceCard(
+                  title: "Meals",
+                  value: "1240",
+                ),
+
+                SizedBox(width: 10),
+
+                _PerformanceCard(
+                  title: "Success",
+                  value: "92%",
+                ),
+
+                SizedBox(width: 10),
+
+                _PerformanceCard(
+  title: "Coverage",
+  value: "86%",
+),
+              ],
+            ),
+
+            const SizedBox(height: 24),
+
+            /// ✅ SMART INSIGHTS (LAST)
+            SmartInsights(range: selectedRange),
           ],
         ),
       ),
@@ -88,47 +129,82 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 }
 
-/// 🔹 SUMMARY STAT CARD
+////////////////////////////////////////////////////
+/// ⭐ COMPACT OVERVIEW CARD (SMALL SIZE)
+////////////////////////////////////////////////////
+
 class _StatCard extends StatelessWidget {
+
   final String title;
   final String value;
+  final IconData icon;
 
   const _StatCard({
     required this.title,
     required this.value,
+    required this.icon,
   });
 
   @override
   Widget build(BuildContext context) {
+
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
+
+        /// ✅ SMALL HEIGHT FEEL
+        padding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 15,
+        ),
+
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(14),
+
           boxShadow: const [
             BoxShadow(
               color: Colors.black12,
-              blurRadius: 8,
-              offset: Offset(0, 3),
+              blurRadius: 6,
+              offset: Offset(0,2),
             ),
           ],
         ),
+
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+
           children: [
-            Text(
-              title,
-              style: const TextStyle(
-                color: Colors.grey,
-                fontSize: 13,
-              ),
+
+            /// ICON TOP RIGHT
+            Row(
+              children: [
+
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ),
+
+                Icon(
+                  icon,
+                  size: 18,
+                  color: const Color(0xFF0F5F54),
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
+
+            const SizedBox(height: 6),
+
+            /// VALUE
             Text(
               value,
               style: const TextStyle(
-                fontSize: 22,
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -138,73 +214,73 @@ class _StatCard extends StatelessWidget {
     );
   }
 }
+////////////////////////////////////////////////////
+/// ⭐ PERFORMANCE CARD (SCREENSHOT STYLE)
+////////////////////////////////////////////////////
 
-/// 🔹 PROGRESS TILE
-class _ProgressTile extends StatelessWidget {
+class _PerformanceCard extends StatelessWidget {
+
   final String title;
-  final double value;
-  final String label;
+  final String value;
 
-  const _ProgressTile(this.title, this.value, this.label);
+  const _PerformanceCard({
+    required this.title,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 6,
-            offset: Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
 
-          /// 🔹 TITLE + VALUE
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
-              ),
-            ],
-          ),
+    return Expanded(
+      child: Container(
 
-          const SizedBox(height: 12),
+        padding: const EdgeInsets.symmetric(
+          vertical: 18,
+          horizontal: 12,
+        ),
 
-          /// 🔹 PROGRESS BAR
-          SizedBox(
-            height: 10,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: LinearProgressIndicator(
-                value: value,
-                color: const Color(0xFF0F5F54),
-                backgroundColor: Colors.grey.shade200,
+        decoration: BoxDecoration(
+
+          /// ✅ GREEN COLOR
+          color: const Color(0xFF0F5F54),
+
+          borderRadius: BorderRadius.circular(14),
+
+          boxShadow: const [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 6,
+              offset: Offset(0,3),
+            )
+          ],
+        ),
+
+        child: Column(
+
+          children: [
+
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+
+                /// WHITE TEXT
+                color: Colors.white,
               ),
             ),
-          ),
-        ],
+
+            const SizedBox(height: 6),
+
+            Text(
+              title,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
