@@ -3,7 +3,7 @@ import '../constants/app_colors.dart';
 
 class AppTheme {
   static ThemeData lightTheme = ThemeData(
-    scaffoldBackgroundColor: AppColors.background,
+    scaffoldBackgroundColor: const Color(0xFFF7F7F7),
     primaryColor: AppColors.primary,
     fontFamily: 'Roboto',
     appBarTheme: const AppBarTheme(
@@ -12,7 +12,7 @@ class AppTheme {
       centerTitle: true,
     ),
     cardTheme: CardThemeData(
-  color: AppColors.card,
+  color: const Color.fromARGB(255, 255, 255, 255),
   shape: RoundedRectangleBorder(
     borderRadius: BorderRadius.circular(16),
   ),

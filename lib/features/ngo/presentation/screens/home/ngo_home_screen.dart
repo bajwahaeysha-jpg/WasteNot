@@ -379,7 +379,7 @@ Container(
             ),
             child: const Text(
               '3',
-              style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+              style: TextStyle(color: Color(0xFFFFFFFF), fontSize: 10, fontWeight: FontWeight.bold),
             ),
           ),
         ),

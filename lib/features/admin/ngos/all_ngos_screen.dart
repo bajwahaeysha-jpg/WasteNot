@@ -14,7 +14,7 @@ class _AllNGOsScreenState extends State<AllNGOsScreen> {
   final ngos = [
     {
       "name": "Khair Foundation",
-      "location": "Lahore",
+      "location": "Iqbal chowk, Sialkot",
       "mealsReceived": 1240,
       "successRate": 92,
       "status": "Approved",
@@ -22,7 +22,7 @@ class _AllNGOsScreenState extends State<AllNGOsScreen> {
     },
     {
       "name": "Edhi Foundation",
-      "location": "Karachi",
+      "location": "Defence road, Sialkot",
       "mealsReceived": 980,
       "successRate": 88,
       "status": "Approved",
@@ -30,7 +30,7 @@ class _AllNGOsScreenState extends State<AllNGOsScreen> {
     },
     {
       "name": "SOS Children’s Village",
-      "location": "Multan",
+      "location": "Khadam Ali chok,Sialkot",
       "mealsReceived": 670,
       "successRate": 81,
       "status": "Suspended",
