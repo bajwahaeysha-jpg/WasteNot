@@ -4,6 +4,8 @@ import 'accepted_donations_screen.dart';
 import 'expired_donations_screen.dart';
 import 'emergency_detail_screen.dart';
 import '../../donate/screens/add_donation_screen.dart';
+import 'donation_detail_screen.dart';
+import 'package:wastenot/features/donor/models/accepted_donation_model.dart';
 import '../../messages/screens/chat_screen.dart';
 
 class DonorHomeScreen extends StatefulWidget {
@@ -18,7 +20,7 @@ class DonorHomeScreen extends StatefulWidget {
   @override
   State<DonorHomeScreen> createState() => _DonorHomeScreenState();
 }
-
+ 
 class _DonorHomeScreenState extends State<DonorHomeScreen> {
   final String donorName = "Allah Malik Hotel";
 
@@ -32,23 +34,7 @@ class _DonorHomeScreenState extends State<DonorHomeScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9F9),
-      appBar: AppBar(
-        backgroundColor: DonorHomeScreen.mainGreen,
-        title: const Text("WasteNot", style: TextStyle(color: Colors.white)),
-        actions: const [
-          Icon(Icons.notifications_none, color: Colors.white),
-          SizedBox(width: 10),
-          Padding(
-            padding: EdgeInsets.only(right: 12),
-            child: CircleAvatar(
-              backgroundColor: Colors.white,
-              child: Text("A", style: TextStyle(color: DonorHomeScreen.mainGreen)),
-            ),
-          )
-        ],
-      ),
-
-      body: SingleChildScrollView(
+        body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
 
@@ -131,7 +117,7 @@ class _DonorHomeScreenState extends State<DonorHomeScreen> {
                 const SizedBox(height: 10),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: Image.asset("assets/images/emergency.webp", height: 140, width: double.infinity, fit: BoxFit.cover),
+                  child: Image.asset("assets/images/emergency.jpg", height: 140, width: double.infinity, fit: BoxFit.cover),
                 ),
                 const SizedBox(height: 10),
                 const Text("Donations For Flood Affectes", style: TextStyle(fontWeight: FontWeight.bold)),
@@ -280,15 +266,82 @@ class _DonationCard extends StatelessWidget {
 
 class _RecentDonationTile extends StatelessWidget {
   final String name, time, logo;
+
   const _RecentDonationTile(this.name, this.time, this.logo);
+
+  AcceptedDonation getDonationData() {
+
+    if (name == "SOS Village" && time.contains("30 mins")) {
+      return AcceptedDonation(
+        donor: "Allah Malik Hotel",
+        acceptedBy: "SOS Village",
+        location: "Sialkot",
+        uploadedAt: "10:00 AM",
+        acceptedAt: "10:30 AM",
+        pickedAt: null,
+        food: "Cooked Rice",
+        servings: 25,
+        image: "assets/images/cooked rice.png",
+        status: "ACTIVE", place: '', time: '',
+      );
+    }
+
+    if (name == "Khair Foundation") {
+      return AcceptedDonation(
+        donor: "Allah Malik Hotel",
+        acceptedBy: "Khair Foundation",
+        location: "Sialkot",
+        uploadedAt: "9:30 AM",
+        acceptedAt: "10:00 AM",
+        pickedAt: "11:00 AM",
+        food: "Chicken Biryani",
+        servings: 40,
+        image: "assets/images/biryani.jpg",
+        status: "COMPLETED", place: '', time: '',
+      );
+    }
+
+    return AcceptedDonation(
+      donor: "Allah Malik Hotel",
+      acceptedBy: "SOS Village",
+      location: "Sialkot",
+      uploadedAt: "Yesterday",
+      acceptedAt: "Yesterday",
+      pickedAt: null,
+      food: "Chicken Sajji",
+      servings: 30,
+      image: "assets/images/chicken sajji.jpg",
+      status: "ACTIVE", place: '', time: '',
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+
     return ListTile(
-      leading: CircleAvatar(backgroundColor: Colors.white, backgroundImage: AssetImage(logo)),
+      leading: CircleAvatar(
+        backgroundColor: Colors.white,
+        backgroundImage: AssetImage(logo),
+      ),
+
       title: Text(name),
       subtitle: Text(time),
+
       trailing: const Icon(Icons.chevron_right),
+
+      onTap: () {
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => DonationDetailScreen(
+              donation: getDonationData(),
+              onStatusChanged: () {},
+            ),
+          ),
+        );
+
+      },
     );
   }
 }
