@@ -123,21 +123,30 @@ class _ChatScreenState extends State<ChatScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7F6),
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF5F7F6),
-        elevation: 1,
-        title: _isSelecting
-            ? Text("${_selected.length} selected", style: const TextStyle(color: Colors.black))
-            : Text(widget.donorName, style: const TextStyle(color: Colors.black)),
-        iconTheme: const IconThemeData(color: Colors.black),
-        actions: _isSelecting
-            ? [
-                IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.black),
-                  onPressed: _confirmDelete,
-                )
-              ]
-            : [],
-      ),
+  backgroundColor: const Color(0xFF0F4C45),
+  elevation: 1,
+
+  iconTheme: const IconThemeData(color: Colors.white),
+
+  title: _isSelecting
+      ? Text(
+          "${_selected.length} selected",
+          style: const TextStyle(color: Colors.white),
+        )
+      : Text(
+          widget.donorName,
+          style: const TextStyle(color: Colors.white),
+        ),
+
+  actions: _isSelecting
+      ? [
+          IconButton(
+            icon: const Icon(Icons.delete, color: Colors.white),
+            onPressed: _confirmDelete,
+          )
+        ]
+      : [],
+),
       body: Column(
         children: [
           Expanded(

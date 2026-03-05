@@ -22,9 +22,11 @@ class ActiveDonationsScreen extends StatelessWidget {
               ),
             );
           },
+
           child: Container(
             margin: const EdgeInsets.only(bottom: 14),
             padding: const EdgeInsets.all(14),
+
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(14),
@@ -36,8 +38,10 @@ class ActiveDonationsScreen extends StatelessWidget {
                 )
               ],
             ),
+
             child: Row(
               children: [
+
                 ClipRRect(
                   borderRadius: BorderRadius.circular(10),
                   child: Image.asset(
@@ -57,12 +61,18 @@ class ActiveDonationsScreen extends StatelessWidget {
                       Text(
                         donation.restaurantName,
                         style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold),
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
+
                       const SizedBox(height: 4),
+
                       Text(
                         donation.status,
-                        style: const TextStyle(color: Colors.black54),
+                        style: const TextStyle(
+                          color: Colors.black54,
+                        ),
                       ),
                     ],
                   ),

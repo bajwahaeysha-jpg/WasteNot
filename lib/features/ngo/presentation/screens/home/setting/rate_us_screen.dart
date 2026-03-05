@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 class RateUsScreen extends StatelessWidget {
   const RateUsScreen({super.key});
 
+  static const Color primary = Color(0xFF0F4C45);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -17,11 +19,15 @@ class RateUsScreen extends StatelessWidget {
             width: double.infinity,
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFFFFC107), Color(0xFFFFA000)],
+                colors: [
+                  Color(0xFF0F4C45),
+                  Color(0xFF2E7D72),
+                ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
             ),
+
             child: SafeArea(
               child: Stack(
                 children: [
@@ -35,7 +41,11 @@ class RateUsScreen extends StatelessWidget {
                   ),
 
                   const Center(
-                    child: Icon(Icons.star_rate, size: 90, color: Colors.white),
+                    child: Icon(
+                      Icons.star_rate,
+                      size: 85, // refined
+                      color: Colors.white,
+                    ),
                   ),
                 ],
               ),
@@ -81,12 +91,12 @@ class RateUsScreen extends StatelessWidget {
 
           GestureDetector(
             onTap: () {
-              
+
             },
             child: const Text(
               "Rate on Play Store",
               style: TextStyle(
-                color: Colors.blue,
+                color: Color(0xFF0F4C45), // theme color
                 fontSize: 16,
                 decoration: TextDecoration.underline,
               ),

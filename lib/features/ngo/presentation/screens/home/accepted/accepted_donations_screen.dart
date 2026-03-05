@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'accepted_dummy_data.dart';
 import 'accepted_donation_detail_screen.dart';
-import 'package:wastenot/core/theme/app_theme.dart';
-
 
 class AcceptedDonationsScreen extends StatefulWidget {
   const AcceptedDonationsScreen({super.key});
@@ -12,8 +10,7 @@ class AcceptedDonationsScreen extends StatefulWidget {
       _AcceptedDonationsScreenState();
 }
 
-class _AcceptedDonationsScreenState
-    extends State<AcceptedDonationsScreen> {
+class _AcceptedDonationsScreenState extends State<AcceptedDonationsScreen> {
   List<AcceptedDonation> filtered = [];
   bool isSearching = false;
   final controller = TextEditingController();
@@ -40,35 +37,36 @@ class _AcceptedDonationsScreenState
 
   String _groupLabel(DateTime d) {
     final now = DateTime.now();
-    if (d.year == now.year &&
-        d.month == now.month &&
-        d.day == now.day) {
+
+    if (d.year == now.year && d.month == now.month && d.day == now.day) {
       return "Today";
     }
+
     if (d.year == now.year &&
         d.month == now.month &&
         d.day == now.day - 1) {
       return "Yesterday";
     }
+
     return "${d.day}/${d.month}/${d.year}";
   }
 
   @override
   Widget build(BuildContext context) {
     final Map<String, List<AcceptedDonation>> grouped = {};
+
     for (var d in filtered) {
       grouped.putIfAbsent(_groupLabel(d.date), () => []).add(d);
     }
 
     return Scaffold(
-      backgroundColor: Colors.white, // 
+      backgroundColor: const Color(0xffF4F4F4),
 
       appBar: AppBar(
-         backgroundColor: const Color(0xFF0F4C45),// 
-        automaticallyImplyLeading: true,
+        backgroundColor: const Color(0xFF0F4C45),
         iconTheme: const IconThemeData(color: Colors.white),
-        titleSpacing: 0,
         elevation: 0,
+        titleSpacing: 0,
 
         title: isSearching
             ? TextField(
@@ -78,12 +76,10 @@ class _AcceptedDonationsScreenState
                 onChanged: _search,
                 decoration: InputDecoration(
                   hintText: "Search restaurant / hotel",
-                  hintStyle:
-                      const TextStyle(color: Colors.white70),
+                  hintStyle: const TextStyle(color: Colors.white70),
                   border: InputBorder.none,
                   suffixIcon: IconButton(
-                    icon: const Icon(Icons.close,
-                        color: Colors.white),
+                    icon: const Icon(Icons.close, color: Colors.white),
                     onPressed: _clear,
                   ),
                 ),
@@ -99,48 +95,34 @@ class _AcceptedDonationsScreenState
         actions: [
           if (!isSearching)
             IconButton(
-              icon: const Icon(Icons.search,
-                  color: Colors.white),
-              onPressed: () =>
-                  setState(() => isSearching = true),
+              icon: const Icon(Icons.search, color: Colors.white),
+              onPressed: () => setState(() => isSearching = true),
             ),
         ],
       ),
 
       body: ListView(
+        padding: const EdgeInsets.symmetric(vertical: 8),
         children: grouped.entries.map((group) {
           return Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
 
-              // ======= GROUP HEADER =======
-              Container(
-                width: double.infinity,
+              /// ===== DATE HEADER =====
+              Padding(
                 padding: const EdgeInsets.symmetric(
                     horizontal: 16, vertical: 8),
-                color: Colors.white, // 👈 removed grey
-                child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      group.key,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    const Divider(
-                        height: 1,
-                        thickness: 0.8),
-                  ],
+                child: Text(
+                  group.key,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    color: Colors.black87,
+                  ),
                 ),
               ),
 
-              // ======= DONATION ROWS =======
+              /// ===== DONATION CARDS =====
               ...group.value.map((d) => InkWell(
                     onTap: () {
                       Navigator.push(
@@ -153,62 +135,68 @@ class _AcceptedDonationsScreenState
                       );
                     },
                     child: Container(
-                      padding:
-                          const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12),
-                      decoration: const BoxDecoration(
-                        border: Border(
-                          bottom: BorderSide(
-                              color: Colors.black12),
-                        ),
+                      margin: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 6),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(18),
+                        boxShadow: [
+                          BoxShadow(
+color: Colors.black.withValues(alpha: 0.06),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          )
+                        ],
                       ),
+
                       child: Row(
                         children: [
-                          const CircleAvatar(
-                            radius: 22,
-                            backgroundImage:
-                                AssetImage(
-                                    "assets/images/food.jpg"),
+
+                          /// FOOD IMAGE
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Image.asset(
+                              "assets/images/food.jpg",
+                              width: 55,
+                              height: 55,
+                              fit: BoxFit.cover,
+                            ),
                           ),
+
                           const SizedBox(width: 12),
+
+                          /// FOOD + PLACE
                           Expanded(
                             child: Column(
                               crossAxisAlignment:
-                                  CrossAxisAlignment
-                                      .start,
+                                  CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   d.food,
-                                  style:
-                                      const TextStyle(
-                                    fontWeight:
-                                        FontWeight.w600,
-                                    color:
-                                        Colors.black,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 15,
                                   ),
                                 ),
-                                const SizedBox(
-                                    height: 2),
+                                const SizedBox(height: 4),
                                 Text(
                                   d.place,
-                                  style:
-                                      const TextStyle(
-                                    color:
-                                        Colors.black54,
-                                    fontSize: 12,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.black54,
                                   ),
                                 ),
                               ],
                             ),
                           ),
+
+                          /// TIME
                           Text(
                             d.pickupTime,
-                            style:
-                                const TextStyle(
-                              color: Colors.green,
-                              fontWeight:
-                                  FontWeight.w600,
+                            style: const TextStyle(
+                              color: Color(0xFF0F4C45),
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],

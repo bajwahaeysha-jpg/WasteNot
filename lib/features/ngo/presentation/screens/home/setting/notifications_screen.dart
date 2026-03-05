@@ -17,18 +17,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       backgroundColor: Colors.white,
 
       appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        title: const Text(
-          "Notifications & Reminders",
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-        ),
-      ),
+  elevation: 0,
+  backgroundColor: const Color(0xFF0F4C45),
+  iconTheme: const IconThemeData(color: Colors.white),
+  title: const Text(
+    "Notifications & Reminders",
+    style: TextStyle(
+      fontSize: 24,
+      fontWeight: FontWeight.bold,
+      color: Colors.white,
+    ),
+  ),
+),
 
       body: Padding(
         padding: const EdgeInsets.all(20),

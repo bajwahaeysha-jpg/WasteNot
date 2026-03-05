@@ -40,7 +40,18 @@ class _NgoHomeScreenState extends State<NgoHomeScreen> {
       return const SettingsScreen();
     }
   }
-
+String _getTitle() {
+  switch (_index) {
+    case 0:
+      return "WasteNot";
+    case 1:
+      return "Active Donations";
+    case 2:
+      return "Messages";
+    default:
+      return "WasteNot";
+  }
+}
   Widget _homeBody() {
     return SingleChildScrollView(
       child: Column(
@@ -347,14 +358,14 @@ Container(
   iconTheme: const IconThemeData(color: Colors.white),
   centerTitle: false,
 
-  title: const Text(
-    "WasteNot",
-    style: TextStyle(
-      color: Colors.white,
-      fontWeight: FontWeight.bold,
-      fontSize: 26,
-    ),
+  title: Text(
+  _getTitle(),
+  style: const TextStyle(
+    color: Colors.white,
+    fontWeight: FontWeight.bold,
+    fontSize: 26,
   ),
+),
 
   actions: [
     Stack(

@@ -16,14 +16,18 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
       backgroundColor: Colors.white,
 
       appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        title: const Text(
-          "Privacy",
-          style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-        ),
-      ),
+  elevation: 0,
+  backgroundColor: const Color(0xFF0F4C45),
+  iconTheme: const IconThemeData(color: Colors.white),
+  title: const Text(
+    "Privacy",
+    style: TextStyle(
+      fontSize: 26,
+      fontWeight: FontWeight.bold,
+      color: Colors.white,
+    ),
+  ),
+),
 
       body: Padding(
         padding: const EdgeInsets.all(20),

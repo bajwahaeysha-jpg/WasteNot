@@ -3,7 +3,7 @@ import 'chat_screen.dart';
 import 'chat_store.dart';
 
 class MessagesScreen extends StatefulWidget {
-  const MessagesScreen({super.key}); // ✅ const added
+  const MessagesScreen({super.key});
 
   @override
   State<MessagesScreen> createState() => _MessagesScreenState();
@@ -46,19 +46,15 @@ class _MessagesScreenState extends State<MessagesScreen> {
 
   @override
   void dispose() {
-    _searchController.dispose(); // ✅ memory leak fix
+    _searchController.dispose();
     super.dispose();
   }
 
   void _search(String value) {
     setState(() {
       _filtered = _donors
-          .where(
-            (d) =>
-                d["name"]!
-                    .toLowerCase()
-                    .contains(value.toLowerCase()),
-          )
+          .where((d) =>
+              d["name"]!.toLowerCase().contains(value.toLowerCase()))
           .toList();
     });
   }
@@ -75,101 +71,97 @@ class _MessagesScreenState extends State<MessagesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F7F6),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFF5F7F6),
-        elevation: 0,
-        title: const Text(
-          "Inbox",
-          style: TextStyle(color: Colors.black),
-        ),
-        centerTitle: true,
-        iconTheme: const IconThemeData(color: Colors.black),
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+    return Column(
+      children: [
+
+        /// SEARCH BAR
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(30), // rounder edges
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.06),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                )
+              ],
+            ),
             child: TextField(
               controller: _searchController,
               onChanged: _search,
-              decoration: InputDecoration(
-                hintText: "Search",
-                prefixIcon: const Icon(Icons.search),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
+              decoration: const InputDecoration(
+                hintText: "Search conversations...",
+                prefixIcon: Icon(Icons.search),
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(vertical: 14),
               ),
             ),
           ),
+        ),
 
-          const SizedBox(height: 8),
+        /// CHAT LIST
+        Expanded(
+          child: ListView.builder(
+            itemCount: _filtered.length,
+            itemBuilder: (context, index) {
+              final donor = _filtered[index];
 
-          Expanded(
-            child: ListView.builder(
-              itemCount: _filtered.length,
-              itemBuilder: (context, index) {
-                final donor = _filtered[index];
-
-                return ListTile(
-                  leading: CircleAvatar(
-                    radius: 24,
-                    backgroundColor:
-                        _softColors[index % _softColors.length],
-                    child: Text(
-                      donor["name"]![0],
-                      style:
-                          const TextStyle(color: Colors.black),
+              return ListTile(
+                leading: CircleAvatar(
+                  radius: 24,
+                  backgroundColor:
+                      _softColors[index % _softColors.length],
+                  child: Text(
+                    donor["name"]![0],
+                    style: const TextStyle(color: Colors.black),
+                  ),
+                ),
+                title: Text(
+                  donor["name"]!,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                subtitle: Text(
+                  donor["last"]!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                trailing: Text(
+                  donor["time"]!,
+                  style: const TextStyle(fontSize: 12),
+                ),
+                onTap: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          ChatScreen(donorName: donor["name"]!),
                     ),
-                  ),
-                  title: Text(
-                    donor["name"]!,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  subtitle: Text(
-                    donor["last"]!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  trailing: Text(
-                    donor["time"]!,
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                  onTap: () async {
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            ChatScreen(donorName: donor["name"]!),
-                      ),
-                    );
+                  );
 
-                    if (!mounted) return; // ✅ context async fix
+                  if (!mounted) return;
 
-                    final msgs =
-                        ChatStore.getMessages(donor["name"]!);
+                  final msgs =
+                      ChatStore.getMessages(donor["name"]!);
 
-                    if (msgs.isNotEmpty) {
-                      final lastMsg = msgs.last;
-                      setState(() {
-                        donor["last"] = lastMsg.text;
-                        donor["time"] =
-                            _formatTime(lastMsg.time);
-                      });
-                    }
-                  },
-                );
-              },
-            ),
+                  if (msgs.isNotEmpty) {
+                    final lastMsg = msgs.last;
+                    setState(() {
+                      donor["last"] = lastMsg.text;
+                      donor["time"] =
+                          _formatTime(lastMsg.time);
+                    });
+                  }
+                },
+              );
+            },
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

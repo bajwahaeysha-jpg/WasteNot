@@ -36,17 +36,21 @@ class WelcomeScreen extends StatelessWidget {
 
                       /// 🌱 Logo
                       Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: mainGreen.withValues(alpha: 0.06),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Image.asset(
-                          'assets/images/welcome_logo.png',
-                          width: 140,
-                        ),
-                      ),
-
+  width: 160,
+  height: 160,
+  decoration: BoxDecoration(
+    color: mainGreen.withValues(alpha: 0.06),
+    shape: BoxShape.circle,
+  ),
+  child: ClipOval(
+    child: Image.asset(
+      'assets/images/welcome_logo.png',
+      fit: BoxFit.cover, // 🔥 image circle ko fill karegi
+      width: 160,
+      height: 160,
+    ),
+  ),
+),
                       const SizedBox(height: 18),
 
                       const Text(

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 class FaqScreen extends StatelessWidget {
   const FaqScreen({super.key});
 
+  static const Color primary = Color(0xFF0F4C45);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -11,17 +13,21 @@ class FaqScreen extends StatelessWidget {
       body: Column(
         children: [
 
-          // 🖼️ Header section (same style as Privacy Policy)
+          // Header section
           Container(
             height: 230,
             width: double.infinity,
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFF0D47A1), Color(0xFF1976D2)],
+                colors: [
+                  Color(0xFF0F4C45),
+                  Color(0xFF2E7D72),
+                ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
             ),
+
             child: SafeArea(
               child: Stack(
                 children: [
@@ -34,11 +40,11 @@ class FaqScreen extends StatelessWidget {
                     ),
                   ),
 
-                  Center(
+                  const Center(
                     child: Icon(
                       Icons.help_outline,
-                      size: 100,
-                      color: Colors.white.withValues(alpha: 0.9),
+                      size: 85, // slightly refined
+                      color: Colors.white,
                     ),
                   ),
                 ],
@@ -46,7 +52,7 @@ class FaqScreen extends StatelessWidget {
             ),
           ),
 
-          // 📜 Content
+          // Content
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
@@ -116,24 +122,27 @@ class _FaqItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(
-          question,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Colors.black,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            question,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.black,
+            ),
           ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          answer,
-          style: const TextStyle(
-            color: Colors.black,
-            height: 1.5,
+          const SizedBox(height: 6),
+          Text(
+            answer,
+            style: const TextStyle(
+              color: Colors.black,
+              height: 1.5,
+            ),
           ),
-        ),
-      ]),
+        ],
+      ),
     );
   }
 }

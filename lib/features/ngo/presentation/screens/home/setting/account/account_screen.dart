@@ -11,20 +11,24 @@ class AccountScreen extends StatelessWidget {
       backgroundColor: Colors.white,
 
       appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        title: Row(
-          children: const [
-            Text(
-              'Account',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 26),
-            ),
-            SizedBox(width: 8),
-            Icon(Icons.person),
-          ],
+  elevation: 0,
+  backgroundColor: const Color(0xFF0F4C45),
+  iconTheme: const IconThemeData(color: Colors.white),
+  title: Row(
+    children: const [
+      Text(
+        'Account',
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 26,
+          color: Colors.white,
         ),
       ),
+      SizedBox(width: 8),
+      Icon(Icons.person, color: Colors.white),
+    ],
+  ),
+),
 
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),

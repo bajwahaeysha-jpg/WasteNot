@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'donation_details_screen.dart';
+import 'donation_success_screen.dart';
 import 'dummy_all_donations.dart';
 
 class AllDonationsScreen extends StatefulWidget {
@@ -34,8 +35,13 @@ class _AllDonationsScreenState extends State<AllDonationsScreen> {
         ),
         actions: [
           IconButton(
-            icon: Icon(showSearch ? Icons.close : Icons.search),
-            onPressed: () => setState(() => showSearch = !showSearch),
+            icon: Icon(showSearch ? Icons.close : Icons.search, color: Colors.white),
+            onPressed: () {
+              setState(() {
+                showSearch = !showSearch;
+                query = "";
+              });
+            },
           )
         ],
         bottom: showSearch
@@ -71,8 +77,10 @@ class _AllDonationsScreenState extends State<AllDonationsScreen> {
 
             const Padding(
               padding: EdgeInsets.fromLTRB(16, 12, 0, 6),
-              child: Text("Today",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+              child: Text(
+                "Today",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
             ),
 
             Expanded(
@@ -85,7 +93,10 @@ class _AllDonationsScreenState extends State<AllDonationsScreen> {
                     onTap: () async {
                       final accepted = await Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => DonationDetailsScreen(donation: donation)),
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              DonationDetailsScreen(donation: donation),
+                        ),
                       );
 
                       if (accepted == true) {
@@ -98,6 +109,7 @@ class _AllDonationsScreenState extends State<AllDonationsScreen> {
                     child: Container(
                       margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                       padding: const EdgeInsets.all(12),
+
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(14),
@@ -109,19 +121,19 @@ class _AllDonationsScreenState extends State<AllDonationsScreen> {
                           ),
                         ],
                       ),
+
                       child: Row(
                         children: [
 
-                         ClipRRect(
-  borderRadius: BorderRadius.circular(12),
-  child: Image.asset(
-    donation.image,
-    width: 85,
-    height: 85,
-    fit: BoxFit.cover,
-  ),
-),
-
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.asset(
+                              donation.image,
+                              width: 85,
+                              height: 85,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
 
                           const SizedBox(width: 12),
 
@@ -132,29 +144,38 @@ class _AllDonationsScreenState extends State<AllDonationsScreen> {
 
                                 Align(
                                   alignment: Alignment.centerRight,
-                                  child: Text(donation.time,
-                                      style: const TextStyle(fontSize: 11)),
+                                  child: Text(
+                                    donation.time,
+                                    style: const TextStyle(fontSize: 11),
+                                  ),
                                 ),
 
-                                Text(donation.items,
-                                    style: const TextStyle(
-                                        fontSize: 16, fontWeight: FontWeight.bold)),
+                                Text(
+                                  donation.items,
+                                  style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold),
+                                ),
 
                                 const SizedBox(height: 4),
 
                                 Row(children: [
-                                  const Icon(Icons.store, size: 14, color: Colors.redAccent),
+                                  const Icon(Icons.store,
+                                      size: 14, color: Colors.redAccent),
                                   const SizedBox(width: 4),
                                   Expanded(
-                                    child: Text(donation.hotel,
-                                        overflow: TextOverflow.ellipsis),
+                                    child: Text(
+                                      donation.hotel,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
                                 ]),
 
                                 const SizedBox(height: 4),
 
                                 Row(children: [
-                                  const Icon(Icons.ac_unit, size: 14, color: Colors.blue),
+                                  const Icon(Icons.ac_unit,
+                                      size: 14, color: Colors.blue),
                                   const SizedBox(width: 4),
                                   Text(donation.precaution),
                                 ]),
@@ -164,10 +185,16 @@ class _AllDonationsScreenState extends State<AllDonationsScreen> {
                                 Row(
                                   children: [
 
-                                    const Text("View details",
-                                        style: TextStyle(color: Colors.teal, fontSize: 13)),
+                                    const Text(
+                                      "View details",
+                                      style: TextStyle(
+                                          color: Colors.teal, fontSize: 13),
+                                    ),
+
                                     const SizedBox(width: 6),
-                                    const Icon(Icons.info_outline, size: 14, color: Colors.teal),
+
+                                    const Icon(Icons.info_outline,
+                                        size: 14, color: Colors.teal),
 
                                     const Spacer(),
 
@@ -179,11 +206,33 @@ class _AllDonationsScreenState extends State<AllDonationsScreen> {
                                           backgroundColor: Colors.amber,
                                           padding: EdgeInsets.zero,
                                           shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(10)),
+                                            borderRadius:
+                                                BorderRadius.circular(10),
+                                          ),
                                         ),
-                                        onPressed: () {},
-                                        child: const Text("Accept",
-                                            style: TextStyle(color: Colors.black)),
+
+                                        onPressed: () async {
+                                          final result = await Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) =>
+                                                  const DonationSuccessScreen(),
+                                            ),
+                                          );
+
+                                          if (!context.mounted) return;
+
+                                          if (result == true) {
+                                            setState(() {
+                                              allDonations.remove(donation);
+                                            });
+                                          }
+                                        },
+
+                                        child: const Text(
+                                          "Accept",
+                                          style: TextStyle(color: Colors.black),
+                                        ),
                                       ),
                                     ),
                                   ],

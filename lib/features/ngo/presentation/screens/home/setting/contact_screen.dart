@@ -4,6 +4,8 @@ import 'package:url_launcher/url_launcher.dart';
 class ContactScreen extends StatelessWidget {
   const ContactScreen({super.key});
 
+  static const Color primary = Color(0xFF0F4C45);
+
   void _openEmail() async {
     final Uri emailUri = Uri(
       scheme: 'mailto',
@@ -12,82 +14,83 @@ class ContactScreen extends StatelessWidget {
         'subject=WasteNot Support&body=Please describe your issue here.',
       ),
     );
+
     await launchUrl(emailUri);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF5F7F6),
 
-      body: Column(
-        children: [
+      appBar: AppBar(
+        backgroundColor: primary,
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: const Text(
+          "Contact Support",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+        ),
+        elevation: 0,
+      ),
 
-          // Header
-          Container(
-            height: 220,
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF2196F3), Color(0xFF64B5F6)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+      body: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+
+            const SizedBox(height: 20),
+
+            const Icon(
+              Icons.support_agent,
+              size: 90, // slightly bigger
+              color: primary,
+            ),
+
+            const SizedBox(height: 30),
+
+            const Text(
+              "Need Help?",
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
               ),
             ),
-            child: SafeArea(
-              child: Stack(
-                children: [
-                  Positioned(
-                    top: 12,
-                    left: 12,
-                    child: IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ),
 
-                  const Center(
-                    child: Icon(Icons.email, size: 90, color: Colors.white),
-                  ),
-                ],
-              ),
-            ),
-          ),
+            const SizedBox(height: 10),
 
-          const SizedBox(height: 40),
-
-          const Text(
-            "Need Help?",
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
-          ),
-
-          const SizedBox(height: 10),
-
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24),
-            child: Text(
+            const Text(
               "Contact our support team and we'll get back to you shortly.",
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.black),
+              style: TextStyle(
+                color: Colors.black54,
+                height: 1.4,
+              ),
             ),
-          ),
 
-          const SizedBox(height: 24),
+            const SizedBox(height: 30),
 
-          SizedBox(
-            width: 220,
-            height: 52,
-            child: ElevatedButton.icon(
-              onPressed: _openEmail,
-              icon: const Icon(Icons.send),
-              label: const Text("Contact through Mail"),
+            SizedBox(
+              width: 220,
+              height: 50,
+              child: ElevatedButton.icon(
+                onPressed: _openEmail,
+                icon: const Icon(Icons.email_outlined),
+                label: const Text(
+                  "Contact through Mail",
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30), // more rounded
+                  ),
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
