@@ -3,6 +3,7 @@ import 'suspend_success_screen.dart';
 
 class SuspendDonorScreen extends StatefulWidget {
   final Map<String, dynamic> donor;
+
   const SuspendDonorScreen({super.key, required this.donor});
 
   @override
@@ -10,15 +11,21 @@ class SuspendDonorScreen extends StatefulWidget {
 }
 
 class _SuspendDonorScreenState extends State<SuspendDonorScreen> {
+
   final TextEditingController reasonController = TextEditingController();
+
+  static const Color mainGreen = Color(0xFF0F4C45);
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9F8),
+
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F4C45),
+        backgroundColor: mainGreen,
         elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
         title: const Text(
           "Suspend Donor",
           style: TextStyle(
@@ -26,73 +33,90 @@ class _SuspendDonorScreenState extends State<SuspendDonorScreen> {
             fontWeight: FontWeight.w600,
           ),
         ),
-        iconTheme: const IconThemeData(color: Colors.white),
       ),
+
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
 
-          /// ───── REASON BOX ─────
+          /// TITLE
           const Text(
-            "Reason to Suspend",
+            "Reason for Suspension",
             style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600, // ✅ heading bold
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 10),
 
-          TextField(
-            controller: reasonController,
-            maxLines: 4,
-            decoration: InputDecoration(
-              hintText: "Enter detailed reason here...",
-              filled: true,
-              fillColor: Colors.white,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide.none,
+          const SizedBox(height: 12),
+
+          /// REASON BOX
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: const [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 6,
+                )
+              ],
+            ),
+
+            child: TextField(
+              controller: reasonController,
+              maxLines: 4,
+              decoration: const InputDecoration(
+                hintText: "Enter suspension reason...",
+                contentPadding: EdgeInsets.all(16),
+                border: InputBorder.none,
               ),
             ),
           ),
 
-          const SizedBox(height: 26),
+          const SizedBox(height: 28),
 
-          /// ───── DETAILS CARD ─────
+          /// DONOR DETAILS CARD
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(18),
+
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(18),
               boxShadow: const [
                 BoxShadow(
                   color: Colors.black12,
-                  blurRadius: 8,
-                  offset: Offset(0, 3),
-                ),
+                  blurRadius: 6,
+                )
               ],
             ),
+
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+
                 const Text(
-                  "Details",
+                  "Donor Details",
                   style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600, // ✅ heading bold
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 14),
 
-                _detailRow("Donor Name", widget.donor['name']),
+                const SizedBox(height: 16),
+
+                _detailRow("Name", widget.donor['name']),
                 const SizedBox(height: 12),
+
                 _detailRow("Location", widget.donor['location']),
+                const SizedBox(height: 12),
+
+                _detailRow("Phone", widget.donor['phone']),
 
                 const SizedBox(height: 16),
 
                 Text(
-                  "This donor will be suspended based on the provided reason. "
-                  "A notification will be sent to inform them about this action.",
+                  "This donor will be suspended and notified about this action.",
                   style: TextStyle(
                     fontSize: 13,
                     color: Colors.grey.shade700,
@@ -105,12 +129,26 @@ class _SuspendDonorScreenState extends State<SuspendDonorScreen> {
 
           const SizedBox(height: 40),
 
-          /// ───── ACTION BUTTON ─────
+          /// SUSPEND BUTTON
           SizedBox(
             width: double.infinity,
-            height: 48,
+            height: 52,
+
             child: ElevatedButton(
+
               onPressed: () {
+
+                if (reasonController.text.isEmpty) {
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Please enter suspension reason"),
+                    ),
+                  );
+
+                  return;
+                }
+
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
@@ -118,17 +156,19 @@ class _SuspendDonorScreenState extends State<SuspendDonorScreen> {
                   ),
                 );
               },
+
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.shade600,
+                backgroundColor: Colors.red,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(26),
+                  borderRadius: BorderRadius.circular(28),
                 ),
               ),
+
               child: const Text(
-                "Suspend & Send Notification",
+                "Suspend Donor",
                 style: TextStyle(
-                  fontSize: 15,
+                  fontSize: 16,
                   fontWeight: FontWeight.w600,
                   color: Colors.white,
                 ),
@@ -140,26 +180,27 @@ class _SuspendDonorScreenState extends State<SuspendDonorScreen> {
     );
   }
 
-  /// ───── DETAIL ROW (FIXED TYPOGRAPHY) ─────
+  /// DETAIL ROW
   Widget _detailRow(String label, String value) {
+
     return Row(
       children: [
+
         Expanded(
           child: Text(
             label,
             style: TextStyle(
               fontSize: 13,
-              fontWeight: FontWeight.w500, // ✅ label slightly strong
               color: Colors.grey.shade600,
             ),
           ),
         ),
+
         Text(
           value,
           style: const TextStyle(
             fontSize: 14,
-            fontWeight: FontWeight.normal, // ✅ value NOT bold
-            color: Colors.black87,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],

@@ -3,11 +3,11 @@ import 'expire_reason_screen.dart';
 
 class DonationProfileScreen extends StatefulWidget {
   final Map<String, dynamic> donation;
+
   const DonationProfileScreen({super.key, required this.donation});
 
   @override
-  State<DonationProfileScreen> createState() =>
-      _DonationProfileScreenState();
+  State<DonationProfileScreen> createState() => _DonationProfileScreenState();
 }
 
 class _DonationProfileScreenState extends State<DonationProfileScreen> {
@@ -22,150 +22,87 @@ class _DonationProfileScreenState extends State<DonationProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9F8),
+      backgroundColor: const Color(0xFFF2F2F2),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0F5F54),
         elevation: 0,
-        centerTitle: false,
         title: const Text(
           "Donation Details",
           style: TextStyle(
-            color: Colors.white,
             fontWeight: FontWeight.w600,
+            color: Colors.white,
           ),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
+
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+        padding: const EdgeInsets.all(18),
         children: [
 
-          /// ───── DONATION IMAGES ─────
-          SizedBox(
-            height: 160,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: d['images']?.length ?? 1,
-              itemBuilder: (context, index) {
-                String img = d['images'] != null
-                    ? d['images'][index]
-                    : 'assets/images/food.jpg';
-                return Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: Image.asset(
-                      img,
-                      width: 160,
-                      height: 160,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                );
-              },
+          /// DONOR INFO
+          _row("Donor", d['donor']),
+          _row("Accepted by", d['ngo'] ?? "Not yet accepted"),
+          _row("Location", d['location'] ?? "Unknown"),
+
+          const Divider(height: 32),
+
+          /// TIMES
+          if (d['uploadedAt'] != null)
+            _row("Uploaded at", d['uploadedAt']),
+          if (d['acceptedAt'] != null)
+            _row("Accepted at", d['acceptedAt']),
+          if (d['pickedAt'] != null)
+            _row("Picked up at", d['pickedAt']),
+
+          const Divider(height: 32),
+
+          /// DESCRIPTION
+          const Text(
+            "Donation Description",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
             ),
           ),
+
+          const SizedBox(height: 14),
+
+          _row("Food", d['items']),
+          _row("Servings", d['quantity'].toString()),
 
           const SizedBox(height: 24),
 
-          /// ───── STATUS ─────
+          /// PICTURES
+          const Text(
+            "Pictures",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
           Row(
             children: [
-              const Text(
-                "Status:",
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                d['status'],
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: _statusColor(d['status']),
-                ),
-              ),
+              Expanded(child: _image(d)),
+              const SizedBox(width: 12),
+              Expanded(child: _image(d)),
             ],
           ),
 
-          const SizedBox(height: 22),
+          const SizedBox(height: 20),
 
-          /// ───── BASIC INFO CARD ─────
-          Card(
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            elevation: 3,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  _row("Donor", d['donor']),
-                  _row("Accepted by", d['ngo'] ?? "Not yet accepted"),
-                  if (d['uploadedAt'] != null) _row("Uploaded at", d['uploadedAt']),
-                  if (d['acceptedAt'] != null) _row("Accepted at", d['acceptedAt']),
-                  if (d['pickedAt'] != null) _row("Picked up at", d['pickedAt']),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 26),
-
-          /// ───── DONATION DETAILS CARD ─────
-          Card(
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            elevation: 3,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Donation Details",
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _row("Food", d['items']),
-                  _row("Servings", d['quantity'].toString()),
-                  if (d['status'] == "Expired" && d['expireReason'] != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 12),
-                      child: Text(
-                        "Expired Reason:\n${d['expireReason']}",
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Colors.black54,
-                          height: 1.4,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 26),
-
-          /// ───── ADMIN ACTIONS ─────
+          /// ACTION
           if (d['status'] == "Active")
-            _actionText(
-              "Mark as Expired",
-              color: Colors.red,
+            GestureDetector(
               onTap: _openExpireReason,
-            ),
-
-          if (d['status'] == "Pending")
-            Padding(
-              padding: const EdgeInsets.only(top: 10),
-              child: Text(
-                "Waiting for NGO to accept donation",
+              child: const Text(
+                "Mark as Expired",
                 style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey.shade600,
+                  color: Colors.red,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -174,20 +111,18 @@ class _DonationProfileScreenState extends State<DonationProfileScreen> {
     );
   }
 
-  // ───────── HELPERS ─────────
-
+  /// ROW
   Widget _row(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 14),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 110,
+            width: 120,
             child: Text(
               label,
               style: const TextStyle(
-                fontWeight: FontWeight.w500,
+                fontSize: 15,
                 color: Colors.black87,
               ),
             ),
@@ -196,8 +131,8 @@ class _DonationProfileScreenState extends State<DonationProfileScreen> {
             child: Text(
               value,
               style: const TextStyle(
+                fontSize: 15,
                 color: Colors.black54,
-                height: 1.3,
               ),
             ),
           ),
@@ -206,40 +141,23 @@ class _DonationProfileScreenState extends State<DonationProfileScreen> {
     );
   }
 
-  Color _statusColor(String status) {
-    switch (status) {
-      case "Completed":
-        return Colors.green;
-      case "Expired":
-        return Colors.red;
-      case "Active":
-        return Colors.orange;
-      default:
-        return Colors.grey;
-    }
-  }
+  /// IMAGE
+  Widget _image(Map d) {
+    String img = d['images'] != null
+        ? d['images'][0]
+        : 'assets/images/food.jpg';
 
-  Widget _actionText(
-    String text, {
-    required VoidCallback onTap,
-    Color? color,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Text(
-          text,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: color ?? const Color(0xFF0F5F54),
-          ),
-        ),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Image.asset(
+        img,
+        height: 120,
+        fit: BoxFit.cover,
       ),
     );
   }
 
+  /// EXPIRE SCREEN
   Future<void> _openExpireReason() async {
     final result = await Navigator.push(
       context,

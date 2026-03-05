@@ -20,9 +20,9 @@ class SmartInsights extends StatelessWidget {
       ];
     } else {
       return [
-        "📈 This month is outperforming the previous one",
-        "🕒 Peak usage observed in the last 10 days",
-        "💚 Engagement steadily increasing",
+        "This month is outperforming the previous one",
+        "Peak usage observed in the last 10 days",
+        "Engagement steadily increasing",
       ];
     }
   }

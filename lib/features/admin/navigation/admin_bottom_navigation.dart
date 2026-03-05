@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../analytics/analytics_screen.dart';
 import '../home/admin_home_screen.dart';
-import '../messages/messages_screen.dart';
+import '../activity_log/activity_log_screen.dart';
 import '../more/more_bottom_sheet.dart';
 
 class AdminBottomNavigation extends StatefulWidget {
@@ -29,7 +29,7 @@ class _AdminBottomNavigationState extends State<AdminBottomNavigation> {
     _pages = [
       AdminHomeScreen(user: widget.user),
       const AnalyticsScreen(),
-      const MessagesScreen(),
+      const ActivityLogScreen(),
     ];
   }
 
@@ -68,7 +68,7 @@ class _AdminBottomNavigationState extends State<AdminBottomNavigation> {
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.message),
-              label: "Messages",
+              label: "Activity Log",
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.more_horiz),

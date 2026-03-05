@@ -15,6 +15,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   @override
   Widget build(BuildContext context) {
 
+    final width = MediaQuery.of(context).size.width;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9F8),
 
@@ -36,10 +38,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-
           children: [
 
-            /// ✅ OVERVIEW CARDS WITH ICONS
+            /// OVERVIEW CARDS
             Row(
               children: const [
 
@@ -82,18 +83,18 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
             const SizedBox(height: 24),
 
-            /// ✅ PERFORMANCE HEADER
-            const Text(
+            /// PERFORMANCE TITLE
+            Text(
               "Performance",
               style: TextStyle(
-                fontSize: 18,
+                fontSize: width * 0.045,
                 fontWeight: FontWeight.w600,
               ),
             ),
 
             const SizedBox(height: 14),
 
-            /// ✅ PERFORMANCE (SCREENSHOT STYLE)
+            /// PERFORMANCE CARDS
             Row(
               children: const [
 
@@ -112,15 +113,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 SizedBox(width: 10),
 
                 _PerformanceCard(
-  title: "Coverage",
-  value: "86%",
-),
+                  title: "Coverage",
+                  value: "86%",
+                ),
               ],
             ),
 
             const SizedBox(height: 24),
 
-            /// ✅ SMART INSIGHTS (LAST)
+            /// SMART INSIGHTS
             SmartInsights(range: selectedRange),
           ],
         ),
@@ -130,9 +131,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 }
 
 ////////////////////////////////////////////////////
-/// ⭐ COMPACT OVERVIEW CARD (SMALL SIZE)
-////////////////////////////////////////////////////
-
 class _StatCard extends StatelessWidget {
 
   final String title;
@@ -145,38 +143,37 @@ class _StatCard extends StatelessWidget {
     required this.icon,
   });
 
+  static const mainGreen = Color(0xFF0F5F54);
+
   @override
   Widget build(BuildContext context) {
 
+    final width = MediaQuery.of(context).size.width;
+
     return Expanded(
       child: Container(
-
-        /// ✅ SMALL HEIGHT FEEL
-        padding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 15,
+        padding: EdgeInsets.symmetric(
+          horizontal: width * 0.03,
+          vertical: width * 0.035,
         ),
 
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
 
-          boxShadow: const [
+          boxShadow: [
             BoxShadow(
-              color: Colors.black12,
+              color: Colors.black.withValues(alpha:.06),
               blurRadius: 6,
-              offset: Offset(0,2),
+              offset: const Offset(0,2),
             ),
           ],
         ),
 
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-
           children: [
 
-            /// ICON TOP RIGHT
             Row(
               children: [
 
@@ -192,19 +189,18 @@ class _StatCard extends StatelessWidget {
 
                 Icon(
                   icon,
-                  size: 18,
-                  color: const Color(0xFF0F5F54),
+                  size: width * 0.05,
+                  color: mainGreen,
                 ),
               ],
             ),
 
             const SizedBox(height: 6),
 
-            /// VALUE
             Text(
               value,
-              style: const TextStyle(
-                fontSize: 18,
+              style: TextStyle(
+                fontSize: width * 0.045,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -214,10 +210,8 @@ class _StatCard extends StatelessWidget {
     );
   }
 }
-////////////////////////////////////////////////////
-/// ⭐ PERFORMANCE CARD (SCREENSHOT STYLE)
-////////////////////////////////////////////////////
 
+////////////////////////////////////////////////////
 class _PerformanceCard extends StatelessWidget {
 
   final String title;
@@ -231,42 +225,41 @@ class _PerformanceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
 
+    final width = MediaQuery.of(context).size.width;
+
     return Expanded(
       child: Container(
 
-        padding: const EdgeInsets.symmetric(
-          vertical: 18,
-          horizontal: 12,
+        padding: EdgeInsets.symmetric(
+          vertical: width * 0.045,
+          horizontal: width * 0.03,
         ),
 
         decoration: BoxDecoration(
 
-          /// ✅ GREEN COLOR
-          color: const Color(0xFF0F5F54),
+          /// LIGHT GREY COLOR
+          color: const Color(0xFFEDEDED),
 
           borderRadius: BorderRadius.circular(14),
 
-          boxShadow: const [
+          boxShadow: [
             BoxShadow(
-              color: Colors.black26,
+              color: Colors.black.withValues(alpha:.06),
               blurRadius: 6,
-              offset: Offset(0,3),
+              offset: const Offset(0,3),
             )
           ],
         ),
 
         child: Column(
-
           children: [
 
             Text(
               value,
-              style: const TextStyle(
-                fontSize: 20,
+              style: TextStyle(
+                fontSize: width * 0.05,
                 fontWeight: FontWeight.bold,
-
-                /// WHITE TEXT
-                color: Colors.white,
+                color: const Color(0xFF0F5F54),
               ),
             ),
 
@@ -275,7 +268,7 @@ class _PerformanceCard extends StatelessWidget {
             Text(
               title,
               style: const TextStyle(
-                color: Colors.white70,
+                color: Colors.black54,
                 fontSize: 13,
               ),
             ),
