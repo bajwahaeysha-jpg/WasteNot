@@ -1,3 +1,4 @@
+import 'alert_details_screen.dart';
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import 'alert_details_screen.dart';

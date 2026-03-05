@@ -4,7 +4,6 @@ import 'package:wastenot/features/admin/navigation/admin_bottom_navigation.dart'
 import 'package:wastenot/features/donor/presentation/donor_navigation_screen.dart';
 import 'package:wastenot/features/ngo/presentation/screens/home/ngo_home_screen.dart';
 import '../../services/local_auth_service.dart';
-import '../features/admin/navigation/admin_bottom_navigation.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});

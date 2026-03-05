@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:wastenot/features/admin/messages/chat_screen.dart';
-import 'notification_screen.dart';
 import 'send_notification_screen.dart';
 import 'suspend_donor_screen.dart';
+import 'package:wastenot/features/admin/activity_log/activity_log_data.dart';
 
 class DonorProfileScreen extends StatelessWidget {
   final Map<String, dynamic> donor;
@@ -13,12 +12,19 @@ class DonorProfileScreen extends StatelessWidget {
     required this.donor,
   });
 
+  static const primary = Color(0xFF0F4C45);
+
   @override
   Widget build(BuildContext context) {
+
+    final screenWidth = MediaQuery.of(context).size.width;
+    final imageHeight = screenWidth * 0.45;
+
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: const Color(0xFFF5F7F6),
+
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F4C45),
+        backgroundColor: primary,
         elevation: 0,
         title: Text(
           donor['name'] ?? "Donor",
@@ -26,186 +32,178 @@ class DonorProfileScreen extends StatelessWidget {
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
+
       body: ListView(
+        padding: const EdgeInsets.symmetric(vertical: 16),
         children: [
 
-          // 🔹 TOP IMAGE
-          Container(
-            height: 200,
-            decoration: BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage(donor['logo']),
+          /// IMAGE
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.asset(
+                donor['logo'],
+                height: imageHeight,
+                width: double.infinity,
                 fit: BoxFit.cover,
               ),
             ),
           ),
 
-          // 🔹 NAME + LOCATION + ACTIONS
+          const SizedBox(height: 18),
+
+          /// NAME + CALL
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
 
-                // NAME & LOCATION
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+
                     Text(
                       donor['name'],
-                      style: const TextStyle(
-                        fontSize: 18,
+                      style: TextStyle(
+                        fontSize: screenWidth * 0.05,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 4),
+
+                    const SizedBox(height: 6),
+
                     Row(
                       children: [
-                        const Icon(Icons.location_on,
-                            size: 16, color: Colors.red),
+                        const Icon(
+                          Icons.location_on,
+                          size: 16,
+                          color: Colors.red,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           donor['location'],
-                          style:
-                              const TextStyle(color: Colors.grey),
+                          style: const TextStyle(
+                            color: Colors.grey,
+                          ),
                         ),
                       ],
                     ),
                   ],
                 ),
 
-                // 📞 CALL + 💬 MESSAGE
+                /// CALL
                 Row(
                   children: [
 
-                    // CALL BUTTON
                     IconButton(
-                      icon: const Icon(Icons.call,
-                          color: Colors.green),
+                      icon: const Icon(Icons.call, color: primary),
                       onPressed: () async {
-                        final telUrl =
-                            'tel:${donor['phone']}';
-                        if (await canLaunchUrl(
-                            Uri.parse(telUrl))) {
-                          await launchUrl(
-                              Uri.parse(telUrl));
-                        } else {
-                          ScaffoldMessenger.of(context)
-                              .showSnackBar(
-                            const SnackBar(
-                                content: Text(
-                                    "Cannot open dialer")),
-                          );
+
+                        final telUrl = 'tel:${donor['phone']}';
+
+                        if (await canLaunchUrl(Uri.parse(telUrl))) {
+                          await launchUrl(Uri.parse(telUrl));
                         }
                       },
                     ),
 
-                    // MESSAGE BUTTON → CHAT SCREEN
-                    IconButton(
-                      icon: const Icon(Icons.message,
-                          color: Colors.teal),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ChatScreen(
-                              name: donor['name'],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+                  
                   ],
                 ),
               ],
             ),
           ),
 
-          // 🔹 STATS
+          const SizedBox(height: 20),
+
+          /// STATS
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
-                _coloredStatBox(
-                    "${donor['meals']}",
-                    "Meals",
-                    Colors.blue),
-                _coloredStatBox(
-                    "${donor['success']}%",
-                    "Success",
-                    Colors.green),
-                _coloredStatBox(
-                    donor['status'] ?? "Approved",
-                    "Status",
-                    Colors.orange),
+
+                _statBox("${donor['meals']}", "Meals"),
+
+                const SizedBox(width: 10),
+
+                _statBox("${donor['success']}%", "Success"),
+
+                const SizedBox(width: 10),
+
+                _statBox(donor['status'] ?? "Approved", "Status"),
               ],
             ),
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 28),
 
-          // 🔹 ABOUT SECTION
+          /// ABOUT
           const Padding(
-            padding:
-                EdgeInsets.symmetric(horizontal: 16),
+            padding: EdgeInsets.symmetric(horizontal: 16),
             child: Text(
               "About",
               style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold),
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
 
           const SizedBox(height: 8),
 
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
               _description(donor),
               style: const TextStyle(
-                  color: Colors.black87,
-                  height: 1.5),
+                color: Colors.black87,
+                height: 1.5,
+              ),
             ),
           ),
 
           const SizedBox(height: 30),
 
-          // 🔔 SEND NOTIFICATION
+          /// SEND NOTIFICATION
           ListTile(
-            leading: const Icon(Icons.notifications,
-                color: Colors.green),
+            leading: const Icon(
+              Icons.notifications,
+              color: primary,
+            ),
             title: const Text("Send Notification"),
             onTap: () async {
-              final result =
-                  await Navigator.push(
+
+              final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) =>
-                      const SendNotificationScreen(),
+                  builder: (_) => const SendNotificationScreen(),
                 ),
               );
 
-              if (!context.mounted) return;
-
               if (result != null) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        NotificationScreen(
-                            newNotification: result),
-                  ),
+
+                activityLogs.insert(0, {
+                  "title": result['title'],
+                  "message": result['message'],
+                  "receiver": donor['name'],
+                  "time": "Now"
+                });
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Notification Sent")),
                 );
               }
             },
           ),
 
-          // 🚫 SUSPEND DONOR
+          /// SUSPEND
           ListTile(
-            leading:
-                const Icon(Icons.block, color: Colors.red),
+            leading: const Icon(
+              Icons.block,
+              color: Colors.red,
+            ),
             title: const Text(
               "Suspend Donor",
               style: TextStyle(color: Colors.red),
@@ -214,52 +212,57 @@ class DonorProfileScreen extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) =>
-                      SuspendDonorScreen(
-                          donor: donor),
+                  builder: (_) => SuspendDonorScreen(donor: donor),
                 ),
               );
             },
           ),
+
+          const SizedBox(height: 20),
         ],
       ),
     );
   }
 
-  // 🔹 COLORED STAT BOX
-  Widget _coloredStatBox(
-      String value, String label, Color color) {
+  /// STAT BOX
+  Widget _statBox(String value, String label) {
+
     return Expanded(
       child: Container(
-        margin:
-            const EdgeInsets.symmetric(horizontal: 4),
-        padding:
-            const EdgeInsets.symmetric(vertical: 14),
+        padding: const EdgeInsets.symmetric(vertical: 14),
+
         decoration: BoxDecoration(
-          color: color.withOpacity(0.15),
-          borderRadius:
-              BorderRadius.circular(12),
+          color: const Color(0xFFEDEDED),
+          borderRadius: BorderRadius.circular(12),
         ),
+
         child: Column(
           children: [
+
             Text(
               value,
-              style: TextStyle(
+              style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
-                color: color,
+                color: primary,
               ),
             ),
+
             const SizedBox(height: 4),
-            Text(label),
+
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.black54,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  static String _description(
-      Map<String, dynamic> donor) {
+  static String _description(Map<String, dynamic> donor) {
     return "This donor regularly contributes food to NGOs and helps reduce hunger in the community.";
   }
 }

@@ -1,136 +1,230 @@
 import 'package:flutter/material.dart';
+import 'package:wastenot/features/admin/activity_log/activity_log_data.dart';
 import 'suspend_ngo_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class NGOProfileScreen extends StatelessWidget {
   final Map ngo;
+
   const NGOProfileScreen({super.key, required this.ngo});
 
-  static const green = Color.fromARGB(255, 10, 62, 55);
+  static const primary = Color(0xFF0F4C45);
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final imageHeight = screenWidth * 0.45;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9F8),
+      backgroundColor: const Color(0xFFF5F7F6),
+
       appBar: AppBar(
-        backgroundColor: green,
+        backgroundColor: primary,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
         title: Text(
           ngo['name'],
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
+          style: const TextStyle(color: Colors.white),
         ),
       ),
+
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(vertical: 16),
         children: [
-          _headerImage(),
-          const SizedBox(height: 14),
-          _nameRow(), // ✅ FIXED
-          const SizedBox(height: 6),
-          _locationRow(),
+
+          /// IMAGE
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.asset(
+                ngo['logo'],
+                height: imageHeight,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 18),
+
+          /// NAME + CALL
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+
+                    Text(
+                      ngo['name'],
+                      style: TextStyle(
+                        fontSize: screenWidth * 0.05,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+
+                    const SizedBox(height: 6),
+
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on,
+                          size: 16,
+                          color: Colors.red,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          ngo['location'],
+                          style: const TextStyle(
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+
+                /// CALL BUTTON
+                IconButton(
+                  icon: const Icon(Icons.call, color: primary),
+                  onPressed: () async {
+
+                    final telUrl = 'tel:${ngo['phone']}';
+
+                    if (await canLaunchUrl(Uri.parse(telUrl))) {
+                      await launchUrl(Uri.parse(telUrl));
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+
           const SizedBox(height: 20),
-          _statsRow(),
+
+          /// STATS
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+
+                _statBox(
+                  ngo['mealsReceived'].toString(),
+                  "Meals",
+                ),
+
+                const SizedBox(width: 10),
+
+                _statBox(
+                  "${ngo['successRate']}%",
+                  "Success",
+                ),
+
+                const SizedBox(width: 10),
+
+                _statBox(
+                  ngo['status'],
+                  "Status",
+                ),
+              ],
+            ),
+          ),
+
           const SizedBox(height: 28),
-          _aboutSection(),
-          const SizedBox(height: 32),
-          _actions(context),
+
+          /// ABOUT
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              "About",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              "This NGO is dedicated to supporting underprivileged communities by ensuring fair and timely distribution of donated food.",
+              style: TextStyle(
+                color: Colors.black87,
+                height: 1.5,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 30),
+
+          /// SEND NOTIFICATION
+          ListTile(
+            leading: const Icon(
+              Icons.notifications,
+              color: primary,
+            ),
+            title: const Text("Send Notification"),
+            onTap: () => _showNotificationDialog(context),
+          ),
+
+          /// SUSPEND NGO
+          ListTile(
+            leading: const Icon(
+              Icons.block,
+              color: Colors.red,
+            ),
+            title: const Text(
+              "Suspend NGO",
+              style: TextStyle(color: Colors.red),
+            ),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => SuspendNGOScreen(ngo: ngo),
+                ),
+              );
+            },
+          ),
+
+          const SizedBox(height: 20),
         ],
       ),
     );
   }
 
-  // ───────── IMAGE ─────────
-
-  Widget _headerImage() {
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Image.asset(
-        ngo['logo'],
-        height: 220,
-        width: double.infinity,
-        fit: BoxFit.cover,
-      ),
-    );
-  }
-
-  // ───────── NAME + CALL / MESSAGE ─────────
-
-  Widget _nameRow() {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            ngo['name'],
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: Colors.black,
-            ),
-          ),
-        ),
-        const Icon(Icons.call, color: green, size: 24),
-        const SizedBox(width: 20),
-        const Icon(Icons.message, color: green, size: 24),
-      ],
-    );
-  }
-
-  // ───────── LOCATION ─────────
-
-  Widget _locationRow() {
-    return Row(
-      children: [
-        const Icon(Icons.location_on, size: 16, color: Colors.red),
-        const SizedBox(width: 4),
-        Text(
-          ngo['location'],
-          style: const TextStyle(color: Colors.black54),
-        ),
-      ],
-    );
-  }
-
-  // ───────── STATS ─────────
-
-  Widget _statsRow() {
-    return Row(
-      children: [
-        _statBox("Meals", ngo['mealsReceived'].toString()),
-        const SizedBox(width: 10),
-        _statBox("Success", "${ngo['successRate']}%"),
-        const SizedBox(width: 10),
-        _statBox("Status", ngo['status']),
-      ],
-    );
-  }
-
-  Widget _statBox(String label, String value) {
+  /// STAT BOX
+  static Widget _statBox(String value, String label) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.grey.shade200,
-          borderRadius: BorderRadius.circular(8),
+          color: const Color(0xFFEDEDED),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
           children: [
+
             Text(
               value,
               style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: primary,
               ),
             ),
+
             const SizedBox(height: 4),
+
             Text(
               label,
               style: const TextStyle(
-                fontSize: 12,
                 color: Colors.black54,
               ),
             ),
@@ -140,97 +234,8 @@ class NGOProfileScreen extends StatelessWidget {
     );
   }
 
-  // ───────── ABOUT ─────────
-
-  Widget _aboutSection() {
-    return const Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "About",
-          style: TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-            color: Colors.black,
-          ),
-        ),
-        SizedBox(height: 10),
-        Text(
-          "This NGO is dedicated to supporting underprivileged communities by "
-          "ensuring fair and timely distribution of donated food. They work "
-          "closely with donors and volunteers to maintain transparency and trust.\n\n"
-          "Their mission focuses on reducing hunger, minimizing food waste, and "
-          "creating long-term social impact through consistent community support.",
-          style: TextStyle(
-            fontSize: 14.5,
-            height: 1.6,
-            color: Colors.black,
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ───────── ACTIONS ─────────
-
-  Widget _actions(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _actionRow(
-          icon: Icons.notifications,
-          text: "Send Notification",
-          onTap: () => _showNotificationDialog(context),
-        ),
-        const SizedBox(height: 20),
-        _actionRow(
-          icon: Icons.block,
-          text: "Suspend NGO",
-          color: Colors.red,
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => SuspendNGOScreen(ngo: ngo),
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _actionRow({
-    required IconData icon,
-    required String text,
-    required VoidCallback onTap,
-    Color color = green,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      child: Row(
-        children: [
-          Icon(icon, color: color),
-          const SizedBox(width: 12),
-          Text(
-            text,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-
-  // ───────── NOTIFICATION POPUP ─────────
-
+  /// SEND NOTIFICATION DIALOG
   void _showNotificationDialog(BuildContext context) {
-    DateTime? fromDate;
-    DateTime? tillDate;
 
     final titleCtrl = TextEditingController();
     final msgCtrl = TextEditingController();
@@ -238,179 +243,70 @@ class NGOProfileScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            Future<void> pickDateTime(bool isFrom) async {
-              final date = await showDatePicker(
-                context: dialogContext,
-                initialDate: DateTime.now(),
-                firstDate: DateTime.now(),
-                lastDate: DateTime(2100),
-                builder: (context, child) {
-                  return Theme(
-                    data: Theme.of(context).copyWith(
-                      colorScheme: const ColorScheme.light(
-                        primary: green,
-                      ),
-                    ),
-                    child: child!,
-                  );
-                },
-              );
-              if (date == null) return;
 
-              final time = await showTimePicker(
-                context: dialogContext,
-                initialTime: TimeOfDay.now(),
-                builder: (context, child) {
-                  return Theme(
-                    data: Theme.of(context).copyWith(
-                      colorScheme: const ColorScheme.light(
-                        primary: green,
-                      ),
-                    ),
-                    child: child!,
-                  );
-                },
-              );
-              if (time == null) return;
+        return AlertDialog(
 
-              final dt = DateTime(
-                date.year,
-                date.month,
-                date.day,
-                time.hour,
-                time.minute,
-              );
+          title: const Text("Send Notification"),
 
-              setState(() {
-                if (isFrom) {
-                  fromDate = dt;
-                } else {
-                  tillDate = dt;
-                }
-              });
-            }
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
 
-            String format(DateTime? d) {
-              if (d == null) return "Select date & time";
-              return "${d.day}/${d.month}/${d.year} "
-                  "${d.hour}:${d.minute.toString().padLeft(2, '0')}";
-            }
-
-            return AlertDialog(
-              backgroundColor: const Color(0xFFF7F9F8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              title: Row(
-                children: const [
-                  Icon(Icons.notifications, color: green),
-                  SizedBox(width: 8),
-                  Text("Send Notification"),
-                ],
-              ),
-              content: SingleChildScrollView(
-                padding: EdgeInsets.only(
-                  bottom: MediaQuery.of(dialogContext).viewInsets.bottom,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text("Title",
-                        style:
-                            TextStyle(fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 6),
-                    TextField(
-                      controller: titleCtrl,
-                      decoration: const InputDecoration(
-                        isDense: true,
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    const Text("Message",
-                        style:
-                            TextStyle(fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 6),
-                    TextField(
-                      controller: msgCtrl,
-                      maxLines: 3,
-                      decoration:
-                          const InputDecoration(border: OutlineInputBorder()),
-                    ),
-                    const SizedBox(height: 16),
-
-                    _dateRow(
-                      label: "Active From",
-                      value: format(fromDate),
-                      onTap: () => pickDateTime(true),
-                    ),
-                    const SizedBox(height: 10),
-                    _dateRow(
-                      label: "Active Till",
-                      value: format(tillDate),
-                      onTap: () => pickDateTime(false),
-                    ),
-                  ],
+              TextField(
+                controller: titleCtrl,
+                decoration: const InputDecoration(
+                  labelText: "Title",
                 ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.black,
-                  ),
-                  child: const Text("Cancel"),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: green,
-                    foregroundColor: Colors.white,
-                  ),
-                  onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text("Send"),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
 
-  Widget _dateRow({
-    required String label,
-    required String value,
-    required VoidCallback onTap,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label,
-            style: const TextStyle(fontWeight: FontWeight.w600)),
-        const SizedBox(height: 4),
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                value,
-                style: const TextStyle(color: Colors.black),
+              const SizedBox(height: 10),
+
+              TextField(
+                controller: msgCtrl,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  labelText: "Message",
+                ),
               ),
+            ],
+          ),
+
+          actions: [
+
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text("Cancel"),
             ),
-            IconButton(
-              icon: const Icon(Icons.calendar_today, size: 18),
-              color: green,
-              onPressed: onTap,
-            ),
-            IconButton(
-              icon: const Icon(Icons.access_time, size: 18),
-              color: green,
-              onPressed: onTap,
+
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primary,
+              ),
+              onPressed: () {
+
+                if (titleCtrl.text.isEmpty || msgCtrl.text.isEmpty) return;
+
+                activityLogs.insert(0, {
+                  "title": titleCtrl.text,
+                  "message": msgCtrl.text,
+                  "receiver": ngo['name'],
+                  "type": "ngo",
+                  "time": "Now"
+                });
+
+                Navigator.pop(dialogContext);
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Notification sent to NGO"),
+                  ),
+                );
+              },
+              child: const Text("Send"),
             ),
           ],
-        ),
-      ],
+        );
+      },
     );
   }
 }

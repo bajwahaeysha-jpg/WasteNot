@@ -6,6 +6,7 @@ import 'profile/screens/donor_profile_screen.dart';
 import 'settings/screens/donor_settings_screen.dart';
 import 'goal/screens/donor_goal_screen.dart';
 import 'auth/screens/donor_logout_screen.dart';
+import 'package:wastenot/features/donor/presentation/notifications/screens/notification_screen.dart';
 
 class DonorNavigationScreen extends StatefulWidget {
   final Map<String, dynamic> user;
@@ -15,54 +16,127 @@ class DonorNavigationScreen extends StatefulWidget {
     required this.user,
   });
 
-
   @override
   State<DonorNavigationScreen> createState() => _DonorNavigationScreenState();
 }
 
 class _DonorNavigationScreenState extends State<DonorNavigationScreen> {
+
   int _currentIndex = 0;
+
+  static const Color mainGreen = Color(0xFF0E5E53);
 
   late final List<Widget> pages;
 
-@override
-void initState() {
-  super.initState();
-
-  pages = [
-    DonorHomeScreen(user: widget.user),
-    const DonateScreen(),
-    MessagesScreen(donorName: widget.user['name']),
-    const SizedBox(),
+  final List<String> titles = [
+    "WasteNot",
+    "Donate",
+    "Messages",
+    "More"
   ];
-}
 
+  @override
+  void initState() {
+    super.initState();
+
+    pages = [
+      DonorHomeScreen(user: widget.user),
+      const DonateScreen(),
+      MessagesScreen(donorName: widget.user['name']),
+      const SizedBox(),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
+
+      appBar: AppBar(
+        backgroundColor: mainGreen,
+        title: Text(
+          titles[_currentIndex],
+          style: const TextStyle(color: Colors.white),
+        ),
+        actions: [
+  IconButton(
+  icon: const Icon(Icons.notifications_none, color: Colors.white),
+  onPressed: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const NotificationScreen(),
+      ),
+    );
+  },
+),
+
+  const SizedBox(width: 10),
+
+  Padding(
+    padding: const EdgeInsets.only(right: 12),
+    child: GestureDetector(
+
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const DonorProfileScreen(),
+          ),
+        );
+      },
+
+      child: const CircleAvatar(
+        backgroundColor: Colors.white,
+        child: Text(
+          "A",
+          style: TextStyle(
+            color: mainGreen,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    ),
+  )
+],
+      ),
+
       body: pages[_currentIndex],
 
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         backgroundColor: Colors.white,
-        selectedItemColor: const Color(0xFF0E5E53),
-        unselectedItemColor: const Color(0xFF0E5E53),
+        selectedItemColor: mainGreen,
+        unselectedItemColor: Colors.grey,
         type: BottomNavigationBarType.fixed,
 
         onTap: (index) {
           if (index == 3) {
             _openMoreSheet(context);
           } else {
-            setState(() => _currentIndex = index);
+            setState(() {
+              _currentIndex = index;
+            });
           }
         },
 
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(icon: Icon(Icons.favorite), label: "Donate"),
-          BottomNavigationBarItem(icon: Icon(Icons.message), label: "Messages"),
-          BottomNavigationBarItem(icon: Icon(Icons.more_horiz), label: "More"),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: "WasteNot",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.favorite),
+            label: "Donate",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.message),
+            label: "Messages",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.more_horiz),
+            label: "More",
+          ),
         ],
       ),
     );
@@ -86,8 +160,12 @@ void initState() {
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const DonorProfileScreen()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const DonorProfileScreen(),
+                  ),
+                );
               },
             ),
 
@@ -97,8 +175,12 @@ void initState() {
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const DonorSettingsScreen()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const DonorSettingsScreen(),
+                  ),
+                );
               },
             ),
 
@@ -108,19 +190,30 @@ void initState() {
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const DonorGoalScreen()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const DonorGoalScreen(),
+                  ),
+                );
               },
             ),
 
             ListTile(
               leading: const Icon(Icons.logout, color: Colors.red),
-              title: const Text("Logout", style: TextStyle(color: Colors.red)),
+              title: const Text(
+                "Logout",
+                style: TextStyle(color: Colors.red),
+              ),
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const DonorLogoutScreen()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const DonorLogoutScreen(),
+                  ),
+                );
               },
             ),
           ],
@@ -129,3 +222,4 @@ void initState() {
     );
   }
 }
+

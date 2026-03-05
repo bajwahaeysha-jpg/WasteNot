@@ -12,7 +12,6 @@ class MessagesScreen extends StatefulWidget {
 }
 
 class _MessagesScreenState extends State<MessagesScreen> {
-
   static const Color mainGreen = Color(0xFF0E5E53);
 
   final List<Color> _softColors = [
@@ -22,12 +21,25 @@ class _MessagesScreenState extends State<MessagesScreen> {
   ];
 
   final List<Map<String, String>> _ngos = [
-    {"name": "Khair Foundation", "last": "Thank you for your support", "time": "Now"},
-    {"name": "Edhi Foundation", "last": "Pickup scheduled tomorrow", "time": "Yesterday"},
-    {"name": "SOS Children's Village", "last": "Food received successfully", "time": "2 days ago"},
+    {
+      "name": "Khair Foundation",
+      "last": "Thank you for your support",
+      "time": "Now"
+    },
+    {
+      "name": "Edhi Foundation",
+      "last": "Pickup scheduled tomorrow",
+      "time": "Yesterday"
+    },
+    {
+      "name": "SOS Children's Village",
+      "last": "Food received successfully",
+      "time": "2 days ago"
+    },
   ];
 
   List<Map<String, String>> _filtered = [];
+
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -39,16 +51,27 @@ class _MessagesScreenState extends State<MessagesScreen> {
   void _search(String value) {
     setState(() {
       _filtered = _ngos
-          .where((d) => d["name"]!.toLowerCase().contains(value.toLowerCase()))
+          .where((d) =>
+              d["name"]!.toLowerCase().contains(value.toLowerCase()))
           .toList();
     });
   }
 
   String _formatTime(DateTime time) {
     final now = DateTime.now();
-    if (now.difference(time).inMinutes < 60) return "Now";
-    if (now.difference(time).inHours < 24) return "${now.difference(time).inHours}h ago";
-    if (now.difference(time).inDays == 1) return "Yesterday";
+
+    if (now.difference(time).inMinutes < 60) {
+      return "Now";
+    }
+
+    if (now.difference(time).inHours < 24) {
+      return "${now.difference(time).inHours}h ago";
+    }
+
+    if (now.difference(time).inDays == 1) {
+      return "Yesterday";
+    }
+
     return "${now.difference(time).inDays} days ago";
   }
 
@@ -57,75 +80,81 @@ class _MessagesScreenState extends State<MessagesScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7F6),
 
-      // ✅ Home Screen Style AppBar
-      appBar: AppBar(
-        backgroundColor: mainGreen,
-        title: const Text("WasteNot", style: TextStyle(color: Colors.white)),
-        actions: const [
-          Icon(Icons.notifications_none, color: Colors.white),
-          SizedBox(width: 10),
-          Padding(
-            padding: EdgeInsets.only(right: 12),
-            child: CircleAvatar(
-              backgroundColor: Colors.white,
-              child: Text("A", style: TextStyle(color: mainGreen)),
-            ),
-          )
-        ],
-      ),
-
       body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
 
-          // 📨 INBOX TITLE
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Center(
-              child: Text("Inbox", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            ),
-          ),
+          const SizedBox(height: 16),
 
           // 🔍 Search Bar
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: TextField(
-              controller: _searchController,
-              onChanged: _search,
-              decoration: InputDecoration(
-                hintText: "Search",
-                prefixIcon: const Icon(Icons.search),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(40),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 6,
+                    offset: Offset(0, 3),
+                  )
+                ],
+              ),
+              child: TextField(
+                controller: _searchController,
+                onChanged: _search,
+                decoration: const InputDecoration(
+                  hintText: "Search conversation...",
+                  border: InputBorder.none,
+                  icon: Icon(Icons.search),
                 ),
               ),
             ),
           ),
 
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
 
-          // 📋 Inbox List
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: _filtered.length,
               itemBuilder: (context, index) {
+
                 final ngo = _filtered[index];
 
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: ListTile(
+
                     leading: CircleAvatar(
-                      backgroundColor: _softColors[index % _softColors.length],
-                      child: Text(ngo["name"]![0], style: const TextStyle(color: Colors.black)),
+                      backgroundColor:
+                          _softColors[index % _softColors.length],
+                      child: Text(
+                        ngo["name"]![0],
+                        style: const TextStyle(color: Colors.black),
+                      ),
                     ),
-                    title: Text(ngo["name"]!, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text(ngo["last"]!, maxLines: 1, overflow: TextOverflow.ellipsis),
-                    trailing: Text(ngo["time"]!, style: const TextStyle(fontSize: 12)),
+
+                    title: Text(
+                      ngo["name"]!,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+
+                    subtitle: Text(
+                      ngo["last"]!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+
+                    trailing: Text(
+                      ngo["time"]!,
+                      style: const TextStyle(fontSize: 12),
+                    ),
+
                     onTap: () async {
+
                       await Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -136,13 +165,18 @@ class _MessagesScreenState extends State<MessagesScreen> {
                         ),
                       );
 
-                      final msgs = ChatStore.getMessages("${widget.donorName}_${ngo["name"]}");
+                      final msgs = ChatStore.getMessages(
+                          "${widget.donorName}_${ngo["name"]}");
+
                       if (msgs.isNotEmpty) {
+
                         final last = msgs.last;
+
                         setState(() {
                           ngo["last"] = last.text;
                           ngo["time"] = _formatTime(last.time);
                         });
+
                       }
                     },
                   ),
@@ -155,3 +189,4 @@ class _MessagesScreenState extends State<MessagesScreen> {
     );
   }
 }
+

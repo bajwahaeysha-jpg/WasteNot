@@ -11,23 +11,6 @@ class DonateScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9F9),
 
-      // ✅ Home-style Top AppBar
-      appBar: AppBar(
-        backgroundColor: mainGreen,
-        title: const Text("WasteNot", style: TextStyle(color: Colors.white)),
-        actions: const [
-          Icon(Icons.notifications_none, color: Colors.white),
-          SizedBox(width: 10),
-          Padding(
-            padding: EdgeInsets.only(right: 12),
-            child: CircleAvatar(
-              backgroundColor: Colors.white,
-              child: Text("A", style: TextStyle(color: mainGreen)),
-            ),
-          )
-        ],
-      ),
-
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -44,7 +27,7 @@ class DonateScreen extends StatelessWidget {
 
           _donationCard(
             context,
-            image: "assets/images/hunger.jfif",
+            image: "assets/images/hunger.jpg",
             tag: "",
             showButton: false,
             title: "Hunger Crisis Is Rising",
