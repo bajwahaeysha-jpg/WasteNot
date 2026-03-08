@@ -54,51 +54,63 @@ class _DonorNavigationScreenState extends State<DonorNavigationScreen> {
 
       appBar: AppBar(
         backgroundColor: mainGreen,
+        elevation: 0,
+
+        iconTheme: const IconThemeData(
+          color: Colors.white, // ← back arrow white
+        ),
+
         title: Text(
           titles[_currentIndex],
-          style: const TextStyle(color: Colors.white),
-        ),
-        actions: [
-  IconButton(
-  icon: const Icon(Icons.notifications_none, color: Colors.white),
-  onPressed: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const NotificationScreen(),
-      ),
-    );
-  },
-),
-
-  const SizedBox(width: 10),
-
-  Padding(
-    padding: const EdgeInsets.only(right: 12),
-    child: GestureDetector(
-
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const DonorProfileScreen(),
-          ),
-        );
-      },
-
-      child: const CircleAvatar(
-        backgroundColor: Colors.white,
-        child: Text(
-          "A",
-          style: TextStyle(
-            color: mainGreen,
+          style: const TextStyle(
+            color: Colors.white,
             fontWeight: FontWeight.bold,
           ),
         ),
-      ),
-    ),
-  )
-],
+
+        actions: [
+
+          IconButton(
+            icon: const Icon(Icons.notifications_none, color: Colors.white),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const NotificationScreen(),
+                ),
+              );
+            },
+          ),
+
+          const SizedBox(width: 10),
+
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: GestureDetector(
+
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const DonorProfileScreen(),
+                  ),
+                );
+              },
+
+              child: const CircleAvatar(
+                backgroundColor: Colors.white,
+                child: Text(
+                  "A",
+                  style: TextStyle(
+                    color: mainGreen,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          )
+
+        ],
       ),
 
       body: pages[_currentIndex],
@@ -143,13 +155,16 @@ class _DonorNavigationScreenState extends State<DonorNavigationScreen> {
   }
 
   void _openMoreSheet(BuildContext context) {
+
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
+
       builder: (_) => Padding(
         padding: const EdgeInsets.all(20),
+
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -216,10 +231,10 @@ class _DonorNavigationScreenState extends State<DonorNavigationScreen> {
                 );
               },
             ),
+
           ],
         ),
       ),
     );
   }
 }
-

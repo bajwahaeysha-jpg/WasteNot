@@ -26,7 +26,8 @@ class _ChatScreenState extends State<ChatScreen> {
     _messages = ChatStore.getMessages(_chatId);
 
     if (_messages.isEmpty) {
-      ChatStore.addMessage(_chatId, "Hello ${widget.ngoName}, this is ${widget.donorName}.");
+      ChatStore.addMessage(
+          _chatId, "Hello ${widget.ngoName}, this is ${widget.donorName}.");
       _messages = ChatStore.getMessages(_chatId);
     }
   }
@@ -47,7 +48,8 @@ class _ChatScreenState extends State<ChatScreen> {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text("Delete messages?"),
-        content: const Text("Are you sure you want to delete selected messages?"),
+        content:
+            const Text("Are you sure you want to delete selected messages?"),
         actions: [
           TextButton(
             onPressed: () {
@@ -59,7 +61,8 @@ class _ChatScreenState extends State<ChatScreen> {
           TextButton(
             onPressed: () {
               setState(() {
-                final list = _selected.toList()..sort((a, b) => b.compareTo(a));
+                final list = _selected.toList()
+                  ..sort((a, b) => b.compareTo(a));
 
                 for (final i in list) {
                   _messages.removeAt(i);
@@ -79,27 +82,43 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7F6),
+
       appBar: AppBar(
         backgroundColor: const Color(0xFF0E5E53),
+
+        iconTheme: const IconThemeData(
+          color: Colors.white, // back arrow white
+        ),
+
         title: _isSelecting
-            ? Text("${_selected.length} selected")
-            : Text(widget.ngoName),
+            ? Text(
+                "${_selected.length} selected",
+                style: const TextStyle(color: Colors.white),
+              )
+            : Text(
+                widget.ngoName,
+                style: const TextStyle(color: Colors.white),
+              ),
+
         actions: _isSelecting
             ? [
                 IconButton(
-                  icon: const Icon(Icons.delete),
+                  icon: const Icon(Icons.delete, color: Colors.white),
                   onPressed: _confirmDelete,
                 )
               ]
             : [],
       ),
+
       body: Column(
         children: [
+
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(12),
               itemCount: _messages.length,
               itemBuilder: (_, i) {
+
                 final msg = _messages[i];
                 final right = !msg.fromNgo;
                 final selected = _selected.contains(i);
@@ -111,12 +130,16 @@ class _ChatScreenState extends State<ChatScreen> {
                   onTap: () {
                     if (_isSelecting) {
                       setState(() {
-                        selected ? _selected.remove(i) : _selected.add(i);
+                        selected
+                            ? _selected.remove(i)
+                            : _selected.add(i);
                       });
                     }
                   },
                   child: Align(
-                    alignment: right ? Alignment.centerRight : Alignment.centerLeft,
+                    alignment: right
+                        ? Alignment.centerRight
+                        : Alignment.centerLeft,
                     child: Container(
                       margin: const EdgeInsets.symmetric(vertical: 4),
                       padding: const EdgeInsets.all(10),
@@ -141,30 +164,36 @@ class _ChatScreenState extends State<ChatScreen> {
             color: Colors.white,
             child: Row(
               children: [
+
                 Expanded(
                   child: TextField(
                     controller: _controller,
                     decoration: InputDecoration(
                       hintText: "Type a message...",
                       border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(20),
-                          borderSide: BorderSide.none),
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide.none,
+                      ),
                       filled: true,
                       fillColor: Colors.grey.shade200,
                     ),
                   ),
                 ),
+
                 const SizedBox(width: 8),
+
                 CircleAvatar(
-                  backgroundColor: Colors.green,
+                  backgroundColor: const Color(0xFF0E5E53),
                   child: IconButton(
                     icon: const Icon(Icons.send, color: Colors.white),
                     onPressed: _send,
                   ),
                 )
+
               ],
             ),
           )
+
         ],
       ),
     );

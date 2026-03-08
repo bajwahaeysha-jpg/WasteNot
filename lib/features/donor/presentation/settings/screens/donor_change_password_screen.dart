@@ -35,8 +35,16 @@ class _DonorChangePasswordScreenState extends State<DonorChangePasswordScreen> {
       backgroundColor: Colors.white,
 
       appBar: AppBar(
-        title: const Text("Change Password",
-            style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: const Color(0xFF0F5D4E),
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: const Text(
+          "Change Password",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
       ),
 
       body: Padding(
@@ -60,8 +68,17 @@ class _DonorChangePasswordScreenState extends State<DonorChangePasswordScreen> {
             width: double.infinity,
             height: 50,
             child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF0F5D4E),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
               onPressed: updatePassword,
-              child: const Text("Update Password"),
+              child: const Text(
+                "Update Password",
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ),
 
@@ -71,17 +88,27 @@ class _DonorChangePasswordScreenState extends State<DonorChangePasswordScreen> {
   }
 
   Widget _field(String label, TextEditingController controller) {
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
-      const SizedBox(height: 6),
-      TextField(
-        controller: controller,
-        obscureText: true,
-        decoration: InputDecoration(
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+
+        Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+
+        const SizedBox(height: 6),
+
+        TextField(
+          controller: controller,
+          obscureText: true,
+          decoration: InputDecoration(
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
         ),
-      ),
-      const SizedBox(height: 18),
-    ]);
+
+        const SizedBox(height: 18),
+
+      ],
+    );
   }
 }
