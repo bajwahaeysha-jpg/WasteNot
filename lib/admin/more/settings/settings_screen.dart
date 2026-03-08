@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:wastenot/features/admin/more/settings/accounts/account_screen.dart';
-import 'package:wastenot/features/admin/more/settings/notifications/notifications_settings_screen.dart';
+import 'package:wastenot/features/admin/more/settings/notifications/notifications_screen.dart';
 import 'package:wastenot/features/admin/more/settings/privacy/privacy_screen.dart';
 import 'package:wastenot/features/admin/more/settings/rate/rate_us_screen.dart';
-import 'package:wastenot/features/admin/more/settings/contacts/contact_us_screen.dart';
+import 'package:wastenot/features/admin/more/settings/contacts/contact_screen.dart';
 import 'package:wastenot/features/admin/more/settings/about/about_screen.dart';
 import 'package:wastenot/features/admin/more/settings/FAQ/faq_screen.dart';
 import 'package:wastenot/features/admin/more/settings/Privacy_Policy/privacy_policy_screen.dart';
@@ -88,11 +88,11 @@ class SettingsScreen extends StatelessWidget {
                 context,
                 Icons.notifications_none,
                 "Notifications & Reminders",
-                const NotificationsSettingsScreen(),
+                const NotificationsScreen(),
               ),
               _tile(context, Icons.lock_outline, "Privacy", const PrivacyScreen()),
               _tile(context, Icons.star_border, "Rate Us", const RateUsScreen()),
-              _tile(context, Icons.mail_outline, "Contact Us", const ContactUsScreen()),
+              _tile(context, Icons.mail_outline, "Contact Us", const ContactScreen()),
               _tile(context, Icons.info_outline, "About App", const AboutScreen()),
               _tile(context, Icons.help_outline, "FAQ", const FaqScreen()),
               _tile(

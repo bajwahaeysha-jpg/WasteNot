@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import 'personal_information_screen.dart';
 import 'change_password_screen.dart';
 
@@ -9,22 +8,27 @@ class AccountScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-       backgroundColor: const Color(0xFFF7F9F8),
+      backgroundColor: Colors.white,
+
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F5F54),
-        elevation: 0,
-        title: Row(
-          children: const [
-            Text(
-              'Account',
-              style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold, fontSize: 24),
-            ),
-            SizedBox(width: 8),
-            Icon(Icons.person),
-          ],
+  elevation: 0,
+  backgroundColor: const Color(0xFF0F4C45),
+  iconTheme: const IconThemeData(color: Colors.white),
+  title: Row(
+    children: const [
+      Text(
+        'Account',
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 26,
+          color: Colors.white,
         ),
-         iconTheme: const IconThemeData(color: Colors.white),
       ),
+      SizedBox(width: 8),
+      Icon(Icons.person, color: Colors.white),
+    ],
+  ),
+),
 
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -32,14 +36,14 @@ class AccountScreen extends StatelessWidget {
 
           const SizedBox(height: 20),
 
-          _tile(context, Icons.person_outline, "Personal Information", () {
+          _tile(context, Icons.person_outline, "Personal information", () {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const PersonalInformationScreen()),
             );
           }),
 
-          _tile(context, Icons.lock_outline, "Change Password", () {
+          _tile(context, Icons.lock_outline, "Change password", () {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const ChangePasswordScreen()),
@@ -50,10 +54,10 @@ class AccountScreen extends StatelessWidget {
 
           ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.delete_outline, color: Colors.red),
+            leading: const Icon(Icons.cancel, color: Colors.red),
             title: const Text(
-              "Delete Account",
-              style: TextStyle(color: Colors.red),
+              "Delete account",
+              style: TextStyle(fontSize: 16, color: Colors.red),
             ),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => showModalBottomSheet(
@@ -74,7 +78,7 @@ class AccountScreen extends StatelessWidget {
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: Icon(icon),
-      title: Text(text),
+      title: Text(text, style: const TextStyle(fontSize: 16)),
       trailing: const Icon(Icons.chevron_right),
       onTap: onTap,
     );
@@ -92,7 +96,7 @@ class _DeleteAccountSheet extends StatelessWidget {
 
         Row(
           children: [
-            const Text("Delete Account",
+            const Text("Delete account",
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const Spacer(),
             IconButton(
@@ -105,8 +109,8 @@ class _DeleteAccountSheet extends StatelessWidget {
         const SizedBox(height: 12),
 
         const Text(
-          "You will permanently lose access to your admin account and all associated data. "
-          "This action cannot be undone.",
+          "You will lose access to all your data and donation history. "
+          "This action can’t be undone. Are you sure you want to delete your account?",
           style: TextStyle(color: Colors.black54),
         ),
 
@@ -117,19 +121,21 @@ class _DeleteAccountSheet extends StatelessWidget {
             minimumSize: const Size(double.infinity, 52),
             side: const BorderSide(color: Colors.red),
           ),
-          onPressed: () {
-            
-          },
-          child: const Text("Yes, delete my account",
-              style: TextStyle(color: Colors.red)),
+          onPressed: () {},
+          child: const Text(
+            "Yes, delete my account",
+            style: TextStyle(color: Colors.red),
+          ),
         ),
 
         const SizedBox(height: 12),
 
         ElevatedButton(
-          style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 52)),
+          style: ElevatedButton.styleFrom(
+            minimumSize: const Size(double.infinity, 52),
+          ),
           onPressed: () => Navigator.pop(context),
-          child: const Text("Cancel"),
+          child: const Text("No"),
         ),
       ]),
     );

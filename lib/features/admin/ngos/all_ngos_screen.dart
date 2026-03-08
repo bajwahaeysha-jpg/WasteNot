@@ -61,7 +61,11 @@ class _AllNGOsScreenState extends State<AllNGOsScreen> {
       ),
       body: Column(
         children: [
+
+          /// 🔹 FILTER BAR
           _filterBar(),
+
+          /// 🔹 NGO LIST
           Expanded(
             child: ListView.builder(
               itemCount: filtered.length,
@@ -78,7 +82,8 @@ class _AllNGOsScreenState extends State<AllNGOsScreen> {
   Widget _filterBar() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
-      child: Center(
+      child: Align(
+        alignment: Alignment.centerLeft,
         child: Wrap(
           spacing: 10,
           children: [
@@ -144,13 +149,13 @@ class _AllNGOsScreenState extends State<AllNGOsScreen> {
         child: Row(
           children: [
 
-            /// 🏢 NGO LOGO (IMAGE)
+            /// 🏢 NGO LOGO
             Container(
               width: 52,
               height: 52,
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: const Color(0xFF0F5F54).withValues(alpha:0.12),
+                color: const Color(0xFF0F5F54).withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Image.asset(
@@ -161,7 +166,7 @@ class _AllNGOsScreenState extends State<AllNGOsScreen> {
 
             const SizedBox(width: 12),
 
-            /// 📋 DETAILS
+            /// 📋 NGO DETAILS
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -193,10 +198,9 @@ class _AllNGOsScreenState extends State<AllNGOsScreen> {
               ),
             ),
 
-            /// 🟢 STATUS
+            /// 🟢 STATUS BADGE
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: approved
                     ? Colors.green.shade100

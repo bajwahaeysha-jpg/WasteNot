@@ -3,69 +3,169 @@ import 'package:flutter/material.dart';
 class PrivacyPolicyScreen extends StatelessWidget {
   const PrivacyPolicyScreen({super.key});
 
+  static const Color primary = Color(0xFF0F4C45);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9F8),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF0F5F54),
-        elevation: 0,
-        
-        title: const Text("Privacy Policy",
-            style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold)),
-       iconTheme: const IconThemeData(color: Colors.white),
-      ),
+      backgroundColor: Colors.white,
 
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [
+      body: Column(
+        children: [
 
-          Text("Privacy Policy",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          // Header section
+          Container(
+            height: 230,
+            width: double.infinity,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Color(0xFF0F4C45),
+                  Color(0xFF2E7D72),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
 
-          SizedBox(height: 12),
+            child: SafeArea(
+              child: Stack(
+                children: [
+                  Positioned(
+                    top: 12,
+                    left: 12,
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ),
 
-          Text(
-            "Your privacy is important to us. This policy explains how we collect, use, and protect your personal information.",
-            style: TextStyle(color: Colors.black54),
+                  const Center(
+                    child: Icon(
+                      Icons.privacy_tip,
+                      size: 85, // refined
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
 
-          SizedBox(height: 16),
+          // Content
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
 
-          Text("Information We Collect",
-              style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text(
+                    "Privacy Policy",
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
 
-          SizedBox(height: 6),
+                  SizedBox(height: 6),
 
-          Text(
-            "We may collect personal information such as name, email, phone number, and usage data to improve our services.",
-            style: TextStyle(color: Colors.black54),
+                  Text(
+                    "Updated: 1 Jan 2026",
+                    style: TextStyle(color: Colors.black),
+                  ),
+
+                  SizedBox(height: 20),
+
+                  Text(
+                    "WasteNot is committed to protecting your privacy. This Privacy Policy "
+                    "explains how we collect, use, and safeguard your information when you use "
+                    "our application and services.",
+                    style: TextStyle(height: 1.5, color: Colors.black),
+                  ),
+
+                  SizedBox(height: 20),
+
+                  Text(
+                    "1. Scope of Policy",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+
+                  SizedBox(height: 8),
+
+                  Text(
+                    "This policy applies to all users of the WasteNot platform. By using our "
+                    "service, you agree to the collection and use of information in accordance "
+                    "with this policy.",
+                    style: TextStyle(height: 1.5, color: Colors.black),
+                  ),
+
+                  SizedBox(height: 20),
+
+                  Text(
+                    "2. Information We Collect",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+
+                  SizedBox(height: 8),
+
+                  Text(
+                    "We collect personal information such as name, email address, phone number, "
+                    "and organization details to operate and improve our service.",
+                    style: TextStyle(height: 1.5, color: Colors.black),
+                  ),
+
+                  SizedBox(height: 20),
+
+                  Text(
+                    "3. Use of Information",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+
+                  SizedBox(height: 8),
+
+                  Text(
+                    "The information we collect is used to provide, maintain, and improve "
+                    "WasteNot services, communicate with you, and ensure platform safety.",
+                    style: TextStyle(height: 1.5, color: Colors.black),
+                  ),
+
+                  SizedBox(height: 20),
+
+                  Text(
+                    "4. Data Security",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+
+                  SizedBox(height: 8),
+
+                  Text(
+                    "We take appropriate security measures to protect your personal data "
+                    "against unauthorized access, alteration, disclosure, or destruction.",
+                    style: TextStyle(height: 1.5, color: Colors.black),
+                  ),
+                ],
+              ),
+            ),
           ),
-
-          SizedBox(height: 16),
-
-          Text("How We Use Information",
-              style: TextStyle(fontWeight: FontWeight.bold)),
-
-          SizedBox(height: 6),
-
-          Text(
-            "We use collected information to provide better service, improve user experience, and communicate important updates.",
-            style: TextStyle(color: Colors.black54),
-          ),
-
-          SizedBox(height: 16),
-
-          Text("Security",
-              style: TextStyle(fontWeight: FontWeight.bold)),
-
-          SizedBox(height: 6),
-
-          Text(
-            "We take strong security measures to protect your data from unauthorized access.",
-            style: TextStyle(color: Colors.black54),
-          ),
-        ]),
+        ],
       ),
     );
   }

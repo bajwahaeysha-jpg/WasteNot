@@ -1,87 +1,108 @@
 import 'package:flutter/material.dart';
 
-class RateUsScreen extends StatefulWidget {
+class RateUsScreen extends StatelessWidget {
   const RateUsScreen({super.key});
 
-  @override
-  State<RateUsScreen> createState() => _RateUsScreenState();
-}
-
-class _RateUsScreenState extends State<RateUsScreen> {
-  int rating = 0;
+  static const Color primary = Color(0xFF0F4C45);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-       backgroundColor: const Color(0xFFF7F9F8),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF0F5F54),
-        elevation: 0,
-       
-        title: const Text("Rate Us",
-            style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold)),
-       iconTheme: const IconThemeData(color: Colors.white),
-      ),
+      backgroundColor: Colors.white,
 
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
+      body: Column(
+        children: [
 
-            const SizedBox(height: 20),
-
-            const Icon(Icons.star_rate_rounded,
-                size: 80, color: Colors.amber),
-
-            const SizedBox(height: 16),
-
-            const Text(
-              "How was your experience?",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-
-            const SizedBox(height: 10),
-
-            const Text(
-              "Tap a star to rate the app",
-              style: TextStyle(color: Colors.grey),
-            ),
-
-            const SizedBox(height: 24),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(5, (index) {
-                return IconButton(
-                  icon: Icon(
-                    Icons.star,
-                    color: index < rating ? Colors.amber : Colors.grey,
-                    size: 36,
-                  ),
-                  onPressed: () {
-                    setState(() => rating = index + 1);
-                  },
-                );
-              }),
-            ),
-
-            const SizedBox(height: 30),
-
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton(
-                onPressed: rating == 0 ? null : () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Thanks for your feedback!")),
-                  );
-                },
-                child: const Text("Submit Rating"),
+          // Header
+          Container(
+            height: 220,
+            width: double.infinity,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Color(0xFF0F4C45),
+                  Color(0xFF2E7D72),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
             ),
-          ],
-        ),
+
+            child: SafeArea(
+              child: Stack(
+                children: [
+                  Positioned(
+                    top: 12,
+                    left: 12,
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ),
+
+                  const Center(
+                    child: Icon(
+                      Icons.star_rate,
+                      size: 85, // refined
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 40),
+
+          const Text(
+            "Enjoying WasteNot?",
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 24),
+            child: Text(
+              "Your feedback helps us improve and reach more communities.",
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.black),
+            ),
+          ),
+
+          const SizedBox(height: 30),
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: const [
+              Icon(Icons.star, color: Colors.amber, size: 36),
+              Icon(Icons.star, color: Colors.amber, size: 36),
+              Icon(Icons.star, color: Colors.amber, size: 36),
+              Icon(Icons.star, color: Colors.amber, size: 36),
+              Icon(Icons.star_border, size: 36),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          GestureDetector(
+            onTap: () {
+
+            },
+            child: const Text(
+              "Rate on Play Store",
+              style: TextStyle(
+                color: Color(0xFF0F4C45), // theme color
+                fontSize: 16,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

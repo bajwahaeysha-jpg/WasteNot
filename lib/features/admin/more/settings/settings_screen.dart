@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 import 'accounts/account_screen.dart';
-import 'notifications/notifications_settings_screen.dart';
+import 'notifications/notifications_screen.dart';
 import 'privacy/privacy_screen.dart';
 import 'rate/rate_us_screen.dart';
-import 'contacts/contact_us_screen.dart';
+import 'contacts/contact_screen.dart';
 import 'about/about_screen.dart';
 import 'FAQ/faq_screen.dart';
 import 'Privacy_Policy/privacy_policy_screen.dart';
@@ -67,14 +67,14 @@ class SettingsScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: const [
                       Text(
-                        "Allah Malik",
+                        "Areeba Malik",
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
                       ),
                       Text(
-                        "donor@email.com",
+                        "admin@gmail.com",
                         style: TextStyle(color: Colors.grey),
                       ),
                     ],
@@ -89,11 +89,11 @@ class SettingsScreen extends StatelessWidget {
                 context,
                 Icons.notifications_none,
                 "Notifications & Reminders",
-                const NotificationsSettingsScreen(),
+                const NotificationsScreen(),
               ),
               _tile(context, Icons.lock_outline, "Privacy", const PrivacyScreen()),
               _tile(context, Icons.star_border, "Rate Us", const RateUsScreen()),
-              _tile(context, Icons.mail_outline, "Contact Us", const ContactUsScreen()),
+              _tile(context, Icons.mail_outline, "Contact Us", const ContactScreen()),
               _tile(context, Icons.info_outline, "About App", const AboutScreen()),
               _tile(context, Icons.help_outline, "FAQ", const FaqScreen()),
               _tile(

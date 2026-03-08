@@ -35,7 +35,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           /// ✅ HEADER CONNECTED
           Header(
             user: widget.user,
-            onSearch: _handleSearch,
           ),
 
           Expanded(

@@ -3,56 +3,146 @@ import 'package:flutter/material.dart';
 class FaqScreen extends StatelessWidget {
   const FaqScreen({super.key});
 
+  static const Color primary = Color(0xFF0F4C45);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-       backgroundColor: const Color(0xFFF7F9F8),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF0F5F54),
-        elevation: 0,
-        title: const Text("FAQ",
-            style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold)),
-       iconTheme: const IconThemeData(color: Colors.white),
-      ),
+      backgroundColor: Colors.white,
 
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      body: Column(
+        children: [
 
-            const Text(
-              "Frequently Asked Questions",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          // Header section
+          Container(
+            height: 230,
+            width: double.infinity,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Color(0xFF0F4C45),
+                  Color(0xFF2E7D72),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
             ),
 
-            const SizedBox(height: 16),
+            child: SafeArea(
+              child: Stack(
+                children: [
+                  Positioned(
+                    top: 12,
+                    left: 12,
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ),
 
-            _item("How can I donate food?",
-                "You can donate food by creating a donation post through the Donor section."),
+                  const Center(
+                    child: Icon(
+                      Icons.help_outline,
+                      size: 85, // slightly refined
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
 
-            _item("How do NGOs receive donations?",
-                "NGOs browse available donations and accept them based on location and needs."),
+          // Content
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
 
-            _item("Is my data secure?",
-                "Yes, all user data is handled securely and in compliance with privacy standards."),
+                  Text(
+                    "Frequently Asked Questions",
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
 
-            _item("How can I contact support?",
-                "You can contact us from the Contact Us screen."),
-          ],
-        ),
+                  SizedBox(height: 20),
+
+                  _FaqItem(
+                    question: "What is WasteNot?",
+                    answer:
+                        "WasteNot is a platform that connects food donors with NGOs to "
+                        "reduce food waste and help feed communities in need.",
+                  ),
+
+                  _FaqItem(
+                    question: "Who can use WasteNot?",
+                    answer:
+                        "Food businesses, individuals, and NGOs can use WasteNot to donate, "
+                        "accept, and distribute surplus food safely.",
+                  ),
+
+                  _FaqItem(
+                    question: "Is WasteNot free to use?",
+                    answer:
+                        "Yes. WasteNot is completely free for NGOs and donors to use.",
+                  ),
+
+                  _FaqItem(
+                    question: "How do I contact support?",
+                    answer:
+                        "You can contact our support team through the Contact Us section in Settings.",
+                  ),
+
+                  _FaqItem(
+                    question: "How is my data protected?",
+                    answer:
+                        "We use industry-standard security measures to protect your data and privacy.",
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
+}
 
-  Widget _item(String question, String answer) {
+class _FaqItem extends StatelessWidget {
+  final String question;
+  final String answer;
+
+  const _FaqItem({required this.question, required this.answer});
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(question, style: const TextStyle(fontWeight: FontWeight.bold)),
-        const SizedBox(height: 4),
-        Text(answer, style: const TextStyle(color: Colors.black54)),
-      ]),
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            question,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.black,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            answer,
+            style: const TextStyle(
+              color: Colors.black,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

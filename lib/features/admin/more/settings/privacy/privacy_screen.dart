@@ -8,67 +8,70 @@ class PrivacyScreen extends StatefulWidget {
 }
 
 class _PrivacyScreenState extends State<PrivacyScreen> {
-
-  bool profileVisibility = true;
-  bool activityStatus = true;
-  bool dataSharing = false;
+  bool allowDirectMessages = true;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-       backgroundColor: const Color(0xFFF7F9F8),
+      backgroundColor: Colors.white,
+
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F5F54),
-        elevation: 0,
-    
-        title: const Text("Privacy",
-            style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold)),
-       iconTheme: const IconThemeData(color: Colors.white),
-      ),
+  elevation: 0,
+  backgroundColor: const Color(0xFF0F4C45),
+  iconTheme: const IconThemeData(color: Colors.white),
+  title: const Text(
+    "Privacy",
+    style: TextStyle(
+      fontSize: 26,
+      fontWeight: FontWeight.bold,
+      color: Colors.white,
+    ),
+  ),
+),
 
       body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Column(children: [
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
 
-          const SizedBox(height: 20),
-
-          _toggleTile(
-            "Profile Visibility",
-            profileVisibility,
-            "Allow others to view your profile",
-            (val) => setState(() => profileVisibility = val),
-          ),
-
-          _toggleTile(
-            "Activity Status",
-            activityStatus,
-            "Show when you're active",
-            (val) => setState(() => activityStatus = val),
-          ),
-
-          _toggleTile(
-            "Data Sharing",
-            dataSharing,
-            "Allow data sharing for improvements",
-            (val) => setState(() => dataSharing = val),
-          ),
-        ]),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text(
+                            "Allow direct messages",
+                            style: TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.w600,color: Colors.black),
+                          ),
+                          SizedBox(height: 6),
+                          Text(
+                            "Let donors contact your organization directly through the app",
+                            style: TextStyle(color: Colors.black),
+                          ),
+                        ]),
+                  ),
+                  Switch(
+                    value: allowDirectMessages,
+                    onChanged: (value) {
+                      setState(() {
+                        allowDirectMessages = value;
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
-    );
-  }
-
-  Widget _toggleTile(
-    String title,
-    bool value,
-    String subtitle,
-    Function(bool) onChanged,
-  ) {
-    return SwitchListTile(
-      contentPadding: EdgeInsets.zero,
-      title: Text(title),
-      subtitle: Text(subtitle),
-      value: value,
-      onChanged: onChanged,
     );
   }
 }

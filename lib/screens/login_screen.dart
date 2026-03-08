@@ -3,7 +3,6 @@ import '../../routes/app_routes.dart';
 import 'package:wastenot/features/admin/navigation/admin_bottom_navigation.dart';
 import 'package:wastenot/features/donor/presentation/donor_navigation_screen.dart';
 import 'package:wastenot/features/ngo/presentation/screens/home/ngo_home_screen.dart';
-import '../../services/local_auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,6 +12,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -22,66 +22,72 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _error;
 
   static const Color mainGreen = Color(0xFF0B4B3F);
-  static const Color sponsorBlue = Color(0xFF1E88E5); // 🔵 SOS text color
+  static const Color sponsorBlue = Color(0xFF1E88E5);
 
   void _login(String role) {
-  if (!_formKey.currentState!.validate()) return;
 
-  if (role == 'Donor') {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => DonorNavigationScreen(
-          user: {
-            'name': _nameController.text,
-            'role': 'Donor',
-          },
+    if (!_formKey.currentState!.validate()) return;
+
+    String name = _nameController.text;
+
+    /// ADMIN NAME UPPERCASE
+    if (role == 'Admin') {
+      name = name.toUpperCase();
+    }
+
+    if (role == 'Donor') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => DonorNavigationScreen(
+            user: {
+              'name': name,
+              'role': 'Donor',
+            },
+          ),
         ),
-      ),
-    );
-  }
+      );
+    }
 
-  if (role == 'NGO') {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => NgoHomeScreen(
-          user: {
-            'name': _nameController.text,
-            'role': 'NGO',
-          },
+    if (role == 'NGO') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => NgoHomeScreen(
+            user: {
+              'name': name,
+              'role': 'NGO',
+            },
+          ),
         ),
-      ),
-    );
-  }
+      );
+    }
 
-  if (role == 'Admin') {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => AdminBottomNavigation(
-          user: {
-            'name': _nameController.text,
-            'role': 'Admin',
-          },
+    if (role == 'Admin') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AdminBottomNavigation(
+            user: {
+              'name': name,
+              'role': 'Admin',
+            },
+          ),
         ),
-      ),
-    );
+      );
+    }
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
-    final String role =
-    ModalRoute.of(context)!.settings.arguments as String;
 
+    final String role =
+        ModalRoute.of(context)!.settings.arguments as String;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9F8),
       resizeToAvoidBottomInset: false,
 
-      /// 🔽 SPONSORED FIXED BOTTOM
       bottomNavigationBar: _sponsored(),
 
       body: SafeArea(
@@ -95,7 +101,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 40),
 
-                /// 👋 HEADER
+                /// HEADER
                 Center(
                   child: Column(
                     children: const [
@@ -120,14 +126,17 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 40),
 
+                /// NAME
                 _input(
                   "Full Name",
                   _nameController,
-                  validator: (v) => v!.isEmpty ? "Name required" : null,
+                  validator: (v) =>
+                      v!.isEmpty ? "Name required" : null,
                 ),
 
                 const SizedBox(height: 16),
 
+                /// EMAIL
                 _input(
                   "Email",
                   _emailController,
@@ -137,18 +146,50 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 16),
 
+                /// PASSWORD WITH STRONG VALIDATION
                 _input(
                   "Password",
                   _passwordController,
                   obscure: _obscure,
-                  validator: (v) =>
-                      v!.length < 8 ? "Minimum 8 characters" : null,
+                  validator: (v) {
+
+                    if (v == null || v.isEmpty) {
+                      return "Password required";
+                    }
+
+                    if (v.length < 8) {
+                      return "Minimum 8 characters";
+                    }
+
+                    if (!RegExp(r'[A-Z]').hasMatch(v)) {
+                      return "Must contain an uppercase letter";
+                    }
+
+                    if (!RegExp(r'[!@#$%^&*(),.?\":{}|<>]').hasMatch(v)) {
+                      return "Must contain a special character";
+                    }
+
+                    return null;
+                  },
                   suffix: IconButton(
                     icon: Icon(
                       _obscure ? Icons.visibility_off : Icons.visibility,
                     ),
-                    onPressed: () =>
-                        setState(() => _obscure = !_obscure),
+                    onPressed: () {
+                      setState(() {
+                        _obscure = !_obscure;
+                      });
+                    },
+                  ),
+                ),
+
+                const SizedBox(height: 6),
+
+                const Text(
+                  "Password must contain 8+ characters, 1 uppercase & 1 special character",
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey,
                   ),
                 ),
 
@@ -166,7 +207,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 32),
 
-                /// 🔐 LOGIN BUTTON (BOLD TEXT)
+                /// LOGIN BUTTON
                 SizedBox(
                   height: 54,
                   child: ElevatedButton(
@@ -182,7 +223,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       "Login",
                       style: TextStyle(
                         color: Colors.white,
-                        fontWeight: FontWeight.w600, // ✅ BOLD
+                        fontWeight: FontWeight.w600,
                         fontSize: 16,
                       ),
                     ),
@@ -211,7 +252,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  /// 🔹 INPUT FIELD
+  /// INPUT FIELD
   Widget _input(
     String label,
     TextEditingController controller, {
@@ -238,13 +279,14 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  /// 🟦 SPONSORED (SOS LOGO STYLE TEXT)
+  /// SPONSORED
   Widget _sponsored() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 10, 24, 16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+
           Row(
             children: const [
               Expanded(child: Divider()),
@@ -277,7 +319,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
-                  color: sponsorBlue, // 🔵 logo-style blue
+                  color: sponsorBlue,
                   letterSpacing: 0.3,
                 ),
               ),
