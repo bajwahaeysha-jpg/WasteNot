@@ -93,13 +93,61 @@ class DonorSettingsScreen extends StatelessWidget {
 
           const SizedBox(height: 16),
 
+          // 🔴 Logout Tile
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.logout, color: Colors.red),
             title: const Text("Logout", style: TextStyle(color: Colors.red)),
             onTap: () {
-              Navigator.pop(context);
-              // Logout logic later
+
+              showDialog(
+                context: context,
+                builder: (context) {
+                  return AlertDialog(
+
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+
+                    title: const Text("Log out"),
+
+                    content: const Text(
+                      "Are you sure you want to log out?",
+                    ),
+
+                    actions: [
+
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        child: const Text("Cancel"),
+                      ),
+
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.grey.shade200,
+                          foregroundColor: Colors.black,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
+                        onPressed: () {
+
+                          Navigator.pop(context);
+
+                          // 🔐 Logout logic
+                          Navigator.pop(context);
+
+                        },
+                        child: const Text("Log out"),
+                      ),
+
+                    ],
+                  );
+                },
+              );
+
             },
           ),
 

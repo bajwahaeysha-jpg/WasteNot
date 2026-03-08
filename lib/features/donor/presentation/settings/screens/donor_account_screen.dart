@@ -5,54 +5,94 @@ import 'donor_change_password_screen.dart';
 class DonorAccountScreen extends StatelessWidget {
   const DonorAccountScreen({super.key});
 
+  static const Color mainGreen = Color(0xFF0E5E53);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
 
       appBar: AppBar(
+        backgroundColor: mainGreen,
         elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        iconTheme: const IconThemeData(color: Colors.white),
         title: const Text(
-          'Account',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 26),
+          "Account",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: 15),
+            child: Icon(Icons.person),
+          )
+        ],
       ),
 
       body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Column(children: [
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Column(
+          children: [
 
-          const SizedBox(height: 20),
+            const SizedBox(height: 20),
 
-          _tile(context, Icons.person_outline, "Personal Information", () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const DonorPersonalInformationScreen()),
-            );
-          }),
+            // Personal Information
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.person_outline),
+              title: const Text("Personal information"),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const DonorPersonalInformationScreen(),
+                  ),
+                );
+              },
+            ),
 
-          _tile(context, Icons.lock_outline, "Change Password", () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const DonorChangePasswordScreen()),
-            );
-          }),
+            // Change Password
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.lock_outline),
+              title: const Text("Change password"),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const DonorChangePasswordScreen(),
+                  ),
+                );
+              },
+            ),
 
-        ]),
+            const SizedBox(height: 20),
+
+            Divider(color: Colors.grey.shade400),
+
+            const SizedBox(height: 10),
+
+            // Delete Account
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.cancel, color: Colors.red),
+              title: const Text(
+                "Delete account",
+                style: TextStyle(color: Colors.red),
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                // delete popup
+              },
+            ),
+
+          ],
+        ),
       ),
-    );
-  }
-
-  static Widget _tile(
-      BuildContext context, IconData icon, String text, VoidCallback onTap) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(icon),
-      title: Text(text, style: const TextStyle(fontSize: 16)),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: onTap,
     );
   }
 }
