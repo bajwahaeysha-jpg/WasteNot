@@ -29,7 +29,7 @@ class _SuspendSuccessScreenState extends State<SuspendSuccessScreen> {
           children: const [
             Icon(
               Icons.check_circle,
-              color: Color(0xFF0F4C45),
+              color:  Color(0xFF0F4C45),
               size: 80,
             ),
             SizedBox(height: 16),

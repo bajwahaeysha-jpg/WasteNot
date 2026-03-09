@@ -13,7 +13,7 @@ class _SendNotificationScreenState extends State<SendNotificationScreen> {
   final titleController = TextEditingController();
   final messageController = TextEditingController();
 
-  static const green = Color(0xFF0F4C45);
+  static const green = const Color(0xFF0F4C45);
 
   @override
   Widget build(BuildContext context) {

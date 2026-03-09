@@ -33,7 +33,7 @@ class ActiveScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F6),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF145A50),
+        backgroundColor: const Color(0xFF0F4C45),
         title: const Text(
           "Active Operations",
           style: TextStyle(color: Colors.white),

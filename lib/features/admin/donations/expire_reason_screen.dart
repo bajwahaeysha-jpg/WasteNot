@@ -17,7 +17,7 @@ class _ExpireReasonScreenState extends State<ExpireReasonScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9F8),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F5F54),
+        backgroundColor: const Color(0xFF0F4C45),
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white), // ✅ white icons
         title: const Text(

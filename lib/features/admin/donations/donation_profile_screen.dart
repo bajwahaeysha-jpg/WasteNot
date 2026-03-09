@@ -24,7 +24,7 @@ class _DonationProfileScreenState extends State<DonationProfileScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF2F2F2),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F5F54),
+        backgroundColor: const Color(0xFF0F4C45),
         elevation: 0,
         title: const Text(
           "Donation Details",

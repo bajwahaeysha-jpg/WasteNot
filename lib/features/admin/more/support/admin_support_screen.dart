@@ -4,7 +4,7 @@ import 'notification_chat_screen.dart';
 class AdminSupportScreen extends StatelessWidget {
   const AdminSupportScreen({super.key});
 
-  static const Color mainGreen = Color(0xFF0F5F54);
+  static const Color mainGreen = Color(0xFF0F4C45);
 
   @override
   Widget build(BuildContext context) {

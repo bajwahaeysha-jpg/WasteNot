@@ -117,7 +117,7 @@ class _AllDonorsScreenState extends State<AllDonorsScreen> {
               width: 52,
               height: 52,
               decoration: BoxDecoration(
-                color: const Color(0xFF0F5F54).withValues(alpha: 0.12),
+                color: const Color(0xFF0F4C45).withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: ClipRRect(
@@ -216,7 +216,7 @@ Widget statusFilterBar({
               ),
               decoration: BoxDecoration(
                 color:
-                    selected ? const Color(0xFF0F5F54) : Colors.white,
+                    selected ? const Color(0xFF0F4C45) : Colors.white,
                 borderRadius: BorderRadius.circular(22),
                 border: Border.all(
                   color: const Color(0xFF0F5F54),

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class AllMealsScreen extends StatelessWidget {
   const AllMealsScreen({super.key});
 
-  static const Color mainGreen = Color(0xFF0F5F54);
+  static const Color mainGreen =  Color(0xFF0F4C45);
 
   @override
   Widget build(BuildContext context) {

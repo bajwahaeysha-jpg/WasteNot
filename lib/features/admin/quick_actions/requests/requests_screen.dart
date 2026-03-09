@@ -9,7 +9,7 @@ class RequestsScreen extends StatefulWidget {
 }
 
 class _RequestsScreenState extends State<RequestsScreen> {
-  static const Color mainGreen = Color(0xFF0F5F54);
+  static const Color mainGreen =  Color(0xFF0F4C45);
 
   final List<Map<String, dynamic>> requests = [
     {

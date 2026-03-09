@@ -6,7 +6,7 @@ import '../models/alert/alert_model.dart';
 class AlertScreen extends StatelessWidget {
   const AlertScreen({super.key});
 
-  static const Color mainGreen = Color(0xFF0F5F54);
+  static const Color mainGreen =  Color(0xFF0F4C45);
 
   @override
   Widget build(BuildContext context) {

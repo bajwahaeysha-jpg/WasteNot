@@ -16,7 +16,7 @@ class NotificationChatScreen extends StatelessWidget {
     required this.message,
   });
 
-  static const Color mainGreen = Color(0xFF0F5F54);
+  static const Color mainGreen = Color(0xFF0F4C45);
 
   /// EMAIL FUNCTION
   Future<void> sendEmailReply() async {

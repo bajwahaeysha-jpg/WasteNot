@@ -47,7 +47,7 @@ class _AllDonationsScreenState extends State<AllDonationsScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9F8),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F5F54),
+        backgroundColor: const Color(0xFF0F4C45),
         elevation: 0,
         title: const Text(
           "All Donations",
@@ -108,9 +108,9 @@ class _AllDonationsScreenState extends State<AllDonationsScreen> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFF0F5F54) : Colors.white,
+          color: selected ? const Color(0xFF0F4C45) : Colors.white,
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: const Color(0xFF0F5F54)),
+          border: Border.all(color: const Color(0xFF0F4C45)),
         ),
         child: Text(
           label,
@@ -118,7 +118,7 @@ class _AllDonationsScreenState extends State<AllDonationsScreen> {
             fontSize: 13,
             fontWeight: FontWeight.w600,
             color:
-                selected ? Colors.white : const Color(0xFF0F5F54),
+                selected ? Colors.white : const Color(0xFF0F4C45),
           ),
         ),
       ),

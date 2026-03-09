@@ -17,7 +17,7 @@ class RequestSuccessScreen extends StatelessWidget {
           children: const [
             Icon(
               Icons.check_circle,
-              color: Color(0xFF0F5F54),
+              color:  Color(0xFF0F4C45),
               size: 90,
             ),
             SizedBox(height: 16),

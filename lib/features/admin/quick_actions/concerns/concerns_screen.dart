@@ -8,7 +8,7 @@ class ConcernsScreen extends StatefulWidget {
 }
 
 class _ConcernsScreenState extends State<ConcernsScreen> {
-  static const Color mainGreen = Color(0xFF0F5F54);
+  static const Color mainGreen = Color(0xFF0F4C45);
 
   final List<Map<String, dynamic>> concerns = [
     {

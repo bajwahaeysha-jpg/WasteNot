@@ -10,7 +10,7 @@ class RequestDetailScreen extends StatefulWidget {
     required this.onDelete,
   });
 
-  static const Color mainGreen = Color(0xFF0F5F54);
+  static const Color mainGreen = Color(0xFF0F4C45);
 
   @override
   State<RequestDetailScreen> createState() => _RequestDetailScreenState();

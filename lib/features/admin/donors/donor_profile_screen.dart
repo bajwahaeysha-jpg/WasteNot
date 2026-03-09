@@ -12,7 +12,7 @@ class DonorProfileScreen extends StatelessWidget {
     required this.donor,
   });
 
-  static const primary = Color(0xFF0F4C45);
+  static const primary =  Color(0xFF0F4C45);
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +24,7 @@ class DonorProfileScreen extends StatelessWidget {
       backgroundColor: const Color(0xFFF5F7F6),
 
       appBar: AppBar(
-        backgroundColor: primary,
+        backgroundColor: const Color(0xFF0F4C45),
         elevation: 0,
         title: Text(
           donor['name'] ?? "Donor",
@@ -98,7 +98,7 @@ class DonorProfileScreen extends StatelessWidget {
                   children: [
 
                     IconButton(
-                      icon: const Icon(Icons.call, color: primary),
+                      icon: const Icon(Icons.call, color:Color(0xFF0F4C45)),
                       onPressed: () async {
 
                         final telUrl = 'tel:${donor['phone']}';

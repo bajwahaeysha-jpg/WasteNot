@@ -21,7 +21,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       backgroundColor: const Color(0xFFF7F9F8),
 
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F5F54),
+        backgroundColor: const Color(0xFF0F4C45),
         elevation: 0,
         title: const Text(
           "Analytics",

@@ -29,7 +29,7 @@ class _ExpireSuccessScreenState extends State<ExpireSuccessScreen> {
             Icon(
               Icons.check_circle,
               size: 80,
-              color: Color(0xFF0F5F54),
+              color: Color(0xFF0F4C45),
             ),
             SizedBox(height: 16),
             Text(

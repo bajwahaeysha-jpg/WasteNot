@@ -11,7 +11,8 @@ class ActivityLogScreen extends StatefulWidget {
 
 class _ActivityLogScreenState extends State<ActivityLogScreen> {
 
-  int selectedIndex = -1;
+  /// DEFAULT SELECTED (All)
+  int selectedIndex = 0;
 
   final List<String> groups = [
     "Donors & NGOs",
@@ -54,7 +55,7 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
 
           const SizedBox(height: 16),
 
-          /// GROUP BUTTONS (SCREENSHOT STYLE)
+          /// FILTER BAR
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
@@ -97,11 +98,11 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
                           boxShadow: isSelected
                               ? [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(.15),
+                                    color: Colors.black.withValues(alpha:.15),
                                     blurRadius: 6,
                                   )
                                 ]
-                              : null,
+                              : [],
                         ),
 
                         child: Center(
@@ -173,7 +174,7 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
 
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(.05),
+                              color: Colors.black.withValues(alpha:.05),
                               blurRadius: 6,
                             )
                           ],
@@ -188,9 +189,7 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
                               padding: const EdgeInsets.all(10),
 
                               decoration: BoxDecoration(
-                                color: const Color(0xFF0F4C45)
-                                    .withOpacity(.1),
-
+                                color: const Color(0xFF0F4C45).withValues(alpha:.1),
                                 shape: BoxShape.circle,
                               ),
 
@@ -205,8 +204,7 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
                             /// TEXT
                             Expanded(
                               child: Column(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
 
                                 children: [
 
