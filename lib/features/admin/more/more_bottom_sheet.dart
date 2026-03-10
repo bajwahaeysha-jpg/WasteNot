@@ -3,27 +3,72 @@ import 'package:flutter/material.dart';
 import 'profile/admin_profile_screen.dart';
 import 'settings/settings_screen.dart';
 import 'support/admin_support_screen.dart';
+import 'package:wastenot/screens/login_screen.dart';
 
 class AdminMoreSheet extends StatelessWidget {
-  const AdminMoreSheet({super.key});
+
+  final Map<String, dynamic> user;
+
+  const AdminMoreSheet({
+    super.key,
+    required this.user,
+  });
 
   static const Color mainGreen = Color(0xFF0F5F54);
 
   @override
   Widget build(BuildContext context) {
+
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _item(context, Icons.person_outline, "Profile",
-                const AdminProfileScreen()),
-            _item(context, Icons.settings_outlined, "Settings",
-                const SettingsScreen()),
-            _item(context, Icons.support_agent_outlined, "Support",
-                const AdminSupportScreen()),
-          
+
+            _item(
+              context,
+              Icons.person_outline,
+              "Profile",
+              AdminProfileScreen(user: user),
+            ),
+
+            _item(
+              context,
+              Icons.settings_outlined,
+              "Settings",
+              SettingsScreen(user: user)
+            ),
+
+            _item(
+              context,
+              Icons.support_agent_outlined,
+              "Support",
+              const AdminSupportScreen(),
+            ),
+
+            const Divider(),
+
+            /// LOGOUT
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.logout, color: Colors.red),
+
+              title: const Text(
+                "Log Out",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.red,
+                ),
+              ),
+
+              onTap: () {
+                Navigator.pop(context);
+                _showLogoutDialog(context);
+              },
+            ),
           ],
         ),
       ),
@@ -36,9 +81,11 @@ class AdminMoreSheet extends StatelessWidget {
     String title,
     Widget screen,
   ) {
+
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: Icon(icon, color: mainGreen),
+
       title: Text(
         title,
         style: const TextStyle(
@@ -46,13 +93,64 @@ class AdminMoreSheet extends StatelessWidget {
           fontWeight: FontWeight.w500,
         ),
       ),
+
       onTap: () {
-        // 1️⃣ Close bottom sheet
+
         Navigator.of(context).pop();
 
-        // 2️⃣ Open screen normally (NO async gap)
         Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => screen),
+        );
+      },
+    );
+  }
+
+  void _showLogoutDialog(BuildContext context) {
+
+    showDialog(
+      context: context,
+      builder: (context) {
+
+        return AlertDialog(
+
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+
+          title: const Text("Log Out"),
+
+          content: const Text(
+            "Are you sure you want to log out?",
+          ),
+
+          actions: [
+
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text("Cancel"),
+            ),
+
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+              ),
+
+              onPressed: () {
+
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const LoginScreen(),
+                  ),
+                  (route) => false,
+                );
+              },
+
+              child: const Text("Log Out"),
+            ),
+          ],
         );
       },
     );

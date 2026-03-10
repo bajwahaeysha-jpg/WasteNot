@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../routes/app_routes.dart';
 import 'package:wastenot/screens/login_screen.dart';
 
 class RoleSelectionScreen extends StatefulWidget {

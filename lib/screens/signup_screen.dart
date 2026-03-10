@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
-import '../../routes/app_routes.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../services/local_auth_service.dart';
+import 'login_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -10,83 +12,134 @@ class SignUpScreen extends StatefulWidget {
 }
 
 class _SignUpScreenState extends State<SignUpScreen> {
+
   final _formKey = GlobalKey<FormState>();
 
-  final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
+  final nameController = TextEditingController();
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
 
-  bool _obscure = true;
-  String? _error;
+  bool obscure = true;
 
-  static const Color mainGreen = Color(0xFF0B4B3F);
-  static const Color sponsorBlue = Color(0xFF1E88E5); // 🔵 SOS logo text
+  File? profileImage;
+  final ImagePicker picker = ImagePicker();
 
-  void _signup() async {
-    if (!_formKey.currentState!.validate()) return;
+  static const mainGreen = Color(0xFF0B4B3F);
+  static const sponsorBlue = Color(0xFF1E88E5);
 
-    await LocalAuthService.saveUser(
-      name: _nameController.text.trim(),
-      email: _emailController.text.trim(),
-      password: _passwordController.text.trim(),
-      role: "User",
-    );
+  Future pickImage() async {
 
-    if (!mounted) return;
+    final XFile? image =
+        await picker.pickImage(source: ImageSource.gallery);
 
-    Navigator.pushReplacementNamed(context, AppRoutes.login);
+    if (image != null) {
+      setState(() {
+        profileImage = File(image.path);
+      });
+    }
   }
+
+  void signup() async {
+
+  if (!_formKey.currentState!.validate()) return;
+
+  if (profileImage == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Please select profile image")),
+    );
+    return;
+  }
+
+  await LocalAuthService.saveUser(
+    name: nameController.text.trim(),
+    email: emailController.text.trim(),
+    password: passwordController.text.trim(),
+    role: "Admin",
+    image: profileImage?.path,
+  );
+
+  if (!mounted) return;
+
+  /// SIGNUP KE BAAD LOGIN SCREEN
+  Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(
+      builder: (context) => const LoginScreen(),
+    ),
+  );
+}
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9F8),
-      resizeToAvoidBottomInset: false,
 
-      /// 🔽 FIXED SPONSORED
       bottomNavigationBar: _sponsored(),
 
-      body: SafeArea(
+      body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
-          keyboardDismissBehavior:
-              ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: const EdgeInsets.symmetric(horizontal: 28),
           child: Form(
             key: _formKey,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
 
-                const SizedBox(height: 40),
+                const SizedBox(height: 20),
 
-                /// 🧾 HEADER
-                Center(
-                  child: Column(
-                    children: const [
-                      Text(
-                        "Create Account",
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                        ),
+                /// PROFILE IMAGE
+                Stack(
+                  children: [
+
+                    GestureDetector(
+                      onTap: pickImage,
+                      child: CircleAvatar(
+                        radius: 50,
+                        backgroundColor: Colors.grey.shade200,
+                        backgroundImage:
+                            profileImage != null
+                                ? FileImage(profileImage!)
+                                : null,
+                        child: profileImage == null
+                            ? const Icon(Icons.person, size: 40)
+                            : null,
                       ),
-                      SizedBox(height: 6),
-                      Text(
-                        "Register to continue",
-                        style: TextStyle(
-                          color: Colors.black54,
-                          fontSize: 14,
-                        ),
+                    ),
+
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: CircleAvatar(
+                        radius: 16,
+                        backgroundColor: mainGreen,
+                        child: const Icon(Icons.add,
+                            color: Colors.white, size: 18),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
 
-                const SizedBox(height: 40),
+                const SizedBox(height: 20),
+
+                const Text(
+                  "Create Account",
+                  style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold),
+                ),
+
+                const SizedBox(height: 6),
+
+                const Text(
+                  "Register to start using WasteNot",
+                  style: TextStyle(color: Colors.black54),
+                ),
+
+                const SizedBox(height: 30),
 
                 _input(
                   "Full Name",
-                  _nameController,
+                  nameController,
                   validator: (v) =>
                       v!.isEmpty ? "Name required" : null,
                 ),
@@ -95,7 +148,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                 _input(
                   "Email",
-                  _emailController,
+                  emailController,
                   validator: (v) =>
                       v!.contains("@") ? null : "Enter valid email",
                 ),
@@ -104,51 +157,54 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                 _input(
                   "Password",
-                  _passwordController,
-                  obscure: _obscure,
-                  validator: (v) =>
-                      v!.length < 8 ? "Minimum 8 characters" : null,
+                  passwordController,
+                  obscure: obscure,
+                  validator: (v) {
+                    if (v == null || v.isEmpty) {
+                      return "Password required";
+                    }
+
+                    if (v.length < 8) {
+                      return "Minimum 8 characters";
+                    }
+
+                    if (!RegExp(r'[A-Z]').hasMatch(v)) {
+                      return "Must contain uppercase letter";
+                    }
+
+                    if (!RegExp(r'[!@#$%^&*(),.?\":{}|<>]')
+                        .hasMatch(v)) {
+                      return "Must contain special character";
+                    }
+
+                    return null;
+                  },
                   suffix: IconButton(
                     icon: Icon(
-                      _obscure
-                          ? Icons.visibility_off
-                          : Icons.visibility,
-                    ),
-                    onPressed: () =>
-                        setState(() => _obscure = !_obscure),
+                        obscure
+                            ? Icons.visibility_off
+                            : Icons.visibility),
+                    onPressed: () {
+                      setState(() {
+                        obscure = !obscure;
+                      });
+                    },
                   ),
                 ),
 
-                if (_error != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 10),
-                    child: Text(
-                      _error!,
-                      style: const TextStyle(
-                        color: Colors.red,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
+                const SizedBox(height: 30),
 
-                const SizedBox(height: 32),
-
-                /// 🟢 SIGN UP BUTTON
                 SizedBox(
+                  width: double.infinity,
                   height: 54,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: mainGreen,
-                      elevation: 2,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(28),
                       ),
-                      textStyle: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
                     ),
-                    onPressed: _signup,
+                    onPressed: signup,
                     child: const Text(
                       "Sign Up",
                       style: TextStyle(color: Colors.white),
@@ -156,22 +212,25 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 14),
+                const SizedBox(height: 12),
 
-                /// 🔁 LOGIN LINK
-                Center(
-                  child: TextButton(
-                    onPressed: () =>
-                        Navigator.pushReplacementNamed(
-                            context, AppRoutes.login),
-                    child: const Text(
-                      "Already have an account? Login",
-                      style: TextStyle(fontSize: 14),
-                    ),
+                TextButton(
+                  onPressed: () {
+
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const LoginScreen(),
+                      ),
+                    );
+
+                  },
+                  child: const Text(
+                    "Already have an account? Login",
                   ),
                 ),
 
-                const SizedBox(height: 100),
+                const SizedBox(height: 60),
               ],
             ),
           ),
@@ -180,8 +239,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  // ───────────── INPUT FIELD ─────────────
-
   Widget _input(
     String label,
     TextEditingController controller, {
@@ -189,6 +246,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     String? Function(String?)? validator,
     Widget? suffix,
   }) {
+
     return TextFormField(
       controller: controller,
       obscureText: obscure,
@@ -197,7 +255,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
         labelText: label,
         filled: true,
         fillColor: Colors.white,
-        labelStyle: const TextStyle(color: Colors.black54),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         border: OutlineInputBorder(
@@ -209,14 +266,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  // ───────────── SPONSORED (BLUE LOGO STYLE) ─────────────
-
   Widget _sponsored() {
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 10, 24, 16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+
           Row(
             children: const [
               Expanded(child: Divider()),
@@ -225,9 +282,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 child: Text(
                   "Sponsored by",
                   style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey,
-                  ),
+                      fontSize: 11, color: Colors.grey),
                 ),
               ),
               Expanded(child: Divider()),
@@ -247,11 +302,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
               const Text(
                 "SOS Children’s Villages",
                 style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: sponsorBlue, // 🔵 BLUE TEXT
-                  letterSpacing: 0.3,
-                ),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: sponsorBlue),
               ),
             ],
           ),

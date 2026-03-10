@@ -32,23 +32,29 @@ class NGOProfileScreen extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 16),
         children: [
 
-          /// IMAGE
+          /// NGO IMAGE
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.asset(
-                ngo['logo'],
-                height: imageHeight,
-                width: double.infinity,
-                fit: BoxFit.cover,
+            child: Container(
+              height: imageHeight,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.asset(
+                  ngo['logo'],
+                  fit: BoxFit.contain, // 👈 image puri show hogi
+                ),
               ),
             ),
           ),
 
           const SizedBox(height: 18),
 
-          /// NAME + CALL
+          /// NAME + LOCATION + CALL
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
@@ -79,9 +85,7 @@ class NGOProfileScreen extends StatelessWidget {
                         const SizedBox(width: 4),
                         Text(
                           ngo['location'],
-                          style: const TextStyle(
-                            color: Colors.grey,
-                          ),
+                          style: const TextStyle(color: Colors.grey),
                         ),
                       ],
                     ),
@@ -136,7 +140,7 @@ class NGOProfileScreen extends StatelessWidget {
 
           const SizedBox(height: 28),
 
-          /// ABOUT
+          /// ABOUT TITLE
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16),
             child: Text(
@@ -150,11 +154,13 @@ class NGOProfileScreen extends StatelessWidget {
 
           const SizedBox(height: 8),
 
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
+          /// DYNAMIC ABOUT TEXT
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
-              "This NGO is dedicated to supporting underprivileged communities by ensuring fair and timely distribution of donated food.",
-              style: TextStyle(
+              ngo['about'] ??
+                  "This organization works to collect surplus food and distribute it to people in need, helping reduce food waste and hunger.",
+              style: const TextStyle(
                 color: Colors.black87,
                 height: 1.5,
               ),
@@ -224,9 +230,7 @@ class NGOProfileScreen extends StatelessWidget {
 
             Text(
               label,
-              style: const TextStyle(
-                color: Colors.black54,
-              ),
+              style: const TextStyle(color: Colors.black54),
             ),
           ],
         ),

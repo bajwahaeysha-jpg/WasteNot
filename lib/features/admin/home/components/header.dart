@@ -21,6 +21,15 @@ class _HeaderState extends State<Header> {
   File? profileImage;
 
   @override
+  void initState() {
+    super.initState();
+
+    if (widget.user['image'] != null) {
+      profileImage = File(widget.user['image']);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
 
     final statusBar = MediaQuery.of(context).padding.top;
@@ -47,19 +56,33 @@ class _HeaderState extends State<Header> {
       child: Row(
         children: [
 
-          /// APP TITLE
-          const Text(
-            "WasteNot",
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 22,
-              fontWeight: FontWeight.w600,
-            ),
+          /// LOGO + NAME
+          Row(
+            children: [
+
+              Image.asset(
+                "assets/images/logo.png",
+                height: 46,
+                width: 46,
+                fit: BoxFit.contain,
+              ),
+
+              const SizedBox(width: 10),
+
+              const Text(
+                "WasteNot",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
 
           const Spacer(),
 
-          /// NOTIFICATIONS
+          /// NOTIFICATION
           Stack(
             children: [
 
@@ -70,7 +93,9 @@ class _HeaderState extends State<Header> {
                 ),
                 onPressed: () {
 
-                  setState(() => _notificationCount = 0);
+                  setState(() {
+                    _notificationCount = 0;
+                  });
 
                   Navigator.push(
                     context,
@@ -100,17 +125,18 @@ class _HeaderState extends State<Header> {
             ],
           ),
 
-          /// PROFILE ICON
+          /// PROFILE IMAGE
           GestureDetector(
             onTap: () {
 
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => const AdminProfileScreen(),
+                  builder: (_) => AdminProfileScreen(
+                    user: widget.user,
+                  ),
                 ),
               );
-
             },
 
             child: CircleAvatar(
@@ -119,19 +145,13 @@ class _HeaderState extends State<Header> {
 
               child: CircleAvatar(
                 radius: 17,
-                backgroundColor: Colors.grey.shade200,
-
                 backgroundImage:
                     profileImage != null
                         ? FileImage(profileImage!)
                         : null,
 
                 child: profileImage == null
-                    ? const Icon(
-                        Icons.person,
-                        size: 18,
-                        color: Colors.grey,
-                      )
+                    ? const Icon(Icons.person, size: 18)
                     : null,
               ),
             ),

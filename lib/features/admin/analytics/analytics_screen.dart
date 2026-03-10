@@ -40,7 +40,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
 
-            /// OVERVIEW CARDS
+            /// OVERVIEW
+            Text(
+              "Overview",
+              style: TextStyle(
+                fontSize: width * 0.045,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+
+            const SizedBox(height: 14),
+
             Row(
               children: const [
 
@@ -81,9 +91,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               ],
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 26),
 
-            /// PERFORMANCE TITLE
+            /// PERFORMANCE
             Text(
               "Performance",
               style: TextStyle(
@@ -94,7 +104,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
             const SizedBox(height: 14),
 
-            /// PERFORMANCE CARDS
             Row(
               children: const [
 
@@ -119,7 +128,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               ],
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 26),
 
             /// SMART INSIGHTS
             SmartInsights(range: selectedRange),
@@ -131,6 +140,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 }
 
 ////////////////////////////////////////////////////
+
 class _StatCard extends StatelessWidget {
 
   final String title;
@@ -152,57 +162,70 @@ class _StatCard extends StatelessWidget {
 
     return Expanded(
       child: Container(
+
         padding: EdgeInsets.symmetric(
-          horizontal: width * 0.03,
-          vertical: width * 0.035,
+          horizontal: width * 0.035,
+          vertical: width * 0.04,
         ),
 
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-
+          borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha:.06),
-              blurRadius: 6,
-              offset: const Offset(0,2),
-            ),
+              color: Colors.black.withValues(alpha:.05),
+              blurRadius: 8,
+              offset: const Offset(0,3),
+            )
           ],
         ),
 
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Stack(
           children: [
 
-            Row(
-              children: [
-
-                Expanded(
-                  child: Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey,
-                    ),
-                  ),
+            /// ICON TOP RIGHT
+            Positioned(
+              top: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: mainGreen.withValues(alpha:.08),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-
-                Icon(
+                child: Icon(
                   icon,
                   size: width * 0.05,
                   color: mainGreen,
                 ),
-              ],
+              ),
             ),
 
-            const SizedBox(height: 6),
+            /// CONTENT
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
 
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: width * 0.045,
-                fontWeight: FontWeight.bold,
-              ),
+                const SizedBox(height: 6),
+
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: width * 0.05,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+
+                const SizedBox(height: 4),
+
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -212,6 +235,7 @@ class _StatCard extends StatelessWidget {
 }
 
 ////////////////////////////////////////////////////
+
 class _PerformanceCard extends StatelessWidget {
 
   final String title;
@@ -231,22 +255,18 @@ class _PerformanceCard extends StatelessWidget {
       child: Container(
 
         padding: EdgeInsets.symmetric(
-          vertical: width * 0.045,
+          vertical: width * 0.05,
           horizontal: width * 0.03,
         ),
 
         decoration: BoxDecoration(
-
-          /// LIGHT GREY COLOR
           color: const Color(0xFFEDEDED),
-
           borderRadius: BorderRadius.circular(14),
-
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha:.06),
+              color: Colors.black.withValues(alpha:.04),
               blurRadius: 6,
-              offset: const Offset(0,3),
+              offset: const Offset(0,2),
             )
           ],
         ),
@@ -257,7 +277,7 @@ class _PerformanceCard extends StatelessWidget {
             Text(
               value,
               style: TextStyle(
-                fontSize: width * 0.05,
+                fontSize: width * 0.055,
                 fontWeight: FontWeight.bold,
                 color: const Color(0xFF0F5F54),
               ),

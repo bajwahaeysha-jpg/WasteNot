@@ -84,7 +84,7 @@ class _AdminBottomNavigationState extends State<AdminBottomNavigation> {
                   borderRadius:
                       BorderRadius.vertical(top: Radius.circular(24)),
                 ),
-                builder: (_) => const AdminMoreSheet(),
+                builder: (_) => AdminMoreSheet(user: widget.user),
               );
               return;
             }

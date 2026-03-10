@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../routes/app_routes.dart';
+import 'signup_screen.dart';
 import 'package:wastenot/features/admin/navigation/admin_bottom_navigation.dart';
 import 'package:wastenot/features/donor/presentation/donor_navigation_screen.dart';
 import 'package:wastenot/features/ngo/presentation/screens/home/ngo_home_screen.dart';
+import '../../services/local_auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -24,70 +25,70 @@ class _LoginScreenState extends State<LoginScreen> {
   static const Color mainGreen = Color(0xFF0B4B3F);
   static const Color sponsorBlue = Color(0xFF1E88E5);
 
-  void _login(String role) {
+ void _login(String role) async {
 
-    if (!_formKey.currentState!.validate()) return;
+  if (!_formKey.currentState!.validate()) return;
 
-    String name = _nameController.text;
+  final user = await LocalAuthService.getUser();
 
-    /// ADMIN NAME UPPERCASE
-    if (role == 'Admin') {
-      name = name.toUpperCase();
-    }
-
-    if (role == 'Donor') {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => DonorNavigationScreen(
-            user: {
-              'name': name,
-              'role': 'Donor',
-            },
-          ),
-        ),
-      );
-    }
-
-    if (role == 'NGO') {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => NgoHomeScreen(
-            user: {
-              'name': name,
-              'role': 'NGO',
-            },
-          ),
-        ),
-      );
-    }
-
-    if (role == 'Admin') {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => AdminBottomNavigation(
-            user: {
-              'name': name,
-              'role': 'Admin',
-            },
-          ),
-        ),
-      );
-    }
+  /// USER NAHI HAI
+  if (user == null) {
+    setState(() {
+      _error = "Please sign up first";
+    });
+    return;
   }
+
+  /// MATCH CHECK
+  if (user['name'] != _nameController.text.trim() ||
+      user['email'] != _emailController.text.trim() ||
+      user['password'] != _passwordController.text.trim()) {
+
+    setState(() {
+      _error = "Name, Email or Password does not match";
+    });
+    return;
+  }
+
+  /// LOGIN SUCCESS
+  if (role == 'Admin') {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AdminBottomNavigation(user: user),
+      ),
+    );
+  }
+
+  if (role == 'Donor') {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => DonorNavigationScreen(user: user),
+      ),
+    );
+  }
+
+  if (role == 'NGO') {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => NgoHomeScreen(user: user),
+      ),
+    );
+  }
+}
 
   @override
   Widget build(BuildContext context) {
 
+    /// SAFE ROLE FIX
     final String role =
-        ModalRoute.of(context)!.settings.arguments as String;
+        ModalRoute.of(context)?.settings.arguments as String? ?? "Admin";
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9F8),
       resizeToAvoidBottomInset: false,
-
       bottomNavigationBar: _sponsored(),
 
       body: SafeArea(
@@ -102,9 +103,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 40),
 
                 /// HEADER
-                Center(
+                const Center(
                   child: Column(
-                    children: const [
+                    children: [
                       Text(
                         "Welcome Back",
                         style: TextStyle(
@@ -146,7 +147,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 16),
 
-                /// PASSWORD WITH STRONG VALIDATION
+                /// PASSWORD
                 _input(
                   "Password",
                   _passwordController,
@@ -162,11 +163,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     }
 
                     if (!RegExp(r'[A-Z]').hasMatch(v)) {
-                      return "Must contain an uppercase letter";
+                      return "Must contain uppercase letter";
                     }
 
                     if (!RegExp(r'[!@#$%^&*(),.?\":{}|<>]').hasMatch(v)) {
-                      return "Must contain a special character";
+                      return "Must contain special character";
                     }
 
                     return null;
@@ -186,11 +187,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 6),
 
                 const Text(
-                  "Password must contain 8+ characters, 1 uppercase & 1 special character",
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey,
-                  ),
+                  "Password must contain 8+ characters, one uppercase letter and one special character.",
+                  style: TextStyle(fontSize: 11, color: Colors.grey),
                 ),
 
                 if (_error != null)
@@ -213,7 +211,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: mainGreen,
-                      elevation: 2,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(28),
                       ),
@@ -221,24 +218,28 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: () => _login(role),
                     child: const Text(
                       "Login",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
+                      style: TextStyle(color: Colors.white),
                     ),
                   ),
                 ),
 
                 const SizedBox(height: 18),
 
+                /// SIGN UP BUTTON
                 Center(
                   child: TextButton(
-                    onPressed: () =>
-                        Navigator.pushNamed(context, AppRoutes.signup),
+                    onPressed: () {
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SignUpScreen(),
+                        ),
+                      );
+
+                    },
                     child: const Text(
                       "Don't have an account? Sign up",
-                      style: TextStyle(fontSize: 14),
                     ),
                   ),
                 ),
@@ -252,7 +253,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  /// INPUT FIELD
   Widget _input(
     String label,
     TextEditingController controller, {
@@ -279,7 +279,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  /// SPONSORED
   Widget _sponsored() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 10, 24, 16),
@@ -294,10 +293,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 padding: EdgeInsets.symmetric(horizontal: 8),
                 child: Text(
                   "Sponsored by",
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey,
-                  ),
+                  style: TextStyle(fontSize: 11, color: Colors.grey),
                 ),
               ),
               Expanded(child: Divider()),
@@ -309,10 +305,7 @@ class _LoginScreenState extends State<LoginScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Image.asset(
-                'assets/images/ngo3.png',
-                height: 22,
-              ),
+              Image.asset('assets/images/ngo3.png', height: 22),
               const SizedBox(width: 8),
               const Text(
                 "SOS Children’s Villages",
@@ -320,7 +313,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                   color: sponsorBlue,
-                  letterSpacing: 0.3,
                 ),
               ),
             ],
