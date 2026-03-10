@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'login_screen.dart';
 
-class DonorSignupScreen extends StatelessWidget {
-  const DonorSignupScreen({super.key});
+class NgoSignupScreen extends StatelessWidget {
+  const NgoSignupScreen({super.key});
 
   static const Color mainGreen = Color(0xFF0B4B3F);
 
@@ -15,7 +15,7 @@ class DonorSignupScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Donor Sign Up"),
+        title: const Text("NGO Sign Up"),
         backgroundColor: mainGreen,
       ),
       body: Padding(
@@ -28,7 +28,7 @@ class DonorSignupScreen extends StatelessWidget {
             TextField(
               controller: nameController,
               decoration: const InputDecoration(
-                labelText: "Full Name",
+                labelText: "NGO Name",
                 border: OutlineInputBorder(),
               ),
             ),
@@ -70,7 +70,7 @@ class DonorSignupScreen extends StatelessWidget {
                     MaterialPageRoute(
                       builder: (_) => const LoginScreen(),
                       settings: const RouteSettings(
-                        arguments: "Donor",
+                        arguments: "NGO",
                       ),
                     ),
                   );
