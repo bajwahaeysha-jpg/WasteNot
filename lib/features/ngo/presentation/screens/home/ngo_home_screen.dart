@@ -13,7 +13,8 @@ import '../home/setting/account/personal_information_screen.dart';
 import '..//home/concern/raise_concern_screen.dart';
 import 'package:wastenot/core/state/ngo_concern.dart';
 import '../home/goal/ngo_goal_screen.dart';
-
+import '../home/all_donations/donation_details_screen.dart';
+import '../home/all_donations/donation_model.dart';
 
 class NgoHomeScreen extends StatefulWidget {
   final Map<String, dynamic> user;
@@ -523,27 +524,66 @@ Widget _moreItem(IconData icon, String title, VoidCallback onTap) {
   );
 }
 
-  static Widget _donationTile({required String title, required String location, required String time}) {
-    return Container(
+ Widget _donationTile({
+  required String title,
+  required String location,
+  required String time,
+}) {
+  return GestureDetector(
+    onTap: () {
+
+      final donation = DonationModel(
+        hotel: location,
+        items: title,
+        time: time,
+        servings: 60,
+        precaution: "Consume within 4 hours",
+        description: title,
+        image: "assets/images/food.jpg",
+      );
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => DonationDetailsScreen(donation: donation),
+        ),
+      );
+    },
+
+    child: Container(
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
-      child: Row(children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(10),
-          child: Image.asset("assets/images/food.jpg", width: 60, height: 60, fit: BoxFit.cover),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-            Text(location, style: const TextStyle(color: Colors.black)),
-            Text(time, style: const TextStyle(color: Colors.black)),
-          ]),
-        ),
-      ]),
-    );
-  }
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Image.asset(
+              "assets/images/food.jpg",
+              width: 60,
+              height: 60,
+              fit: BoxFit.cover,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(location),
+                Text(time),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
 }
 
 class _DashCard extends StatelessWidget {

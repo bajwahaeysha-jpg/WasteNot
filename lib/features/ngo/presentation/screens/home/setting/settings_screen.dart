@@ -1,7 +1,6 @@
-
 import 'package:flutter/material.dart';
 import 'package:wastenot/core/state/app_user.dart';
-
+import 'package:wastenot/screens/login_screen.dart';
 import 'account/account_screen.dart';
 import 'notifications_screen.dart';
 import 'privacy_screen.dart';
@@ -41,7 +40,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           const SizedBox(height: 20),
 
-          // 👤 Profile Header
+          /// Profile Header
           Row(
             children: [
               CircleAvatar(
@@ -49,18 +48,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 backgroundImage:
                     AppUser.image != null ? FileImage(AppUser.image!) : null,
                 child: AppUser.image == null
-                    ? Text(AppUser.name.substring(0, 2).toUpperCase(),
-                        style: const TextStyle(fontWeight: FontWeight.bold))
+                    ? Text(
+                        AppUser.name.substring(0, 2).toUpperCase(),
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      )
                     : null,
               ),
               const SizedBox(width: 12),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(AppUser.name,
-                      style: const TextStyle(fontWeight: FontWeight.w600,color: Colors.black)),
-                  Text(AppUser.email,
-                      style: const TextStyle(color: Colors.black54)),
+                  Text(
+                    AppUser.name,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w600, color: Colors.black),
+                  ),
+                  Text(
+                    AppUser.email,
+                    style: const TextStyle(color: Colors.black54),
+                  ),
                 ],
               ),
             ],
@@ -79,27 +85,82 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           const SizedBox(height: 12),
 
+          /// Logout Tile
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.logout, color: Colors.red),
-            title: const Text("Logout", style: TextStyle(color: Colors.red)),
+            title: const Text(
+              "Logout",
+              style: TextStyle(
+                color: Colors.red,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             onTap: () {
               showDialog(
                 context: context,
                 builder: (_) => AlertDialog(
-                  title: const Text("Log out"),
-                  content: const Text("Are you sure you want to log out?"),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+
+                  title: const Text(
+                    "Log out",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+
+                  content: const Text(
+                    "Are you sure you want to log out from your account?",
+                  ),
+
                   actions: [
+
+                    /// Cancel Button
                     TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text("Cancel"),
+                      child: const Text(
+                        "Cancel",
+                        style: TextStyle(color: Colors.black54),
+                      ),
                     ),
+
+                    /// Logout Button
                     ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0F4C45),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
                       onPressed: () {
+
                         Navigator.pop(context);
-                        
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("You have logged out"),
+                            duration: Duration(seconds: 1),
+                            backgroundColor: Color(0xFF0F4C45),
+                          ),
+                        );
+
+                        Future.delayed(const Duration(milliseconds: 800), () {
+                          Navigator.of(context, rootNavigator: true)
+                              .pushAndRemoveUntil(
+                            MaterialPageRoute(
+                              builder: (_) => const LoginScreen(),
+                            ),
+                            (route) => false,
+                          );
+                        });
                       },
-                      child: const Text("Log out"),
+                      child: const Text(
+                        "Log out",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -108,6 +169,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
 
           const SizedBox(height: 30),
+
         ]),
       ),
     );
@@ -120,8 +182,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       title: Text(title),
       trailing: const Icon(Icons.chevron_right),
       onTap: () async {
-        await Navigator.push(context, MaterialPageRoute(builder: (_) => page));
-        setState(() {}); // 🔥 This is what makes everything update instantly
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => page),
+        );
+        setState(() {});
       },
     );
   }

@@ -6,15 +6,20 @@ class NotificationsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF5F7F6),
 
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        backgroundColor: const Color(0xFF0F4C45),
+        iconTheme: const IconThemeData(color: Colors.white),
+
         title: const Text(
           "Notifications",
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
       ),
 
@@ -24,7 +29,7 @@ class NotificationsScreen extends StatelessWidget {
 
           _NotificationTile(
             icon: Icons.check_circle,
-            iconColor: Colors.green,
+            iconColor: Color(0xFF0F4C45),
             title: "Donation Accepted",
             message: "You have accepted 100 cooked meals from Cafe Aroma.",
             time: "10 minutes ago",
@@ -32,7 +37,7 @@ class NotificationsScreen extends StatelessWidget {
 
           _NotificationTile(
             icon: Icons.notifications_active,
-            iconColor: Colors.blue,
+            iconColor: Color(0xFF0F4C45),
             title: "New Donation Available",
             message: "Fresh bread packets are available in Sector 11.",
             time: "1 hour ago",
@@ -71,9 +76,11 @@ class _NotificationTile extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(14),
+
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
+
         boxShadow: const [
           BoxShadow(
             color: Color(0x14000000),
@@ -82,30 +89,57 @@ class _NotificationTile extends StatelessWidget {
           ),
         ],
       ),
+
       child: Row(
         children: [
 
           Container(
             height: 42,
             width: 42,
+
             decoration: BoxDecoration(
               color: iconColor.withValues(alpha: .15),
               shape: BoxShape.circle,
             ),
+
             child: Icon(icon, color: iconColor),
           ),
 
           const SizedBox(width: 12),
 
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(title,
-                  style: const TextStyle(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 4),
-              Text(message, style: const TextStyle(color: Colors.black)),
-              const SizedBox(height: 4),
-              Text(time, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-            ]),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
+                ),
+
+                const SizedBox(height: 4),
+
+                Text(
+                  message,
+                  style: const TextStyle(
+                    color: Colors.black87,
+                  ),
+                ),
+
+                const SizedBox(height: 4),
+
+                Text(
+                  time,
+                  style: const TextStyle(
+                    color: Colors.grey,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
