@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:wastenot/screens/login_screen.dart';
 import 'package:wastenot/screens/admin_signup_screen.dart';
 import 'package:wastenot/screens/donor_signup_screen.dart';
 import 'package:wastenot/screens/ngo_signup_screen.dart';
 
 class RoleSelectionScreen extends StatefulWidget {
-  const RoleSelectionScreen({super.key});
+
+  final bool isLogin;
+
+  const RoleSelectionScreen({super.key, required this.isLogin});
 
   @override
   State<RoleSelectionScreen> createState() => _RoleSelectionScreenState();
 }
 
 class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
+
   String selectedRole = "";
 
   static const Color mainGreen = Color(0xFF0B4B3F);
@@ -18,10 +23,12 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
+
     final bool isEnabled = selectedRole.isNotEmpty;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9F8),
+
       body: SafeArea(
         child: Column(
           children: [
@@ -30,6 +37,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
+
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -86,54 +94,24 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                       child: SizedBox(
                         width: 220,
                         height: 52,
+
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            elevation: isEnabled ? 2 : 0,
                             backgroundColor: isEnabled
                                 ? mainGreen
                                 : Colors.grey.shade300,
+
                             foregroundColor: isEnabled
                                 ? Colors.white
                                 : Colors.black54,
+
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(28),
                             ),
                           ),
-                          onPressed: isEnabled
-                              ? () {
 
-                                  if (selectedRole == "Admin") {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                            const  SignUpScreen(),
-                                      ),
-                                    );
-                                  }
+                          onPressed: isEnabled ? _continue : null,
 
-                                  else if (selectedRole == "Donor") {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                            const DonorSignupScreen(),
-                                      ),
-                                    );
-                                  }
-
-                                  else if (selectedRole == "NGO") {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                            const NgoSignupScreen(),
-                                      ),
-                                    );
-                                  }
-
-                                }
-                              : null,
                           child: const Text(
                             "Continue",
                             style: TextStyle(
@@ -151,9 +129,10 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
               ),
             ),
 
-            /// SPONSORED SECTION
+            /// SPONSORED
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -180,11 +159,14 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+
                       Image.asset(
                         'assets/images/ngo3.png',
                         height: 22,
                       ),
+
                       const SizedBox(width: 8),
+
                       const Text(
                         "SOS Children’s Villages",
                         style: TextStyle(
@@ -204,12 +186,68 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
     );
   }
 
+  /// CONTINUE BUTTON LOGIC
+  void _continue() {
+
+    /// LOGIN FLOW
+    if(widget.isLogin){
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const LoginScreen(),
+          settings: RouteSettings(arguments: selectedRole),
+        ),
+      );
+
+    }
+
+    /// SIGNUP FLOW
+    else{
+
+      if(selectedRole == "Admin"){
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const SignUpScreen(),
+          ),
+        );
+
+      }
+
+      else if(selectedRole == "Donor"){
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const DonorSignupScreen(),
+          ),
+        );
+
+      }
+
+      else if(selectedRole == "NGO"){
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const NgoSignUpScreen(),
+          ),
+        );
+
+      }
+
+    }
+  }
+
   /// ROLE CARD
   Widget _roleCard({
     required String title,
     required String description,
     required IconData icon,
   }) {
+
     final bool isSelected = selectedRole == title;
 
     return GestureDetector(
@@ -218,29 +256,43 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
           selectedRole = title;
         });
       },
+
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
+
         padding: const EdgeInsets.all(18),
+
         decoration: BoxDecoration(
           color: isSelected
-              ? mainGreen.withValues(alpha: 0.08)
+              ? mainGreen.withOpacity(0.08)
               : Colors.white,
+
           borderRadius: BorderRadius.circular(20),
+
           border: Border.all(
-            color: isSelected ? mainGreen : Colors.grey.shade300,
+            color: isSelected
+                ? mainGreen
+                : Colors.grey.shade300,
+
             width: 1.4,
           ),
         ),
+
         child: Row(
           children: [
 
             CircleAvatar(
               radius: 26,
-              backgroundColor:
-                  isSelected ? mainGreen : mainGreen.withValues(alpha: 0.15),
+
+              backgroundColor: isSelected
+                  ? mainGreen
+                  : mainGreen.withOpacity(0.15),
+
               child: Icon(
                 icon,
-                color: isSelected ? Colors.white : mainGreen,
+                color: isSelected
+                    ? Colors.white
+                    : mainGreen,
               ),
             ),
 
@@ -249,6 +301,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+
                 Text(
                   title,
                   style: const TextStyle(
@@ -256,7 +309,9 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+
                 const SizedBox(height: 4),
+
                 Text(
                   description,
                   style: const TextStyle(

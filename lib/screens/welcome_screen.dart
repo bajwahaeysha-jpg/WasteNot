@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../screens/role_selection_screen.dart';
-import 'login_screen.dart';
-
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -40,7 +38,7 @@ class WelcomeScreen extends StatelessWidget {
                         width: 160,
                         height: 160,
                         decoration: BoxDecoration(
-                          color: mainGreen.withValues(alpha: 0.06),
+                          color: mainGreen.withOpacity(0.06),
                           shape: BoxShape.circle,
                         ),
                         child: ClipOval(
@@ -90,7 +88,7 @@ class WelcomeScreen extends StatelessWidget {
                       _outlineButton(
                         context,
                         "Sign Up",
-                        () => _goToRoleSelection(context),
+                        () => _goToSignup(context),
                       ),
                     ],
                   ),
@@ -213,17 +211,17 @@ class WelcomeScreen extends StatelessWidget {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => const LoginScreen(),
+        builder: (_) => const RoleSelectionScreen(isLogin: true),
       ),
     );
   }
 
-  /// ROLE SELECTION FOR SIGNUP
-  void _goToRoleSelection(BuildContext context) {
+  /// SIGNUP NAVIGATION
+  void _goToSignup(BuildContext context) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => const RoleSelectionScreen(),
+        builder: (_) => const RoleSelectionScreen(isLogin: false),
       ),
     );
   }

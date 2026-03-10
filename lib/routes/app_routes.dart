@@ -70,8 +70,7 @@ return const WelcomeScreen();
 
      case roleSelection:
   return MaterialPageRoute(
-    builder: (_) => const RoleSelectionScreen(),
-  );
+builder: (_) => const RoleSelectionScreen(isLogin: true),  );
 
       case login:
         return MaterialPageRoute(

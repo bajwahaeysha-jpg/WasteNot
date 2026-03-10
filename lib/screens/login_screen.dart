@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'admin_signup_screen.dart';
 import 'package:wastenot/features/admin/navigation/admin_bottom_navigation.dart';
 import 'package:wastenot/features/donor/presentation/donor_navigation_screen.dart';
 import 'package:wastenot/features/ngo/presentation/screens/home/ngo_home_screen.dart';
-import '../../services/local_auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -15,74 +13,56 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
 
   final _formKey = GlobalKey<FormState>();
+
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
   bool _obscure = true;
-  String? _error;
 
   static const Color mainGreen = Color(0xFF0B4B3F);
   static const Color sponsorBlue = Color(0xFF1E88E5);
 
- void _login(String role) async {
+  void _login(String role) {
 
-  if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) return;
 
-  final user = await LocalAuthService.getUser();
+    final user = {
+      "name": _nameController.text,
+      "email": _emailController.text
+    };
 
-  /// USER NAHI HAI
-  if (user == null) {
-    setState(() {
-      _error = "Please sign up first";
-    });
-    return;
+    if (role == 'Admin') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AdminBottomNavigation(user: user),
+        ),
+      );
+    }
+
+    else if (role == 'Donor') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => DonorNavigationScreen(user: user),
+        ),
+      );
+    }
+
+    else if (role == 'NGO') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => NgoHomeScreen(user: user),
+        ),
+      );
+    }
   }
-
-  /// MATCH CHECK
-  if (user['name'] != _nameController.text.trim() ||
-      user['email'] != _emailController.text.trim() ||
-      user['password'] != _passwordController.text.trim()) {
-
-    setState(() {
-      _error = "Name, Email or Password does not match";
-    });
-    return;
-  }
-
-  /// LOGIN SUCCESS
-  if (role == 'Admin') {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => AdminBottomNavigation(user: user),
-      ),
-    );
-  }
-
-  if (role == 'Donor') {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => DonorNavigationScreen(user: user),
-      ),
-    );
-  }
-
-  if (role == 'NGO') {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => NgoHomeScreen(user: user),
-      ),
-    );
-  }
-}
 
   @override
   Widget build(BuildContext context) {
 
-    /// SAFE ROLE FIX
     final String role =
         ModalRoute.of(context)?.settings.arguments as String? ?? "Admin";
 
@@ -94,6 +74,7 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
+
           child: Form(
             key: _formKey,
             child: Column(
@@ -102,7 +83,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 40),
 
-                /// HEADER
                 const Center(
                   child: Column(
                     children: [
@@ -131,8 +111,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 _input(
                   "Full Name",
                   _nameController,
-                  validator: (v) =>
-                      v!.isEmpty ? "Name required" : null,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return "Please enter your name";
+                    }
+                    return null;
+                  },
                 ),
 
                 const SizedBox(height: 16),
@@ -141,8 +125,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 _input(
                   "Email",
                   _emailController,
-                  validator: (v) =>
-                      v!.contains("@") ? null : "Enter valid email",
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return "Email is required";
+                    }
+                    return null;
+                  },
                 ),
 
                 const SizedBox(height: 16),
@@ -152,22 +140,13 @@ class _LoginScreenState extends State<LoginScreen> {
                   "Password",
                   _passwordController,
                   obscure: _obscure,
-                  validator: (v) {
-
-                    if (v == null || v.isEmpty) {
-                      return "Password required";
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return "Password is required";
                     }
 
-                    if (v.length < 8) {
-                      return "Minimum 8 characters";
-                    }
-
-                    if (!RegExp(r'[A-Z]').hasMatch(v)) {
-                      return "Must contain uppercase letter";
-                    }
-
-                    if (!RegExp(r'[!@#$%^&*(),.?\":{}|<>]').hasMatch(v)) {
-                      return "Must contain special character";
+                    if (!RegExp(r'[0-9]').hasMatch(value)) {
+                      return "Password must contain a digit";
                     }
 
                     return null;
@@ -183,25 +162,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                   ),
                 ),
-
-                const SizedBox(height: 6),
-
-                const Text(
-                  "Password must contain 8+ characters, one uppercase letter and one special character.",
-                  style: TextStyle(fontSize: 11, color: Colors.grey),
-                ),
-
-                if (_error != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 10),
-                    child: Text(
-                      _error!,
-                      style: const TextStyle(
-                        color: Colors.red,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
 
                 const SizedBox(height: 32),
 
@@ -223,27 +183,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 18),
-
-                /// SIGN UP BUTTON
-                Center(
-                  child: TextButton(
-                    onPressed: () {
-
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const SignUpScreen(),
-                        ),
-                      );
-
-                    },
-                    child: const Text(
-                      "Don't have an account? Sign up",
-                    ),
-                  ),
-                ),
-
                 const SizedBox(height: 100),
               ],
             ),
@@ -254,12 +193,12 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _input(
-    String label,
-    TextEditingController controller, {
-    bool obscure = false,
-    String? Function(String?)? validator,
-    Widget? suffix,
-  }) {
+      String label,
+      TextEditingController controller, {
+        bool obscure = false,
+        Widget? suffix,
+        String? Function(String?)? validator,
+      }) {
     return TextFormField(
       controller: controller,
       obscureText: obscure,
@@ -269,7 +208,7 @@ class _LoginScreenState extends State<LoginScreen> {
         filled: true,
         fillColor: Colors.white,
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
           borderSide: BorderSide.none,
