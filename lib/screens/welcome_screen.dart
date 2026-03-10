@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../screens/role_selection_screen.dart';
-import 'signup_screen.dart';
+import 'login_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
 
   static const Color mainGreen = Color(0xFF0B4B3F);
-  static const Color sponsorBlue = Color(0xFF1E88E5); // 🔵 SOS brand-like blue
+  static const Color sponsorBlue = Color(0xFF1E88E5);
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +26,7 @@ class WelcomeScreen extends StatelessWidget {
           child: Column(
             children: [
 
-              /// 🔝 CENTER CONTENT
+              /// CENTER CONTENT
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 26),
@@ -34,23 +34,22 @@ class WelcomeScreen extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
 
-                      /// 🌱 Logo
+                      /// LOGO
                       Container(
-  width: 160,
-  height: 160,
-  decoration: BoxDecoration(
-    color: mainGreen.withValues(alpha: 0.06),
-    shape: BoxShape.circle,
-  ),
-  child: ClipOval(
-    child: Image.asset(
-      'assets/images/welcome_logo.png',
-      fit: BoxFit.cover, // 🔥 image circle ko fill karegi
-      width: 160,
-      height: 160,
-    ),
-  ),
-),
+                        width: 160,
+                        height: 160,
+                        decoration: BoxDecoration(
+                          color: mainGreen.withValues(alpha: 0.06),
+                          shape: BoxShape.circle,
+                        ),
+                        child: ClipOval(
+                          child: Image.asset(
+                            'assets/images/welcome_logo.png',
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+
                       const SizedBox(height: 18),
 
                       const Text(
@@ -59,7 +58,6 @@ class WelcomeScreen extends StatelessWidget {
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
                           color: mainGreen,
-                          letterSpacing: 0.3,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -78,31 +76,32 @@ class WelcomeScreen extends StatelessWidget {
 
                       const SizedBox(height: 42),
 
-                      /// 🟢 Login Button
+                      /// LOGIN BUTTON
                       _primaryButton(
                         context,
                         "Login",
-                        () => _goToRoleSelection(context),
+                        () => _goToLogin(context),
                       ),
 
                       const SizedBox(height: 14),
 
-                      /// ⚪ Sign Up Button
+                      /// SIGNUP BUTTON
                       _outlineButton(
                         context,
                         "Sign Up",
-                        () => _goToSignup(context),
+                        () => _goToRoleSelection(context),
                       ),
                     ],
                   ),
                 ),
               ),
 
-              /// 🔽 SPONSORED SECTION (LOGO + TEXT MATCHED)
+              /// SPONSORED SECTION
               Padding(
                 padding: const EdgeInsets.fromLTRB(26, 0, 26, 18),
                 child: Column(
                   children: [
+
                     Row(
                       children: const [
                         Expanded(child: Divider()),
@@ -124,20 +123,18 @@ class WelcomeScreen extends StatelessWidget {
 
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Image.asset(
                           'assets/images/ngo3.png',
-                          height: 24, // ✅ matched with text height
+                          height: 24,
                         ),
                         const SizedBox(width: 8),
                         const Text(
                           "SOS Children’s Villages",
                           style: TextStyle(
-                            fontSize: 14, // ✅ visually same as logo
+                            fontSize: 14,
                             fontWeight: FontWeight.w700,
-                            color: sponsorBlue, // 🔵 logo-style blue
-                            letterSpacing: 0.3,
+                            color: sponsorBlue,
                           ),
                         ),
                       ],
@@ -152,7 +149,7 @@ class WelcomeScreen extends StatelessWidget {
     );
   }
 
-  // 🟢 PRIMARY BUTTON
+  /// PRIMARY BUTTON
   Widget _primaryButton(
     BuildContext context,
     String text,
@@ -165,23 +162,23 @@ class WelcomeScreen extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: mainGreen,
           foregroundColor: Colors.white,
-          elevation: 2,
-          splashFactory: NoSplash.splashFactory,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(28),
           ),
-          textStyle: const TextStyle(
+        ),
+        onPressed: onTap,
+        child: Text(
+          text,
+          style: const TextStyle(
             fontSize: 17,
             fontWeight: FontWeight.w600,
           ),
         ),
-        onPressed: onTap,
-        child: Text(text),
       ),
     );
   }
 
-  // ⚪ OUTLINE BUTTON
+  /// OUTLINE BUTTON
   Widget _outlineButton(
     BuildContext context,
     String text,
@@ -197,43 +194,35 @@ class WelcomeScreen extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(28),
           ),
-          textStyle: const TextStyle(
+        ),
+        onPressed: onTap,
+        child: Text(
+          text,
+          style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
         ),
-        onPressed: onTap,
-        child: Text(text),
       ),
     );
   }
 
-  // ➡️ LOGIN FLOW
-  void _goToRoleSelection(BuildContext context) {
-    Navigator.push(
-      context,
-      PageRouteBuilder(
-        transitionDuration: const Duration(milliseconds: 350),
-        pageBuilder: (_, animation, _) => const RoleSelectionScreen(),
-        transitionsBuilder: (_, animation, _, child) {
-          return SlideTransition(
-            position: Tween(
-              begin: const Offset(1, 0),
-              end: Offset.zero,
-            ).animate(animation),
-            child: child,
-          );
-        },
-      ),
-    );
-  }
-
-  // ➡️ SIGN UP FLOW
-  void _goToSignup(BuildContext context) {
+  /// LOGIN NAVIGATION
+  void _goToLogin(BuildContext context) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => const SignUpScreen(),
+        builder: (_) => const LoginScreen(),
+      ),
+    );
+  }
+
+  /// ROLE SELECTION FOR SIGNUP
+  void _goToRoleSelection(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const RoleSelectionScreen(),
       ),
     );
   }

@@ -4,7 +4,7 @@ import 'package:wastenot/features/donor/presentation/home/screens/donor_home_scr
 import '../screens/welcome_screen.dart';
 import '../screens/role_selection_screen.dart';
 import '../screens/login_screen.dart';
-import '../screens/signup_screen.dart';
+import '../screens/admin_signup_screen.dart';
 import '../features/admin/home/admin_home_screen.dart';
 import '../services/local_auth_service.dart';
 

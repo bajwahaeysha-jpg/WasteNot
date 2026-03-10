@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'signup_screen.dart';
+import 'admin_signup_screen.dart';
 import 'package:wastenot/features/admin/navigation/admin_bottom_navigation.dart';
 import 'package:wastenot/features/donor/presentation/donor_navigation_screen.dart';
 import 'package:wastenot/features/ngo/presentation/screens/home/ngo_home_screen.dart';
