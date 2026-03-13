@@ -1,6 +1,9 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:wastenot/screens/login_screen.dart';
+import 'package:wastenot/services/auth_service.dart';
 
 class NgoSignUpScreen extends StatefulWidget {
   const NgoSignUpScreen({super.key});
@@ -10,227 +13,140 @@ class NgoSignUpScreen extends StatefulWidget {
 }
 
 class _NgoSignUpScreenState extends State<NgoSignUpScreen> {
-
   final _formKey = GlobalKey<FormState>();
-
-  final TextEditingController ngoNameController = TextEditingController();
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController phoneController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
-  final TextEditingController regNumberController = TextEditingController();
-  final TextEditingController cityController = TextEditingController();
-  final TextEditingController aboutController = TextEditingController();
+  final _organizationController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _registrationController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final AuthService _authService = AuthService();
+  final ImagePicker _picker = ImagePicker();
 
   File? _image;
-
-  final ImagePicker picker = ImagePicker();
-
-  Future pickImage() async {
-    final picked = await picker.pickImage(source: ImageSource.gallery);
-
-    if (picked != null) {
-      setState(() {
-        _image = File(picked.path);
-      });
-    }
-  }
+  bool _obscurePassword = true;
+  bool _loading = false;
 
   static const primary = Color(0xFF0F4C45);
+
+  @override
+  void dispose() {
+    _organizationController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _passwordController.dispose();
+    _addressController.dispose();
+    _registrationController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-
       appBar: AppBar(
         backgroundColor: primary,
-        title: const Text(
-          "NGO Sign Up",
-          style: TextStyle(color: Colors.white),
-        ),
-        iconTheme: const IconThemeData(color: Colors.white),
+        foregroundColor: Colors.white,
+        title: const Text('NGO Sign Up'),
       ),
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
-
         child: Form(
           key: _formKey,
           child: Column(
             children: [
-
-              /// Profile Image
               GestureDetector(
-                onTap: pickImage,
+                onTap: _pickImage,
                 child: CircleAvatar(
                   radius: 55,
                   backgroundColor: primary.withOpacity(0.1),
-                  backgroundImage:
-                      _image != null ? FileImage(_image!) : null,
-                  child: _image == null
-                      ? const Icon(Icons.camera_alt, size: 35)
-                      : null,
+                  backgroundImage: _image != null ? FileImage(_image!) : null,
+                  child: _image == null ? const Icon(Icons.camera_alt, size: 35) : null,
                 ),
               ),
-
               const SizedBox(height: 10),
-
-              const Text(
-                "Upload NGO Logo",
-                style: TextStyle(fontSize: 14),
-              ),
-
+              const Text('Upload NGO Logo'),
               const SizedBox(height: 30),
-
-              buildField(
-                "NGO Name",
-                ngoNameController,
+              _field('Organization Name', _organizationController),
+              _field(
+                'Email Address',
+                _emailController,
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return "NGO name is required";
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Email is required';
+                  }
+                  if (!value.contains('@')) {
+                    return 'Enter a valid email';
                   }
                   return null;
                 },
               ),
-
-              buildField(
-                "Email Address",
-                emailController,
+              _field(
+                'Phone Number',
+                _phoneController,
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return "Email is required";
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Phone number is required';
                   }
-
-                  final emailRegex =
-                      RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-
-                  if (!emailRegex.hasMatch(value)) {
-                    return "Enter valid email";
-                  }
-
-                  return null;
-                },
-              ),
-
-              buildField(
-                "Phone Number",
-                phoneController,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return "Phone number required";
-                  }
-
-                  final phoneRegex = RegExp(r'^\d{11}$');
-
-                  if (!phoneRegex.hasMatch(value)) {
-                    return "Phone must be 11 digits";
-                  }
-
-                  return null;
-                },
-              ),
-
-              buildField(
-                "Password",
-                passwordController,
-                obscure: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return "Password required";
-                  }
-
-                  if (value.length < 8) {
-                    return "Password must be at least 8 characters";
-                  }
-
-                  final specialRegex =
-                      RegExp(r'[!@#$%^&*(),.?":{}|<>]');
-
-                  if (!specialRegex.hasMatch(value)) {
-                    return "Password must contain special character";
-                  }
-
-                  return null;
-                },
-              ),
-
-              buildField(
-                "Registration Number",
-                regNumberController,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return "Registration number required";
+                  if (!RegExp(r'^\d{10,15}$').hasMatch(value.trim())) {
+                    return 'Enter a valid phone number';
                   }
                   return null;
                 },
               ),
-
-              buildField(
-                "City / Country",
-                cityController,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return "City required";
-                  }
-                  return null;
-                },
-              ),
-
-              const SizedBox(height: 10),
-
-              /// About NGO
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  "About NGO",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: primary,
-                    fontSize: 16,
-                  ),
+              _field(
+                'Password',
+                _passwordController,
+                obscure: _obscurePassword,
+                suffix: IconButton(
+                  icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
+                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                 ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Password is required';
+                  }
+                  if (value.length < 6) {
+                    return 'Password must be at least 6 characters';
+                  }
+                  return null;
+                },
               ),
-
-              const SizedBox(height: 8),
-
+              _field('Address', _addressController),
+              _field('Registration Number', _registrationController),
               TextFormField(
-                controller: aboutController,
+                controller: _descriptionController,
                 maxLines: 4,
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return "Please describe your NGO";
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please describe your NGO';
                   }
                   return null;
                 },
                 decoration: InputDecoration(
-                  hintText: "Write about your NGO mission and work",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  labelText: 'Organization Description',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
-
               const SizedBox(height: 30),
-
-              /// Sign Up Button
               SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    foregroundColor: Colors.white,
                   ),
-                  onPressed: submitForm,
-                  child: const Text(
-                    "Register NGO",
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white,
-                    ),
-                  ),
+                  onPressed: _loading ? null : _submit,
+                  child: _loading
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text('Register NGO'),
                 ),
               ),
             ],
@@ -240,10 +156,11 @@ class _NgoSignUpScreenState extends State<NgoSignUpScreen> {
     );
   }
 
-  Widget buildField(
+  Widget _field(
     String label,
     TextEditingController controller, {
     bool obscure = false,
+    Widget? suffix,
     String? Function(String?)? validator,
   }) {
     return Padding(
@@ -251,37 +168,93 @@ class _NgoSignUpScreenState extends State<NgoSignUpScreen> {
       child: TextFormField(
         controller: controller,
         obscureText: obscure,
-        validator: validator,
+        validator: validator ??
+            (value) {
+              if (value == null || value.trim().isEmpty) {
+                return '$label is required';
+              }
+              return null;
+            },
         decoration: InputDecoration(
           labelText: label,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          suffixIcon: suffix,
         ),
       ),
     );
   }
 
-  void submitForm() {
+  Future<void> _pickImage() async {
+    final picked = await _picker.pickImage(source: ImageSource.gallery);
+    if (picked == null) {
+      return;
+    }
+    setState(() => _image = File(picked.path));
+  }
 
-    if (!_formKey.currentState!.validate()) return;
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Registration Submitted"),
-        content: const Text(
-          "Your NGO account has been submitted.\n\nPlease wait for admin approval before logging in.",
+    setState(() => _loading = true);
+    try {
+      await _authService.submitNgoRequest(
+        organizationName: _organizationController.text,
+        email: _emailController.text,
+        password: _passwordController.text,
+        phone: _phoneController.text,
+        address: _addressController.text,
+        registrationNumber: _registrationController.text,
+        description: _descriptionController.text,
+        profileImage: _image,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Registration Submitted'),
+          content: const Text(
+            'Your request has been submitted for admin approval.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('OK'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-            child: const Text("OK"),
-          )
-        ],
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false,
+      );
+    } on AuthFailure catch (error) {
+      _showMessage(error.message, isError: true);
+    } catch (error) {
+      _showMessage(error.toString(), isError: true);
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
+  }
+
+  void _showMessage(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : primary,
       ),
     );
   }

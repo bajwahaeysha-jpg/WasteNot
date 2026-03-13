@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:wastenot/features/admin/navigation/admin_bottom_navigation.dart';
-import 'package:wastenot/features/donor/presentation/donor_navigation_screen.dart';
+import 'package:wastenot/features/donor/presentation/home/screens/donor_home_screen.dart';
 import 'package:wastenot/features/ngo/presentation/screens/home/ngo_home_screen.dart';
+import 'package:wastenot/models/app_user_model.dart';
+import 'package:wastenot/screens/role_selection_screen.dart';
+import 'package:wastenot/services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -11,180 +14,124 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-
   final _formKey = GlobalKey<FormState>();
-
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final AuthService _authService = AuthService();
 
   bool _obscure = true;
+  bool _loading = false;
 
   static const Color mainGreen = Color(0xFF0B4B3F);
-  static const Color sponsorBlue = Color(0xFF1E88E5);
 
-  void _login(String role) {
-
-    if (!_formKey.currentState!.validate()) return;
-
-    final user = {
-      "name": _nameController.text,
-      "email": _emailController.text
-    };
-
-    if (role == 'Admin') {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => AdminBottomNavigation(user: user),
-        ),
-      );
-    }
-
-    else if (role == 'Donor') {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => DonorNavigationScreen(user: user),
-        ),
-      );
-    }
-
-    else if (role == 'NGO') {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => NgoHomeScreen(user: user),
-        ),
-      );
-    }
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-
-    final String role =
-        ModalRoute.of(context)?.settings.arguments as String? ?? "Admin";
-
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9F8),
-      resizeToAvoidBottomInset: false,
-      bottomNavigationBar: _sponsored(),
-
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
-
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-
-                const SizedBox(height: 40),
-
-                const Center(
-                  child: Column(
-                    children: [
-                      Text(
-                        "Welcome Back",
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 6),
-                      Text(
-                        "Sign in to continue",
-                        style: TextStyle(
-                          color: Colors.black54,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    'Welcome Back',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                   ),
-                ),
-
-                const SizedBox(height: 40),
-
-                /// NAME
-                _input(
-                  "Full Name",
-                  _nameController,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return "Please enter your name";
-                    }
-                    return null;
-                  },
-                ),
-
-                const SizedBox(height: 16),
-
-                /// EMAIL
-                _input(
-                  "Email",
-                  _emailController,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return "Email is required";
-                    }
-                    return null;
-                  },
-                ),
-
-                const SizedBox(height: 16),
-
-                /// PASSWORD
-                _input(
-                  "Password",
-                  _passwordController,
-                  obscure: _obscure,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return "Password is required";
-                    }
-
-                    if (!RegExp(r'[0-9]').hasMatch(value)) {
-                      return "Password must contain a digit";
-                    }
-
-                    return null;
-                  },
-                  suffix: IconButton(
-                    icon: Icon(
-                      _obscure ? Icons.visibility_off : Icons.visibility,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _obscure = !_obscure;
-                      });
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Sign in with your email and password.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.black54),
+                  ),
+                  const SizedBox(height: 32),
+                  _input(
+                    label: 'Name',
+                    controller: _nameController,
+                    validator: (_) => null,
+                  ),
+                  const SizedBox(height: 16),
+                  _input(
+                    label: 'Email',
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Email is required';
+                      }
+                      if (!value.contains('@')) {
+                        return 'Enter a valid email';
+                      }
+                      return null;
                     },
                   ),
-                ),
-
-                const SizedBox(height: 32),
-
-                /// LOGIN BUTTON
-                SizedBox(
-                  height: 54,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: mainGreen,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(28),
-                      ),
-                    ),
-                    onPressed: () => _login(role),
-                    child: const Text(
-                      "Login",
-                      style: TextStyle(color: Colors.white),
+                  const SizedBox(height: 16),
+                  _input(
+                    label: 'Password',
+                    controller: _passwordController,
+                    obscure: _obscure,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Password is required';
+                      }
+                      return null;
+                    },
+                    suffix: IconButton(
+                      icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility),
+                      onPressed: () => setState(() => _obscure = !_obscure),
                     ),
                   ),
-                ),
-
-                const SizedBox(height: 100),
-              ],
+                  const SizedBox(height: 28),
+                  SizedBox(
+                    height: 54,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: mainGreen,
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: _loading ? null : _login,
+                      child: _loading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            )
+                          : const Text('Login'),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const RoleSelectionScreen(isLogin: false),
+                        ),
+                      );
+                    },
+                    child: const Text('Need an account? Sign up'),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Shared login for donor, NGO, and admin. Name is only used for admin display.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 12, color: Colors.black54),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -192,25 +139,25 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _input(
-      String label,
-      TextEditingController controller, {
-        bool obscure = false,
-        Widget? suffix,
-        String? Function(String?)? validator,
-      }) {
+  Widget _input({
+    required String label,
+    required TextEditingController controller,
+    required String? Function(String?) validator,
+    TextInputType keyboardType = TextInputType.text,
+    bool obscure = false,
+    Widget? suffix,
+  }) {
     return TextFormField(
       controller: controller,
-      obscureText: obscure,
       validator: validator,
+      keyboardType: keyboardType,
+      obscureText: obscure,
       decoration: InputDecoration(
         labelText: label,
         filled: true,
         fillColor: Colors.white,
-        contentPadding:
-        const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: BorderRadius.circular(20),
           borderSide: BorderSide.none,
         ),
         suffixIcon: suffix,
@@ -218,45 +165,54 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _sponsored() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 10, 24, 16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
+  Future<void> _login() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
-          Row(
-            children: const [
-              Expanded(child: Divider()),
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8),
-                child: Text(
-                  "Sponsored by",
-                  style: TextStyle(fontSize: 11, color: Colors.grey),
-                ),
-              ),
-              Expanded(child: Divider()),
-            ],
-          ),
+    setState(() => _loading = true);
+    try {
+      final user = await _authService.signIn(
+        name: _nameController.text,
+        email: _emailController.text,
+        password: _passwordController.text,
+      );
+      if (!mounted) {
+        return;
+      }
+      _goToDashboard(user);
+    } on AuthFailure catch (error) {
+      _showMessage(error.message, isError: true);
+    } catch (error) {
+      _showMessage(error.toString(), isError: true);
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
+  }
 
-          const SizedBox(height: 8),
+  void _goToDashboard(AppUserModel user) {
+    final route = user.isAdmin
+        ? MaterialPageRoute(
+            builder: (_) => AdminBottomNavigation(
+              user: user.toNavigationUser(),
+            ),
+          )
+        : user.isNgo
+            ? MaterialPageRoute(builder: (_) => NgoHomeScreen(user: user.toNavigationUser()))
+            : MaterialPageRoute(
+                builder: (_) => DonorHomeScreen(user: user.toNavigationUser()),
+              );
 
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Image.asset('assets/images/ngo3.png', height: 22),
-              const SizedBox(width: 8),
-              const Text(
-                "SOS Children’s Villages",
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: sponsorBlue,
-                ),
-              ),
-            ],
-          ),
-        ],
+    Navigator.pushAndRemoveUntil(context, route, (route) => false);
+  }
+
+  void _showMessage(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : mainGreen,
       ),
     );
   }

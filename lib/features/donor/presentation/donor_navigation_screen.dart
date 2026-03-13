@@ -7,6 +7,7 @@ import 'settings/screens/donor_settings_screen.dart';
 import 'goal/screens/donor_goal_screen.dart';
 import 'auth/screens/donor_logout_screen.dart';
 import 'package:wastenot/features/donor/presentation/notifications/screens/notification_screen.dart';
+import 'package:wastenot/services/session_service.dart';
 
 class DonorNavigationScreen extends StatefulWidget {
   final Map<String, dynamic> user;
@@ -97,10 +98,10 @@ class _DonorNavigationScreenState extends State<DonorNavigationScreen> {
                 );
               },
 
-              child: const CircleAvatar(
+              child: CircleAvatar(
                 backgroundColor: Colors.white,
                 child: Text(
-                  "A",
+                  SessionService.initials(),
                   style: TextStyle(
                     color: mainGreen,
                     fontWeight: FontWeight.bold,

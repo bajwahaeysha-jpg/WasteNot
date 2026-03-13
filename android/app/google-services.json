@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "3832930230",
+    "project_id": "wastenot-20ade",
+    "storage_bucket": "wastenot-20ade.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:3832930230:android:5457646687edab0469ab17",
+        "android_client_info": {
+          "package_name": "com.example.wastenot"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "3832930230-7qifdj4if9dn0qirgb53rn3kuuu7j5i7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBianhmUjNrmJNICNivz4bYvvq1JdyPKxU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "3832930230-7qifdj4if9dn0qirgb53rn3kuuu7j5i7.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

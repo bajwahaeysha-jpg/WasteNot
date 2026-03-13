@@ -17,4 +17,11 @@ class AppUser {
     if (newPhone != null) phone = newPhone;
     if (newImage != null) image = newImage;
   }
+
+  static void clear() {
+    name = "Khair Foundation";
+    email = "contact@khair.org";
+    phone = null;
+    image = null;
+  }
 }

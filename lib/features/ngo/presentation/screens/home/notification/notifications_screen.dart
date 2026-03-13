@@ -1,10 +1,18 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:wastenot/services/auth_service.dart';
+import 'package:wastenot/services/firestore_service.dart';
 
 class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final authService = AuthService();
+    final firestoreService = FirestoreService();
+    final currentUser = authService.currentFirebaseUser;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7F6),
 
@@ -23,36 +31,68 @@ class NotificationsScreen extends StatelessWidget {
         ),
       ),
 
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: const [
+      body: StreamBuilder<List<Map<String, dynamic>>>(
+        stream: firestoreService.notificationsForUser(
+          uid: currentUser?.uid,
+          email: currentUser?.email,
+        ),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-          _NotificationTile(
-            icon: Icons.check_circle,
-            iconColor: Color(0xFF0F4C45),
-            title: "Donation Accepted",
-            message: "You have accepted 100 cooked meals from Cafe Aroma.",
-            time: "10 minutes ago",
-          ),
+          final notifications = snapshot.data!;
+          if (notifications.isEmpty) {
+            return const Center(
+              child: Text(
+                'No notifications yet.',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              ),
+            );
+          }
 
-          _NotificationTile(
-            icon: Icons.notifications_active,
-            iconColor: Color(0xFF0F4C45),
-            title: "New Donation Available",
-            message: "Fresh bread packets are available in Sector 11.",
-            time: "1 hour ago",
-          ),
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: notifications.length,
+            itemBuilder: (context, index) {
+              final notification = notifications[index];
+              final createdAt = notification['createdAt'];
+              final date = createdAt is Timestamp
+                  ? createdAt.toDate()
+                  : DateTime.now();
 
-          _NotificationTile(
-            icon: Icons.warning_amber,
-            iconColor: Colors.orange,
-            title: "Urgent Need Alert",
-            message: "Food demand increased due to flood emergency.",
-            time: "Yesterday",
-          ),
-        ],
+              return _NotificationTile(
+                icon: _resolveIcon(notification['title']?.toString() ?? ''),
+                iconColor: _resolveColor(notification['title']?.toString() ?? ''),
+                title: notification['title']?.toString() ?? 'Notification',
+                message: notification['message']?.toString() ?? '',
+                time: DateFormat('dd MMM, hh:mm a').format(date),
+              );
+            },
+          );
+        },
       ),
     );
+  }
+
+  IconData _resolveIcon(String title) {
+    if (title.toLowerCase().contains('approved')) {
+      return Icons.check_circle;
+    }
+    if (title.toLowerCase().contains('rejected')) {
+      return Icons.cancel;
+    }
+    return Icons.notifications_active;
+  }
+
+  Color _resolveColor(String title) {
+    if (title.toLowerCase().contains('approved')) {
+      return const Color(0xFF0F4C45);
+    }
+    if (title.toLowerCase().contains('rejected')) {
+      return Colors.red;
+    }
+    return const Color(0xFF0F4C45);
   }
 }
 

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'donor_personal_information_screen.dart';
-import 'donor_change_password_screen.dart';
+import 'package:wastenot/features/donor/presentation/settings/screens/donor_change_password_screen.dart';
+import 'package:wastenot/features/donor/presentation/settings/screens/donor_personal_information_screen.dart';
+import 'package:wastenot/screens/welcome_screen.dart';
+import 'package:wastenot/services/auth_service.dart';
 
 class DonorAccountScreen extends StatelessWidget {
   const DonorAccountScreen({super.key});
@@ -11,88 +13,111 @@ class DonorAccountScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-
       appBar: AppBar(
         backgroundColor: mainGreen,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
         title: const Text(
-          "Account",
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+          'Account',
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         actions: const [
           Padding(
             padding: EdgeInsets.only(right: 15),
             child: Icon(Icons.person),
-          )
+          ),
         ],
       ),
-
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Column(
           children: [
-
             const SizedBox(height: 20),
-
-            // Personal Information
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.person_outline),
-              title: const Text("Personal information"),
+              title: const Text('Personal information'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const DonorPersonalInformationScreen(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const DonorPersonalInformationScreen()),
                 );
               },
             ),
-
-            // Change Password
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.lock_outline),
-              title: const Text("Change password"),
+              title: const Text('Change password'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const DonorChangePasswordScreen(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const DonorChangePasswordScreen()),
                 );
               },
             ),
-
             const SizedBox(height: 20),
-
             Divider(color: Colors.grey.shade400),
-
             const SizedBox(height: 10),
-
-            // Delete Account
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.cancel, color: Colors.red),
-              title: const Text(
-                "Delete account",
-                style: TextStyle(color: Colors.red),
-              ),
+              title: const Text('Delete account', style: TextStyle(color: Colors.red)),
               trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                // delete popup
-              },
+              onTap: () => _confirmDelete(context),
             ),
-
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _confirmDelete(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Delete account'),
+            content: const Text(
+              'This will remove your Firestore profile and Firebase Authentication account.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                onPressed: () => Navigator.pop(dialogContext, true),
+                child: const Text('Delete'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!confirmed || !context.mounted) {
+      return;
+    }
+
+    try {
+      await AuthService().deleteCurrentAccount();
+      if (!context.mounted) {
+        return;
+      }
+
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+        (route) => false,
+      );
+    } on AuthFailure catch (error) {
+      if (!context.mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message), backgroundColor: Colors.red),
+      );
+    }
   }
 }

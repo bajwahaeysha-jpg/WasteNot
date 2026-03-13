@@ -1,82 +1,64 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:wastenot/models/ngo_request_model.dart';
+import 'package:wastenot/services/firestore_service.dart';
+
 import 'request_detail_screen.dart';
 
-class RequestsScreen extends StatefulWidget {
+class RequestsScreen extends StatelessWidget {
   const RequestsScreen({super.key});
 
-  @override
-  State<RequestsScreen> createState() => _RequestsScreenState();
-}
-
-class _RequestsScreenState extends State<RequestsScreen> {
-  static const Color mainGreen =  Color(0xFF0F4C45);
-
-  final List<Map<String, dynamic>> requests = [
-    {
-      "type": "ngo",
-      "title": "Khair Foundation wants to join WasteNot",
-      "name": "Khair Foundation",
-      "email": "info@khair.org",
-      "phone": "+92 300 1112233",
-      "location": "Lahore",
-      "logo": "assets/images/ngo1.png",
-    },
-    {
-      "type": "ngo",
-      "title": "Al-Khidmat Foundation wants to join WasteNot",
-      "name": "Al-Khidmat Foundation",
-      "email": "info@AlKhidmat.org",
-      "phone": "+92 300 1112233",
-      "location": "Lahore",
-      "logo": "assets/images/ngo4.png",
-    },
-    {
-      "type": "donor",
-      "title": "Allah Malak wants to join WasteNot",
-      "name": "Allah Malak",
-      "business": "Resturant",
-      "phone": "+92 321 9876543",
-      "location": "DHA Phase 5",
-      "logo": "assets/images/allah_malak.png",
-    },
-  ];
+  static const Color mainGreen = Color(0xFF0F4C45);
 
   @override
   Widget build(BuildContext context) {
+    final firestoreService = FirestoreService();
+
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9F8),
       appBar: AppBar(
         backgroundColor: mainGreen,
         elevation: 0,
         title: const Text(
-          "Requests",
+          'Requests',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: requests.length,
-        itemBuilder: (_, i) => _requestTile(context, requests[i], i),
+      body: StreamBuilder<List<NgoRequestModel>>(
+        stream: firestoreService.pendingNgoRequests(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final requests = snapshot.data!;
+          if (requests.isEmpty) {
+            return const Center(
+              child: Text(
+                'No pending NGO requests.',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              ),
+            );
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: requests.length,
+            itemBuilder: (_, i) => _requestTile(context, requests[i]),
+          );
+        },
       ),
     );
   }
 
-  Widget _requestTile(BuildContext context, Map<String, dynamic> r, int index) {
+  Widget _requestTile(BuildContext context, NgoRequestModel request) {
     return InkWell(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => RequestDetailScreen(
-              request: r,
-              onDelete: () {
-                setState(() {
-                  requests.removeAt(index);
-                });
-                Navigator.pop(context); // close detail screen
-              },
-            ),
+            builder: (_) => RequestDetailScreen(request: request),
           ),
         );
       },
@@ -94,8 +76,8 @@ class _RequestsScreenState extends State<RequestsScreen> {
           children: [
             CircleAvatar(
               radius: 22,
-              backgroundImage: AssetImage(r['logo']),
-              backgroundColor: Colors.grey.shade200,
+              backgroundColor: Colors.blue.withValues(alpha: .12),
+              child: const Icon(Icons.apartment, color: Colors.blue),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -103,39 +85,62 @@ class _RequestsScreenState extends State<RequestsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    r['title'],
+                    '${request.organizationName} wants to join WasteNot',
                     style: const TextStyle(
                       fontSize: 14.5,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 6),
-                  _badge(r['type']),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withValues(alpha: .12),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Text(
+                          'PENDING NGO',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.blue,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          DateFormat('dd MMM, hh:mm a').format(
+                            request.createdAt,
+                          ),
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            color: Colors.black54,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    request.email,
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      color: Colors.black54,
+                    ),
+                  ),
                 ],
               ),
             ),
             const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _badge(String type) {
-    final bool isNgo = type == "ngo";
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: isNgo ? Colors.blue.withValues(alpha:.12) : mainGreen.withValues(alpha:.12),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        isNgo ? "NGO REQUEST" : "DONOR REQUEST",
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: isNgo ? Colors.blue : mainGreen,
         ),
       ),
     );

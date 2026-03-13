@@ -101,9 +101,9 @@ String _getTitle() {
 
       const SizedBox(height: 10),
 
-      const Text(
-        "Hello, Khair Foundation",
-        style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700,color: Colors.black),
+      Text(
+        "Hello, ${widget.user['name'] ?? 'NGO'}",
+        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700,color: Colors.black),
       ),
 
       const SizedBox(height: 4),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../screens/role_selection_screen.dart';
+import 'package:wastenot/screens/login_screen.dart';
+import 'package:wastenot/screens/role_selection_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -13,10 +14,7 @@ class WelcomeScreen extends StatelessWidget {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              Color(0xFFF5FBF9),
-              Colors.white,
-            ],
+            colors: [Color(0xFFF5FBF9), Colors.white],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -24,16 +22,12 @@ class WelcomeScreen extends StatelessWidget {
         child: SafeArea(
           child: Column(
             children: [
-
-              /// CENTER CONTENT
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 26),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-
-                      /// LOGO
                       Container(
                         width: 160,
                         height: 160,
@@ -48,88 +42,70 @@ class WelcomeScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-
                       const SizedBox(height: 18),
-
                       const Text(
-                        "Welcome back",
+                        'Welcome back',
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
                           color: mainGreen,
                         ),
-                        textAlign: TextAlign.center,
                       ),
-
                       const SizedBox(height: 6),
-
                       const Text(
-                        "Donate & Share. Make a difference today.\nBecause every meal matters.",
+                        'Donate and share. Make a difference today.\nBecause every meal matters.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: Colors.black54,
-                          height: 1.4,
-                        ),
+                        style: TextStyle(fontSize: 15, color: Colors.black54, height: 1.4),
                       ),
-
                       const SizedBox(height: 42),
-
-                      /// LOGIN BUTTON
                       _primaryButton(
                         context,
-                        "Login",
-                        () => _goToLogin(context),
+                        'Login',
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const LoginScreen()),
+                        ),
                       ),
-
                       const SizedBox(height: 14),
-
-                      /// SIGNUP BUTTON
                       _outlineButton(
                         context,
-                        "Sign Up",
-                        () => _goToSignup(context),
+                        'Sign Up',
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const RoleSelectionScreen(isLogin: false),
+                          ),
+                        ),
                       ),
                     ],
                   ),
                 ),
               ),
-
-              /// SPONSORED SECTION
               Padding(
                 padding: const EdgeInsets.fromLTRB(26, 0, 26, 18),
                 child: Column(
                   children: [
-
-                    Row(
-                      children: const [
+                    const Row(
+                      children: [
                         Expanded(child: Divider()),
                         Padding(
                           padding: EdgeInsets.symmetric(horizontal: 8),
                           child: Text(
-                            "Sponsored by",
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey,
-                            ),
+                            'Sponsored by',
+                            style: TextStyle(fontSize: 11, color: Colors.grey),
                           ),
                         ),
                         Expanded(child: Divider()),
                       ],
                     ),
-
                     const SizedBox(height: 10),
-
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Image.asset(
-                          'assets/images/ngo3.png',
-                          height: 24,
-                        ),
+                        Image.asset('assets/images/ngo3.png', height: 24),
                         const SizedBox(width: 8),
                         const Text(
-                          "SOS Children’s Villages",
+                          "SOS Children's Villages",
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
@@ -148,12 +124,7 @@ class WelcomeScreen extends StatelessWidget {
     );
   }
 
-  /// PRIMARY BUTTON
-  Widget _primaryButton(
-    BuildContext context,
-    String text,
-    VoidCallback onTap,
-  ) {
+  Widget _primaryButton(BuildContext context, String text, VoidCallback onTap) {
     return SizedBox(
       width: double.infinity,
       height: 54,
@@ -161,28 +132,15 @@ class WelcomeScreen extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: mainGreen,
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
         ),
         onPressed: onTap,
-        child: Text(
-          text,
-          style: const TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        child: Text(text, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
       ),
     );
   }
 
-  /// OUTLINE BUTTON
-  Widget _outlineButton(
-    BuildContext context,
-    String text,
-    VoidCallback onTap,
-  ) {
+  Widget _outlineButton(BuildContext context, String text, VoidCallback onTap) {
     return SizedBox(
       width: double.infinity,
       height: 54,
@@ -190,38 +148,10 @@ class WelcomeScreen extends StatelessWidget {
         style: OutlinedButton.styleFrom(
           foregroundColor: mainGreen,
           side: const BorderSide(color: mainGreen, width: 1.4),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
         ),
         onPressed: onTap,
-        child: Text(
-          text,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// LOGIN NAVIGATION
-  void _goToLogin(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const RoleSelectionScreen(isLogin: true),
-      ),
-    );
-  }
-
-  /// SIGNUP NAVIGATION
-  void _goToSignup(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const RoleSelectionScreen(isLogin: false),
+        child: Text(text, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
       ),
     );
   }

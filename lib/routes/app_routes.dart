@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:wastenot/features/admin/navigation/admin_bottom_navigation.dart';
 import 'package:wastenot/features/ngo/presentation/screens/home/ngo_home_screen.dart';
 import 'package:wastenot/features/donor/presentation/home/screens/donor_home_screen.dart';
 import '../screens/welcome_screen.dart';
 import '../screens/role_selection_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/admin_signup_screen.dart';
-import '../features/admin/home/admin_home_screen.dart';
 import '../services/local_auth_service.dart';
 
 class AppRoutes {
@@ -46,7 +46,7 @@ class AppRoutes {
 final role = user['role'];
 
 if (role == 'Admin') {
-  return AdminHomeScreen(user: user);
+  return AdminBottomNavigation(user: user);
 }
 
 if (role == 'Donor') {
@@ -87,7 +87,7 @@ builder: (_) => const RoleSelectionScreen(isLogin: true),  );
             settings.arguments as Map<String, dynamic>;
 
         return MaterialPageRoute(
-          builder: (_) => AdminHomeScreen(
+          builder: (_) => AdminBottomNavigation(
             user: {
               'name': args['name'],
               'role': args['role'],

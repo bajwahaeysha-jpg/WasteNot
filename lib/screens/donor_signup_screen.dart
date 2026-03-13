@@ -1,258 +1,231 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:wastenot/screens/login_screen.dart';
+import 'package:wastenot/services/auth_service.dart';
 
 class DonorSignupScreen extends StatefulWidget {
   const DonorSignupScreen({super.key});
-
-  static const Color mainGreen = Color(0xFF0E5E53);
 
   @override
   State<DonorSignupScreen> createState() => _DonorSignupScreenState();
 }
 
 class _DonorSignupScreenState extends State<DonorSignupScreen> {
-
   final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _addressController = TextEditingController();
+  final AuthService _authService = AuthService();
+  final ImagePicker _picker = ImagePicker();
 
-  final ImagePicker picker = ImagePicker();
-  File? logo;
+  File? _profileImage;
+  bool _obscurePassword = true;
+  bool _loading = false;
 
-  final restaurantController = TextEditingController();
-  final ownerController = TextEditingController();
-  final emailController = TextEditingController();
-  final phoneController = TextEditingController();
-  final addressController = TextEditingController();
-  final foodController = TextEditingController();
-  final aboutController = TextEditingController();
-
-  Future pickLogo() async {
-    final picked = await picker.pickImage(source: ImageSource.gallery);
-
-    if (picked != null) {
-      setState(() {
-        logo = File(picked.path);
-      });
-    }
-  }
-
-  Widget field(
-    String title,
-    TextEditingController controller, {
-    TextInputType keyboard = TextInputType.text,
-  }) {
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-
-          Text(
-            title,
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 13,
-            ),
-          ),
-
-          const SizedBox(height: 6),
-
-          TextFormField(
-            controller: controller,
-            keyboardType: keyboard,
-            validator: (value) {
-
-              if (value == null || value.isEmpty) {
-                return "This field is required";
-              }
-
-              /// EMAIL VALIDATION
-              if (title == "Email Address") {
-
-                final emailRegex =
-                    RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-
-                if (!emailRegex.hasMatch(value)) {
-                  return "Enter valid email";
-                }
-              }
-
-              /// PHONE VALIDATION
-              if (title == "Phone Number") {
-
-                final phoneRegex = RegExp(r'^\d{11}$');
-
-                if (!phoneRegex.hasMatch(value)) {
-                  return "Phone must be 11 digits";
-                }
-              }
-
-              return null;
-            },
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: Colors.white,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide.none,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  static const Color mainGreen = Color(0xFF0E5E53);
 
   @override
   void dispose() {
-    restaurantController.dispose();
-    ownerController.dispose();
-    emailController.dispose();
-    phoneController.dispose();
-    addressController.dispose();
-    foodController.dispose();
-    aboutController.dispose();
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _phoneController.dispose();
+    _addressController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       backgroundColor: const Color(0xFFF6F8F7),
-
       appBar: AppBar(
-        backgroundColor: DonorSignupScreen.mainGreen,
-        title: const Text(
-          "Donor Sign Up",
-          style: TextStyle(color: Colors.white),
-        ),
-        iconTheme: const IconThemeData(color: Colors.white),
+        backgroundColor: mainGreen,
+        foregroundColor: Colors.white,
+        title: const Text('Donor Sign Up'),
       ),
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(18),
-
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
-              /// LOGO
               Center(
                 child: GestureDetector(
-                  onTap: pickLogo,
+                  onTap: _pickImage,
                   child: CircleAvatar(
                     radius: 50,
                     backgroundColor: Colors.grey.shade300,
-                    backgroundImage:
-                        logo != null ? FileImage(logo!) : null,
-                    child: logo == null
-                        ? const Icon(Icons.add_a_photo, size: 28)
-                        : null,
+                    backgroundImage: _profileImage != null ? FileImage(_profileImage!) : null,
+                    child: _profileImage == null ? const Icon(Icons.add_a_photo, size: 28) : null,
                   ),
                 ),
               ),
-
               const SizedBox(height: 20),
-
-              field("Restaurant Name", restaurantController),
-
-              field("Owner / Manager Name", ownerController),
-
-              field(
-                "Email Address",
-                emailController,
+              _field('Full Name', _nameController),
+              _field(
+                'Email Address',
+                _emailController,
                 keyboard: TextInputType.emailAddress,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Email is required';
+                  }
+                  if (!value.contains('@')) {
+                    return 'Enter a valid email';
+                  }
+                  return null;
+                },
               ),
-
-              field(
-                "Phone Number",
-                phoneController,
+              _field(
+                'Password',
+                _passwordController,
+                obscure: _obscurePassword,
+                suffix: IconButton(
+                  icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
+                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Password is required';
+                  }
+                  if (value.length < 6) {
+                    return 'Password must be at least 6 characters';
+                  }
+                  return null;
+                },
+              ),
+              _field(
+                'Phone Number',
+                _phoneController,
                 keyboard: TextInputType.phone,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Phone number is required';
+                  }
+                  if (!RegExp(r'^\d{10,15}$').hasMatch(value.trim())) {
+                    return 'Enter a valid phone number';
+                  }
+                  return null;
+                },
               ),
-
-              field(
-                "Restaurant Address / City",
-                addressController,
-              ),
-
-              field(
-                "Food Type Donated",
-                foodController,
-              ),
-
-              /// ABOUT
-              const Text(
-                "About",
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-
-              const SizedBox(height: 6),
-
-              TextFormField(
-                controller: aboutController,
-                maxLines: 2,
-                decoration: InputDecoration(
-                  hintText: "Tell us about your restaurant...",
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 30),
-
-              /// SIGN UP BUTTON
+              _field('Address', _addressController),
+              const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
                 height: 50,
-
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: DonorSignupScreen.mainGreen,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
-                    ),
+                    backgroundColor: mainGreen,
+                    foregroundColor: Colors.white,
                   ),
-
-                  onPressed: () {
-
-                    if (_formKey.currentState!.validate()) {
-
-                      print("Restaurant: ${restaurantController.text}");
-                      print("Owner: ${ownerController.text}");
-                      print("Email: ${emailController.text}");
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Donor account created successfully"),
-                        ),
-                      );
-                    }
-                  },
-
-                  child: const Text(
-                    "Create Account",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                    ),
-                  ),
+                  onPressed: _loading ? null : _register,
+                  child: _loading
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text('Create Account'),
                 ),
               ),
-
-              const SizedBox(height: 30),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _field(
+    String title,
+    TextEditingController controller, {
+    TextInputType keyboard = TextInputType.text,
+    bool obscure = false,
+    Widget? suffix,
+    String? Function(String?)? validator,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: keyboard,
+        obscureText: obscure,
+        validator: validator ??
+            (value) {
+              if (value == null || value.trim().isEmpty) {
+                return '$title is required';
+              }
+              return null;
+            },
+        decoration: InputDecoration(
+          labelText: title,
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide.none,
+          ),
+          suffixIcon: suffix,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickImage() async {
+    final picked = await _picker.pickImage(source: ImageSource.gallery);
+    if (picked == null) {
+      return;
+    }
+    setState(() => _profileImage = File(picked.path));
+  }
+
+  Future<void> _register() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() => _loading = true);
+    try {
+      await _authService.registerDonor(
+        name: _nameController.text,
+        email: _emailController.text,
+        password: _passwordController.text,
+        phone: _phoneController.text,
+        address: _addressController.text,
+        profileImage: _profileImage,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      _showMessage('Account created successfully. Please login to continue.');
+
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false,
+      );
+    } on AuthFailure catch (error) {
+      _showMessage(error.message, isError: true);
+    } catch (error) {
+      _showMessage(error.toString(), isError: true);
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
+  }
+
+  void _showMessage(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : mainGreen,
       ),
     );
   }

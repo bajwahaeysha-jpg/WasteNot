@@ -22,7 +22,13 @@ class DonorHomeScreen extends StatefulWidget {
 }
  
 class _DonorHomeScreenState extends State<DonorHomeScreen> {
-  final String donorName = "Allah Malik Hotel";
+  String get donorName {
+    final value = widget.user['name']?.toString().trim();
+    if (value == null || value.isEmpty) {
+      return 'Donor';
+    }
+    return value;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +67,7 @@ class _DonorHomeScreenState extends State<DonorHomeScreen> {
 
           const Text("Welcome Back!", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
           const SizedBox(height: 6),
-          const Text("Allah Malik Hotel, ready to make a difference?"),
+          Text("$donorName, ready to make a difference?"),
 
           const SizedBox(height: 16),
 
@@ -183,7 +189,14 @@ class _DonorHomeScreenState extends State<DonorHomeScreen> {
           const _SectionHeader("Recent Donations"),
           const SizedBox(height: 12),
 
-          ...recentDonations.map((d) => _RecentDonationTile(d["ngo"]!, d["time"]!, d["logo"]!)),
+          ...recentDonations.map(
+            (d) => _RecentDonationTile(
+              d["ngo"]!,
+              d["time"]!,
+              d["logo"]!,
+              donorName,
+            ),
+          ),
 
           const SizedBox(height: 16),
 
@@ -266,14 +279,15 @@ class _DonationCard extends StatelessWidget {
 
 class _RecentDonationTile extends StatelessWidget {
   final String name, time, logo;
+  final String donorName;
 
-  const _RecentDonationTile(this.name, this.time, this.logo);
+  const _RecentDonationTile(this.name, this.time, this.logo, this.donorName);
 
   AcceptedDonation getDonationData() {
 
     if (name == "SOS Village" && time.contains("30 mins")) {
       return AcceptedDonation(
-        donor: "Allah Malik Hotel",
+        donor: donorName,
         acceptedBy: "SOS Village",
         location: "Sialkot",
         uploadedAt: "10:00 AM",
@@ -288,7 +302,7 @@ class _RecentDonationTile extends StatelessWidget {
 
     if (name == "Khair Foundation") {
       return AcceptedDonation(
-        donor: "Allah Malik Hotel",
+        donor: donorName,
         acceptedBy: "Khair Foundation",
         location: "Sialkot",
         uploadedAt: "9:30 AM",
@@ -302,7 +316,7 @@ class _RecentDonationTile extends StatelessWidget {
     }
 
     return AcceptedDonation(
-      donor: "Allah Malik Hotel",
+      donor: donorName,
       acceptedBy: "SOS Village",
       location: "Sialkot",
       uploadedAt: "Yesterday",

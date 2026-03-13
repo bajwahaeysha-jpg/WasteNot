@@ -1,0 +1,27 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn() && request.auth.token.email == 'admin@email.com';
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    match /users/{uid} {
+      allow read, update, delete: if isOwner(uid) || isAdmin();
+      allow create: if isOwner(uid) || isAdmin();
+    }
+
+    match /ngo_requests/{requestId} {
+      allow create: if true;
+      allow read: if isAdmin();
+      allow update, delete: if isAdmin();
+    }
+  }
+}
