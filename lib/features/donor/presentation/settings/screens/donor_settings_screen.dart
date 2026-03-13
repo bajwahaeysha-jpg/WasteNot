@@ -7,6 +7,7 @@ import 'package:wastenot/features/donor/presentation/settings/screens/donor_noti
 import 'package:wastenot/features/donor/presentation/settings/screens/donor_privacy_policy_screen.dart';
 import 'package:wastenot/features/donor/presentation/settings/screens/donor_privacy_screen.dart';
 import 'package:wastenot/features/donor/presentation/settings/screens/donor_rate_screen.dart';
+import 'package:wastenot/models/app_user_model.dart';
 import 'package:wastenot/screens/welcome_screen.dart';
 import 'package:wastenot/services/auth_service.dart';
 import 'package:wastenot/services/session_service.dart';
@@ -18,70 +19,91 @@ class DonorSettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = SessionService.user;
+    return ValueListenableBuilder<AppUserModel?>(
+      valueListenable: SessionService.currentUser,
+      builder: (context, user, _) {
+        final imageUrl = user?.profileImageUrl;
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        elevation: 0,
+        return Scaffold(
         backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        title: const Text(
-          'Settings',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 28),
+        appBar: AppBar(
+          elevation: 0,
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          title: const Text(
+            'Settings',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 28),
+          ),
         ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundColor: mainGreen,
-                  child: Text(
-                    SessionService.initials(),
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            children: [
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 30,
+                    backgroundColor: mainGreen,
+                    backgroundImage: imageUrl != null && imageUrl.isNotEmpty
+                        ? NetworkImage(imageUrl)
+                        : null,
+                    child: imageUrl == null || imageUrl.isEmpty
+                        ? Text(
+                            SessionService.initials(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )
+                        : null,
                   ),
-                ),
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      user?.displayName ?? 'Donor',
-                      style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.black),
-                    ),
-                    Text(
-                      user?.email ?? '',
-                      style: const TextStyle(color: Colors.black54),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 30),
-            _tile(context, Icons.person_outline, 'Account', const DonorAccountScreen()),
-            _tile(context, Icons.notifications_none, 'Notifications & Reminders', const DonorNotificationsScreen()),
-            _tile(context, Icons.lock_outline, 'Privacy', const DonorPrivacyScreen()),
-            _tile(context, Icons.star_outline, 'Rate Us', const DonorRateScreen()),
-            _tile(context, Icons.mail_outline, 'Contact Us', const DonorContactScreen()),
-            _tile(context, Icons.info_outline, 'About App', const DonorAboutScreen()),
-            _tile(context, Icons.help_outline, 'FAQ', const DonorFaqScreen()),
-            _tile(context, Icons.privacy_tip_outlined, 'Privacy Policy', const DonorPrivacyPolicyScreen()),
-            const SizedBox(height: 16),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.logout, color: Colors.red),
-              title: const Text('Logout', style: TextStyle(color: Colors.red)),
-              onTap: () => _confirmLogout(context),
-            ),
-            const SizedBox(height: 30),
-          ],
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user?.displayName ?? 'Donor',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black,
+                        ),
+                      ),
+                      Text(
+                        user?.email ?? '',
+                        style: const TextStyle(color: Colors.black54),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 30),
+              _tile(context, Icons.person_outline, 'Account',
+                  const DonorAccountScreen()),
+              _tile(context, Icons.notifications_none, 'Notifications & Reminders',
+                  const DonorNotificationsScreen()),
+              _tile(context, Icons.lock_outline, 'Privacy',
+                  const DonorPrivacyScreen()),
+              _tile(context, Icons.star_outline, 'Rate Us', const DonorRateScreen()),
+              _tile(context, Icons.mail_outline, 'Contact Us',
+                  const DonorContactScreen()),
+              _tile(context, Icons.info_outline, 'About App', const DonorAboutScreen()),
+              _tile(context, Icons.help_outline, 'FAQ', const DonorFaqScreen()),
+              _tile(context, Icons.privacy_tip_outlined, 'Privacy Policy',
+                  const DonorPrivacyPolicyScreen()),
+              const SizedBox(height: 16),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.logout, color: Colors.red),
+                title: const Text('Logout', style: TextStyle(color: Colors.red)),
+                onTap: () => _confirmLogout(context),
+              ),
+              const SizedBox(height: 30),
+            ],
+          ),
         ),
-      ),
+      );
+      },
     );
   }
 

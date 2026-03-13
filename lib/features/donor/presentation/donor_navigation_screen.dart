@@ -58,7 +58,7 @@ class _DonorNavigationScreenState extends State<DonorNavigationScreen> {
         elevation: 0,
 
         iconTheme: const IconThemeData(
-          color: Colors.white, // ← back arrow white
+          color: Colors.white,
         ),
 
         title: Text(
@@ -214,7 +214,6 @@ class _DonorNavigationScreenState extends State<DonorNavigationScreen> {
                 );
               },
             ),
-
             ListTile(
               leading: const Icon(Icons.logout, color: Colors.red),
               title: const Text(

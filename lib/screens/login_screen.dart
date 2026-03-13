@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:wastenot/features/admin/navigation/admin_bottom_navigation.dart';
-import 'package:wastenot/features/donor/presentation/home/screens/donor_home_screen.dart';
+import 'package:wastenot/features/donor/presentation/donor_navigation_screen.dart';
 import 'package:wastenot/features/ngo/presentation/screens/home/ngo_home_screen.dart';
 import 'package:wastenot/models/app_user_model.dart';
 import 'package:wastenot/screens/role_selection_screen.dart';
@@ -58,12 +58,15 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: TextStyle(color: Colors.black54),
                   ),
                   const SizedBox(height: 32),
+
                   _input(
                     label: 'Name',
                     controller: _nameController,
                     validator: (_) => null,
                   ),
+
                   const SizedBox(height: 16),
+
                   _input(
                     label: 'Email',
                     controller: _emailController,
@@ -78,7 +81,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       return null;
                     },
                   ),
+
                   const SizedBox(height: 16),
+
                   _input(
                     label: 'Password',
                     controller: _passwordController,
@@ -94,7 +99,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: () => setState(() => _obscure = !_obscure),
                     ),
                   ),
+
                   const SizedBox(height: 28),
+
                   SizedBox(
                     height: 54,
                     child: ElevatedButton(
@@ -107,24 +114,32 @@ class _LoginScreenState extends State<LoginScreen> {
                           ? const SizedBox(
                               width: 20,
                               height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
                             )
                           : const Text('Login'),
                     ),
                   ),
+
                   const SizedBox(height: 12),
+
                   TextButton(
                     onPressed: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => const RoleSelectionScreen(isLogin: false),
+                          builder: (_) =>
+                              const RoleSelectionScreen(isLogin: false),
                         ),
                       );
                     },
                     child: const Text('Need an account? Sign up'),
                   ),
+
                   const SizedBox(height: 8),
+
                   const Text(
                     'Shared login for donor, NGO, and admin. Name is only used for admin display.',
                     textAlign: TextAlign.center,
@@ -166,20 +181,19 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _login() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
     setState(() => _loading = true);
+
     try {
       final user = await _authService.signIn(
         name: _nameController.text,
         email: _emailController.text,
         password: _passwordController.text,
       );
-      if (!mounted) {
-        return;
-      }
+
+      if (!mounted) return;
+
       _goToDashboard(user);
     } on AuthFailure catch (error) {
       _showMessage(error.message, isError: true);
@@ -200,9 +214,13 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           )
         : user.isNgo
-            ? MaterialPageRoute(builder: (_) => NgoHomeScreen(user: user.toNavigationUser()))
+            ? MaterialPageRoute(
+                builder: (_) =>
+                    NgoHomeScreen(user: user.toNavigationUser()),
+              )
             : MaterialPageRoute(
-                builder: (_) => DonorHomeScreen(user: user.toNavigationUser()),
+                builder: (_) =>
+                    DonorNavigationScreen(user: user.toNavigationUser()),
               );
 
     Navigator.pushAndRemoveUntil(context, route, (route) => false);

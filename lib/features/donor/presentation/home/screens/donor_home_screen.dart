@@ -7,6 +7,7 @@ import '../../donate/screens/add_donation_screen.dart';
 import 'donation_detail_screen.dart';
 import 'package:wastenot/features/donor/models/accepted_donation_model.dart';
 import '../../messages/screens/chat_screen.dart';
+import 'package:wastenot/services/session_service.dart';
 
 class DonorHomeScreen extends StatefulWidget {
    final Map<String, dynamic> user;
@@ -23,6 +24,11 @@ class DonorHomeScreen extends StatefulWidget {
  
 class _DonorHomeScreenState extends State<DonorHomeScreen> {
   String get donorName {
+    final sessionName = SessionService.user?.displayName.trim();
+    if (sessionName != null && sessionName.isNotEmpty) {
+      return sessionName;
+    }
+
     final value = widget.user['name']?.toString().trim();
     if (value == null || value.isEmpty) {
       return 'Donor';

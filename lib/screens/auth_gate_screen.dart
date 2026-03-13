@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:wastenot/features/admin/navigation/admin_bottom_navigation.dart';
-import 'package:wastenot/features/donor/presentation/home/screens/donor_home_screen.dart';
+import 'package:wastenot/features/donor/presentation/donor_navigation_screen.dart';
 import 'package:wastenot/features/ngo/presentation/screens/home/ngo_home_screen.dart';
 import 'package:wastenot/models/app_user_model.dart';
 import 'package:wastenot/screens/welcome_screen.dart';
@@ -63,7 +63,7 @@ class AuthGateScreen extends StatelessWidget {
               return NgoHomeScreen(user: user.toNavigationUser());
             }
 
-            return DonorHomeScreen(user: user.toNavigationUser());
+            return DonorNavigationScreen(user: user.toNavigationUser());
           },
         );
       },

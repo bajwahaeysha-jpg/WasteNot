@@ -71,6 +71,39 @@ class FirestoreService {
     });
   }
 
+  Future<void> updateUserProfile({
+    required String uid,
+    String? name,
+    String? email,
+    String? phone,
+    String? address,
+    String? profileImageUrl,
+  }) {
+    final payload = <String, dynamic>{};
+
+    if (name != null) {
+      payload['name'] = name;
+    }
+    if (email != null) {
+      payload['email'] = email;
+    }
+    if (phone != null) {
+      payload['phone'] = phone;
+    }
+    if (address != null) {
+      payload['address'] = address;
+    }
+    if (profileImageUrl != null) {
+      payload['profileImageUrl'] = profileImageUrl;
+    }
+
+    if (payload.isEmpty) {
+      return Future.value();
+    }
+
+    return _users.doc(uid).update(payload);
+  }
+
   Future<void> submitNgoRequest({
     required String organizationName,
     required String email,

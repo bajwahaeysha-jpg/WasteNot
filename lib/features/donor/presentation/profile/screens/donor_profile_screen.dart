@@ -1,6 +1,10 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:wastenot/models/app_user_model.dart';
+import 'package:wastenot/services/auth_service.dart';
+import 'package:wastenot/services/session_service.dart';
 
 class DonorProfileScreen extends StatefulWidget {
   const DonorProfileScreen({super.key});
@@ -10,162 +14,221 @@ class DonorProfileScreen extends StatefulWidget {
 }
 
 class _DonorProfileScreenState extends State<DonorProfileScreen> {
+  static const Color mainGreen = Color(0xFF0F5D4E);
 
-  bool isEditing = false;
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _addressController = TextEditingController();
+  final AuthService _authService = AuthService();
 
-  final TextEditingController nameController =
-      TextEditingController(text: "Allah Malik");
+  bool _isEditing = false;
+  bool _saving = false;
+  File? _selectedImage;
 
-  final TextEditingController emailController =
-      TextEditingController(text: "donor@email.com");
-
-  final TextEditingController phoneController =
-      TextEditingController(text: "0300-0000000");
-
-  final TextEditingController locationController =
-      TextEditingController(text: "Sialkot, Pakistan");
-
-  File? selectedImage;
-
-  void _toggleEditSave() {
-    setState(() => isEditing = !isEditing);
+  @override
+  void initState() {
+    super.initState();
+    _syncFromSession(SessionService.user);
+    SessionService.currentUser.addListener(_handleSessionUserChange);
   }
 
-  Future<void> _pickImage() async {
-    if (!isEditing) return;
+  @override
+  void dispose() {
+    SessionService.currentUser.removeListener(_handleSessionUserChange);
+    _nameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _addressController.dispose();
+    super.dispose();
+  }
 
-    final image = await ImagePicker().pickImage(source: ImageSource.gallery);
-
-    if (image != null) {
-      setState(() => selectedImage = File(image.path));
+  void _handleSessionUserChange() {
+    if (!_isEditing) {
+      _syncFromSession(SessionService.user);
     }
   }
 
+  void _syncFromSession(AppUserModel? user) {
+    _nameController.text = user?.name ?? '';
+    _emailController.text = user?.email ?? '';
+    _phoneController.text = user?.phone ?? '';
+    _addressController.text = user?.address ?? '';
+  }
+
+  Future<void> _pickImage() async {
+    if (!_isEditing) {
+      return;
+    }
+
+    final image = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (image == null || !mounted) {
+      return;
+    }
+
+    setState(() => _selectedImage = File(image.path));
+  }
+
+  Future<void> _toggleEditSave() async {
+    if (!_isEditing) {
+      setState(() => _isEditing = true);
+      return;
+    }
+
+    setState(() => _saving = true);
+    try {
+      await _authService.updateCurrentUserProfile(
+        name: _nameController.text,
+        phone: _phoneController.text,
+        address: _addressController.text,
+        profileImage: _selectedImage,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _isEditing = false;
+        _selectedImage = null;
+      });
+      _showMessage('Profile updated successfully.');
+    } on AuthFailure catch (error) {
+      _showMessage(error.message, isError: true);
+    } catch (error) {
+      _showMessage(error.toString(), isError: true);
+    } finally {
+      if (mounted) {
+        setState(() => _saving = false);
+      }
+    }
+  }
+
+  void _showMessage(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : mainGreen,
+      ),
+    );
+  }
+
   Widget _field(String label, TextEditingController controller) {
+    final editable = _isEditing && label != 'Email';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-
         Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
-
         const SizedBox(height: 6),
-
         TextField(
           controller: controller,
-          enabled: isEditing,
+          enabled: editable,
           decoration: InputDecoration(
             filled: true,
             fillColor: Colors.white,
-
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: isEditing ? Colors.black : Colors.grey.shade300,
+                color: editable ? Colors.black : Colors.grey.shade300,
               ),
             ),
-
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: Colors.black),
             ),
           ),
         ),
-
         const SizedBox(height: 18),
-
       ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return ValueListenableBuilder<AppUserModel?>(
+      valueListenable: SessionService.currentUser,
+      builder: (context, user, _) {
+        final initials = SessionService.initials();
+        final networkImage = user?.profileImageUrl;
 
-      backgroundColor: Colors.white,
-
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF0F5D4E),
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-
-        title: const Text(
-          "Personal Information",
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-
-        actions: [
-          TextButton(
-            onPressed: _toggleEditSave,
-            child: Text(
-              isEditing ? "Save" : "Edit",
-              style: const TextStyle(
+        return Scaffold(
+          backgroundColor: Colors.white,
+          appBar: AppBar(
+            backgroundColor: mainGreen,
+            elevation: 0,
+            iconTheme: const IconThemeData(color: Colors.white),
+            title: const Text(
+              'Personal Information',
+              style: TextStyle(
                 color: Colors.white,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.bold,
               ),
             ),
-          ),
-        ],
-      ),
-
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-
-        child: Column(
-          children: [
-
-            // PROFILE IMAGE
-            Stack(
-              alignment: Alignment.center,
-              children: [
-
-                GestureDetector(
-                  onTap: _pickImage,
-
-                  child: CircleAvatar(
-                    radius: 50,
-                    backgroundColor: Colors.green.shade100,
-
-                    backgroundImage:
-                        selectedImage != null ? FileImage(selectedImage!) : null,
-
-                    child: selectedImage == null
-                        ? const Text(
-                            "AM",
-                            style: TextStyle(
-                              fontSize: 26,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          )
-                        : null,
+            actions: [
+              TextButton(
+                onPressed: _saving ? null : _toggleEditSave,
+                child: Text(
+                  _isEditing ? (_saving ? 'Saving...' : 'Save') : 'Edit',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-
-                if (isEditing)
-                  const Positioned(
-                    bottom: 4,
-                    right: 4,
-                    child: CircleAvatar(
-                      radius: 14,
-                      backgroundColor: Colors.black,
-                      child: Icon(Icons.edit, color: Colors.white, size: 16),
+              ),
+            ],
+          ),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    GestureDetector(
+                      onTap: _pickImage,
+                      child: CircleAvatar(
+                        radius: 50,
+                        backgroundColor: Colors.green.shade100,
+                        backgroundImage: _selectedImage != null
+                            ? FileImage(_selectedImage!)
+                            : (networkImage != null && networkImage.isNotEmpty)
+                                ? NetworkImage(networkImage)
+                                : null,
+                        child: _selectedImage == null &&
+                                (networkImage == null || networkImage.isEmpty)
+                            ? Text(
+                                initials,
+                                style: const TextStyle(
+                                  fontSize: 26,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              )
+                            : null,
+                      ),
                     ),
-                  ),
+                    if (_isEditing)
+                      const Positioned(
+                        bottom: 4,
+                        right: 4,
+                        child: CircleAvatar(
+                          radius: 14,
+                          backgroundColor: Colors.black,
+                          child: Icon(Icons.edit, color: Colors.white, size: 16),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                _field('Name', _nameController),
+                _field('Email', _emailController),
+                _field('Phone', _phoneController),
+                _field('Address', _addressController),
               ],
             ),
-
-            const SizedBox(height: 24),
-
-            _field("Name", nameController),
-            _field("Email", emailController),
-            _field("Phone", phoneController),
-             _field("Location", locationController),
-
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
