@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:wastenot/features/admin/more/feedback/feedback_model.dart';
 import 'package:wastenot/models/app_user_model.dart';
 import 'package:wastenot/models/ngo_request_model.dart';
 
@@ -24,6 +25,8 @@ class FirestoreService {
       _firestore.collection('ngo_requests');
   CollectionReference<Map<String, dynamic>> get _notifications =>
       _firestore.collection('notifications');
+  CollectionReference<Map<String, dynamic>> get _feedback =>
+      _firestore.collection('feedback');
 
   Future<String?> uploadProfileImage({
     required String folder,
@@ -139,6 +142,16 @@ class FirestoreService {
     return AppUserModel.fromFirestore(doc);
   }
 
+  Stream<AppUserModel?> userStream(String uid) {
+    return _users.doc(uid).snapshots().map((doc) {
+      if (!doc.exists) {
+        return null;
+      }
+
+      return AppUserModel.fromFirestore(doc);
+    });
+  }
+
   Future<AppUserModel?> getUserByEmail(String email) async {
     final query = await _users.where('email', isEqualTo: email).limit(1).get();
     if (query.docs.isEmpty) {
@@ -179,6 +192,57 @@ class FirestoreService {
 
   Future<void> rejectNgoRequest(String requestId) {
     return _ngoRequests.doc(requestId).update({'status': 'rejected'});
+  }
+
+  Future<void> submitFeedback({
+    required AppUserModel ngo,
+    required AppUserModel donor,
+    required String feedbackText,
+    required int rating,
+  }) {
+    return _feedback.add({
+      'ngoId': ngo.uid,
+      'ngoName': ngo.displayName,
+      'ngoProfileImage': ngo.profileImageUrl,
+      'donorId': donor.uid,
+      'donorName': donor.displayName,
+      'donorProfileImage': donor.profileImageUrl,
+      'feedbackText': feedbackText.trim(),
+      'rating': rating,
+      'submittedByRole': 'ngo',
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<void> submitDonorFeedback({
+    required AppUserModel donor,
+    required AppUserModel ngo,
+    required String feedbackText,
+    required int rating,
+  }) {
+    return _feedback.add({
+      'donorId': donor.uid,
+      'donorName': donor.displayName,
+      'donorProfileImage': donor.profileImageUrl,
+      'ngoId': ngo.uid,
+      'ngoName': ngo.displayName,
+      'ngoProfileImage': ngo.profileImageUrl,
+      'feedbackText': feedbackText.trim(),
+      'rating': rating,
+      'submittedByRole': 'donor',
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Stream<List<FeedbackModel>> feedbackStream() {
+    return _feedback.orderBy('timestamp', descending: true).snapshots().map((
+      snapshot,
+    ) {
+      final feedbackItems =
+          snapshot.docs.map(FeedbackModel.fromFirestore).toList();
+      feedbackItems.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      return feedbackItems;
+    });
   }
 
   Future<AppUserModel> approveNgoRequest(NgoRequestModel request) async {
@@ -271,6 +335,23 @@ class FirestoreService {
 
   Future<void> deleteUserDocument(String uid) {
     return _users.doc(uid).delete();
+  }
+
+  Future<AppUserModel> updateUserDocument({
+    required String uid,
+    required Map<String, dynamic> data,
+  }) async {
+    await _users.doc(uid).set(data, SetOptions(merge: true));
+
+    final updatedUser = await getUserByUid(uid);
+    if (updatedUser == null) {
+      throw FirebaseException(
+        plugin: 'cloud_firestore',
+        message: 'User document could not be refreshed after update.',
+      );
+    }
+
+    return updatedUser;
   }
 
   Future<void> createNgoRejectionNotification(NgoRequestModel request) {

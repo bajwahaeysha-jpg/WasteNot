@@ -7,6 +7,7 @@ import 'settings/screens/donor_settings_screen.dart';
 import 'goal/screens/donor_goal_screen.dart';
 import 'auth/screens/donor_logout_screen.dart';
 import 'package:wastenot/features/donor/presentation/notifications/screens/notification_screen.dart';
+import 'package:wastenot/features/donor/presentation/feedback/screens/feedback_screen.dart';
 import 'package:wastenot/services/session_service.dart';
 
 class DonorNavigationScreen extends StatefulWidget {
@@ -214,6 +215,24 @@ class _DonorNavigationScreenState extends State<DonorNavigationScreen> {
                 );
               },
             ),
+
+            // ✅ NEW FEEDBACK OPTION
+
+            ListTile(
+              leading: const Icon(Icons.feedback),
+              title: const Text("Feedback"),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const FeedbackScreen(),
+                  ),
+                );
+              },
+            ),
+
             ListTile(
               leading: const Icon(Icons.logout, color: Colors.red),
               title: const Text(

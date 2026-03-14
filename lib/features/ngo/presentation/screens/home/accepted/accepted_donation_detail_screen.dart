@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'accepted_dummy_data.dart';
+import 'package:wastenot/services/session_service.dart';
 
 class AcceptedDonationDetailScreen extends StatelessWidget {
   final AcceptedDonation donation;
@@ -79,7 +80,7 @@ class AcceptedDonationDetailScreen extends StatelessWidget {
 
               /// ===== Basic Info =====
               _row("Donor", donation.place),
-              _row("Accepted by", "Khair Foundation"),
+              _row("Accepted by", SessionService.user?.displayName ?? "NGO"),
               _row("Location", "Gulshan-e-Iqbal, Karachi"),
 
               const SizedBox(height: 8),

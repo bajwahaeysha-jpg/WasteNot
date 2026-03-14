@@ -6,7 +6,6 @@ import '../home/all_donations/all_donations_screen.dart';
 import '../home/accepted/accepted_donations_screen.dart';
 import '../home/impact/impact_screen.dart';
 import '../home/setting/settings_screen.dart';
-import 'package:wastenot/core/state/app_user.dart';
 import '../../../presentation/screens/global_search_screen.dart';
 import '../home/notification/notifications_screen.dart';
 import '../home/setting/account/personal_information_screen.dart';
@@ -15,13 +14,16 @@ import 'package:wastenot/core/state/ngo_concern.dart';
 import '../home/goal/ngo_goal_screen.dart';
 import '../home/all_donations/donation_details_screen.dart';
 import '../home/all_donations/donation_model.dart';
+import 'package:wastenot/features/ngo/presentation/screens/ngo_feedback_screen.dart';
+import 'package:wastenot/models/app_user_model.dart';
+import 'package:wastenot/services/session_service.dart';
 
 class NgoHomeScreen extends StatefulWidget {
-  final Map<String, dynamic> user;
+  final Map<String, dynamic>? user;
 
   const NgoHomeScreen({
     super.key,
-    required this.user,
+    this.user,
   });
   @override
   State<NgoHomeScreen> createState() => _NgoHomeScreenState();
@@ -54,9 +56,15 @@ String _getTitle() {
   }
 }
   Widget _homeBody() {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
+    return ValueListenableBuilder<AppUserModel?>(
+      valueListenable: SessionService.currentUser,
+      builder: (context, user, _) {
+        final displayName =
+            user?.displayName ?? widget.user?['name']?.toString() ?? 'NGO';
+
+        return SingleChildScrollView(
+          child: Column(
+            children: [
 
           //  HEADER
           Padding(
@@ -102,7 +110,7 @@ String _getTitle() {
       const SizedBox(height: 10),
 
       Text(
-        "Hello, ${widget.user['name'] ?? 'NGO'}",
+        "Hello, $displayName",
         style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700,color: Colors.black),
       ),
 
@@ -343,118 +351,134 @@ Container(
           ),
         ],
       ),
+        );
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color.fromRGBO(245, 247, 246, 1),
+    return ValueListenableBuilder<AppUserModel?>(
+      valueListenable: SessionService.currentUser,
+      builder: (context, user, _) {
+        final profileImageUrl = user?.profileImageUrl;
 
-      //  Modern Header
-     appBar: AppBar(
-  backgroundColor: AppColors.primary,
-  elevation: 0,
-
-  iconTheme: const IconThemeData(color: Colors.white),
-  centerTitle: false,
-
-  title: Text(
-  _getTitle(),
-  style: const TextStyle(
-    color: Colors.white,
-    fontWeight: FontWeight.bold,
-    fontSize: 26,
-  ),
-),
-
-  actions: [
-    Stack(
-      children: [
-        IconButton(
-          icon: const Icon(Icons.notifications_none, size: 26),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const NotificationsScreen()),
-            );
-          },
-        ),
-        Positioned(
-          right: 8,
-          top: 8,
-          child: Container(
-            padding: const EdgeInsets.all(3),
-            decoration: const BoxDecoration(
-              color: Colors.red,
-              shape: BoxShape.circle,
+        return Scaffold(
+          backgroundColor: const Color.fromRGBO(245, 247, 246, 1),
+          appBar: AppBar(
+            backgroundColor: AppColors.primary,
+            elevation: 0,
+            iconTheme: const IconThemeData(color: Colors.white),
+            centerTitle: false,
+            title: Text(
+              _getTitle(),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 26,
+              ),
             ),
-            child: const Text(
-              '3',
-              style: TextStyle(color: Color(0xFFFFFFFF), fontSize: 10, fontWeight: FontWeight.bold),
+            actions: [
+              Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.notifications_none, size: 26),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const NotificationsScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  Positioned(
+                    right: 8,
+                    top: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Text(
+                        '3',
+                        style: TextStyle(
+                          color: Color(0xFFFFFFFF),
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: CircleAvatar(
+                  radius: 18,
+                  backgroundImage: profileImageUrl != null &&
+                          profileImageUrl.isNotEmpty
+                      ? NetworkImage(profileImageUrl)
+                      : null,
+                  backgroundColor: Colors.white24,
+                  child: profileImageUrl == null || profileImageUrl.isEmpty
+                      ? Text(
+                          SessionService.initials(),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        )
+                      : null,
+                ),
+              ),
+            ],
+          ),
+
+          body: _getBody(),
+
+          bottomNavigationBar: AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutCubic,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)],
+            ),
+            child: BottomNavigationBar(
+              currentIndex: _index,
+              onTap: (i) {
+                if (i == 3) {
+                  _openMoreSheet();
+                } else {
+                  setState(() => _index = i);
+                }
+              },
+              backgroundColor: Colors.white,
+              elevation: 0,
+              selectedItemColor: AppColors.primary,
+              unselectedItemColor: AppColors.primary.withValues(alpha: .35),
+              showUnselectedLabels: true,
+              type: BottomNavigationBarType.fixed,
+              items: const [
+                BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.inventory),
+                  label: "Active",
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.message),
+                  label: "Messages",
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.more_horiz),
+                  label: "More",
+                ),
+              ],
             ),
           ),
-        ),
-      ],
-    ),
-
-    Padding(
-      padding: const EdgeInsets.only(right: 12),
-      child: CircleAvatar(
-        radius: 18,
-        backgroundImage: AppUser.image != null ? FileImage(AppUser.image!) : null,
-        backgroundColor: Colors.white24,
-        child: AppUser.image == null
-            ? Text(
-                AppUser.name.substring(0, 2).toUpperCase(),
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-              )
-            : null,
-      ),
-    ),
-  ],
-),
-
-
-
-      body: _getBody(),
-
-      bottomNavigationBar: AnimatedContainer(
-  duration: const Duration(milliseconds: 250),
-  curve: Curves.easeOutCubic,
-  decoration: const BoxDecoration(
-    color: Colors.white,
-    boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)],
-  ),
-  child: BottomNavigationBar(
-    currentIndex: _index,
-    onTap: (i) {
-      if (i == 3) {
-        _openMoreSheet();
-      } else {
-        setState(() => _index = i);
-      }
-    },
-
-    backgroundColor: Colors.white,
-    elevation: 0,
-
-    selectedItemColor: AppColors.primary,
-    unselectedItemColor: AppColors.primary.withValues(alpha: .35),
-
-    showUnselectedLabels: true,
-    type: BottomNavigationBarType.fixed,
-
-    items: const [
-      BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-      BottomNavigationBarItem(icon: Icon(Icons.inventory), label: "Active"),
-      BottomNavigationBarItem(icon: Icon(Icons.message), label: "Messages"),
-      BottomNavigationBarItem(icon: Icon(Icons.more_horiz), label: "More"),
-    ],
-  ),
-),
-
-
+        );
+      },
     );
   }
 void _openMoreSheet() {
@@ -506,6 +530,16 @@ void _openMoreSheet() {
   Navigator.push(
     context,
     MaterialPageRoute(builder: (_) => const NgoGoalScreen()),
+  );
+}),
+
+_moreItem(Icons.feedback, "Feedback", () {
+  Navigator.pop(context);
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => const NgoFeedbackScreen(),
+    ),
   );
 }),
 

@@ -4,22 +4,22 @@ import 'package:wastenot/models/app_user_model.dart';
 import 'package:wastenot/services/firestore_service.dart';
 import 'package:wastenot/services/session_service.dart';
 
-class DonorRateScreen extends StatefulWidget {
-  const DonorRateScreen({super.key});
+class NgoFeedbackScreen extends StatefulWidget {
+  const NgoFeedbackScreen({super.key});
 
   @override
-  State<DonorRateScreen> createState() => _DonorRateScreenState();
+  State<NgoFeedbackScreen> createState() => _NgoFeedbackScreenState();
 }
 
-class _DonorRateScreenState extends State<DonorRateScreen> {
+class _NgoFeedbackScreenState extends State<NgoFeedbackScreen> {
   final FirestoreService _firestoreService = FirestoreService();
   final TextEditingController _feedbackController = TextEditingController();
 
-  AppUserModel? _selectedNgo;
+  AppUserModel? _selectedDonor;
   int _rating = 0;
   bool _isSubmitting = false;
 
-  AppUserModel? get _currentDonor => SessionService.user;
+  AppUserModel? get _currentNgo => SessionService.user;
 
   @override
   void dispose() {
@@ -28,40 +28,34 @@ class _DonorRateScreenState extends State<DonorRateScreen> {
   }
 
   Future<void> _submitFeedback() async {
-    final donor = _currentDonor;
-    final ngo = _selectedNgo;
+    final ngo = _currentNgo;
+    final donor = _selectedDonor;
     final feedbackText = _feedbackController.text.trim();
 
-    if (donor == null || !donor.isDonor) {
+    if (ngo == null || !ngo.isNgo) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Donor profile not found. Please log in again.'),
-        ),
+        const SnackBar(content: Text('NGO profile not found. Please log in again.')),
       );
       return;
     }
 
-    if (ngo == null) {
+    if (donor == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select an NGO.')),
+        const SnackBar(content: Text('Please select a donor.')),
       );
       return;
     }
 
     if (feedbackText.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please write feedback before submitting.'),
-        ),
+        const SnackBar(content: Text('Please write feedback before submitting.')),
       );
       return;
     }
 
     if (_rating < 1 || _rating > 5) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a star rating from 1 to 5.'),
-        ),
+        const SnackBar(content: Text('Please select a star rating from 1 to 5.')),
       );
       return;
     }
@@ -71,9 +65,9 @@ class _DonorRateScreenState extends State<DonorRateScreen> {
     });
 
     try {
-      await _firestoreService.submitDonorFeedback(
-        donor: donor,
+      await _firestoreService.submitFeedback(
         ngo: ngo,
+        donor: donor,
         feedbackText: feedbackText,
         rating: _rating,
       );
@@ -83,7 +77,7 @@ class _DonorRateScreenState extends State<DonorRateScreen> {
       }
 
       setState(() {
-        _selectedNgo = null;
+        _selectedDonor = null;
         _rating = 0;
         _feedbackController.clear();
       });
@@ -97,9 +91,7 @@ class _DonorRateScreenState extends State<DonorRateScreen> {
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not submit feedback. Please try again.'),
-        ),
+        const SnackBar(content: Text('Could not submit feedback. Please try again.')),
       );
     } finally {
       if (mounted) {
@@ -123,15 +115,19 @@ class _DonorRateScreenState extends State<DonorRateScreen> {
         ),
       ),
       body: StreamBuilder<List<AppUserModel>>(
-        stream: _firestoreService.usersByRole('ngo'),
+        stream: _firestoreService.usersByRole('donor'),
         builder: (context, snapshot) {
-          final ngos = snapshot.data ?? const <AppUserModel>[];
+          final donors = snapshot.data ?? const <AppUserModel>[];
           final loading = snapshot.connectionState == ConnectionState.waiting &&
               snapshot.data == null;
 
-          if (_selectedNgo != null) {
-            final match = ngos.where((ngo) => ngo.uid == _selectedNgo!.uid);
-            _selectedNgo = match.isNotEmpty ? match.first : null;
+          if (_selectedDonor != null) {
+            final match = donors.where((donor) => donor.uid == _selectedDonor!.uid);
+            if (match.isNotEmpty) {
+  _selectedDonor = match.first;
+} else {
+  _selectedDonor = null;
+}
           }
 
           return SingleChildScrollView(
@@ -144,7 +140,7 @@ class _DonorRateScreenState extends State<DonorRateScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Select NGO',
+                        'Select Donor',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -153,21 +149,23 @@ class _DonorRateScreenState extends State<DonorRateScreen> {
                       ),
                       const SizedBox(height: 10),
                       DropdownButtonFormField<String>(
-                        value: ngos.any((ngo) => ngo.uid == _selectedNgo?.uid)
-                            ? _selectedNgo?.uid
+                        value: donors.any((d) => d.uid == _selectedDonor?.uid)
+                            ? _selectedDonor?.uid
                             : null,
                         isExpanded: true,
-                        hint: Text(loading ? 'Loading NGOs...' : 'Choose NGO'),
+                        hint: Text(
+                          loading ? 'Loading donors...' : 'Choose donor',
+                        ),
                         decoration: _inputDecoration(),
-                        items: ngos
+                        items: donors
                             .map(
-                              (ngo) => DropdownMenuItem<String>(
-                                value: ngo.uid,
+                              (donor) => DropdownMenuItem<String>(
+                                value: donor.uid,
                                 child: Row(
                                   children: [
                                     _ProfileAvatar(
-                                      name: ngo.displayName,
-                                      imageUrl: ngo.profileImageUrl,
+                                      name: donor.displayName,
+                                      imageUrl: donor.profileImageUrl,
                                       radius: 18,
                                     ),
                                     const SizedBox(width: 10),
@@ -178,14 +176,14 @@ class _DonorRateScreenState extends State<DonorRateScreen> {
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            ngo.displayName,
+                                            donor.displayName,
                                             overflow: TextOverflow.ellipsis,
                                             style: const TextStyle(
                                               fontWeight: FontWeight.w600,
                                             ),
                                           ),
                                           Text(
-                                            ngo.email,
+                                            donor.email,
                                             overflow: TextOverflow.ellipsis,
                                             style: const TextStyle(
                                               color: AppColors.textSecondary,
@@ -201,36 +199,36 @@ class _DonorRateScreenState extends State<DonorRateScreen> {
                             )
                             .toList(),
                         selectedItemBuilder: (context) {
-                          return ngos
+                          return donors
                               .map(
-                                (ngo) => Align(
+                                (donor) => Align(
                                   alignment: Alignment.centerLeft,
                                   child: Text(
-                                    ngo.displayName,
+                                    donor.displayName,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                               )
                               .toList();
                         },
-                        onChanged: loading || ngos.isEmpty
+                        onChanged: loading || donors.isEmpty
                             ? null
                             : (value) {
                                 setState(() {
-                                  _selectedNgo = ngos.firstWhere(
-                                    (ngo) => ngo.uid == value,
+                                  _selectedDonor = donors.firstWhere(
+                                    (donor) => donor.uid == value,
                                   );
                                 });
                               },
                       ),
-                      if (!loading && ngos.isEmpty) ...[
+                      if (!loading && donors.isEmpty) ...[
                         const SizedBox(height: 10),
                         const Text(
-                          'No registered NGOs found in Firebase.',
+                          'No registered donors found in Firebase.',
                           style: TextStyle(color: AppColors.textSecondary),
                         ),
                       ],
-                      if (_selectedNgo != null) ...[
+                      if (_selectedDonor != null) ...[
                         const SizedBox(height: 14),
                         Container(
                           padding: const EdgeInsets.all(12),
@@ -242,8 +240,8 @@ class _DonorRateScreenState extends State<DonorRateScreen> {
                           child: Row(
                             children: [
                               _ProfileAvatar(
-                                name: _selectedNgo!.displayName,
-                                imageUrl: _selectedNgo!.profileImageUrl,
+                                name: _selectedDonor!.displayName,
+                                imageUrl: _selectedDonor!.profileImageUrl,
                                 radius: 20,
                               ),
                               const SizedBox(width: 12),
@@ -252,13 +250,13 @@ class _DonorRateScreenState extends State<DonorRateScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      _selectedNgo!.displayName,
+                                      _selectedDonor!.displayName,
                                       style: const TextStyle(
                                         fontWeight: FontWeight.w700,
                                       ),
                                     ),
                                     Text(
-                                      'NGO ID: ${_selectedNgo!.uid}',
+                                      'Donor ID: ${_selectedDonor!.uid}',
                                       style: const TextStyle(
                                         fontSize: 12,
                                         color: AppColors.textSecondary,
@@ -292,12 +290,12 @@ class _DonorRateScreenState extends State<DonorRateScreen> {
                         controller: _feedbackController,
                         maxLines: 5,
                         decoration: _inputDecoration(
-                          hintText: 'Write feedback about NGO...',
+                          hintText: 'Write feedback about donor...',
                         ),
                       ),
                       const SizedBox(height: 20),
                       const Text(
-                        'Rate NGO',
+                        'Rate Donor',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,

@@ -1,8 +1,8 @@
 import 'dart:io';
 
 class AppUser {
-  static String name = "Khair Foundation";
-  static String email = "contact@khair.org";
+  static String name = "User";
+  static String email = "";
   static String? phone;
   static File? image;
 
@@ -19,8 +19,8 @@ class AppUser {
   }
 
   static void clear() {
-    name = "Khair Foundation";
-    email = "contact@khair.org";
+    name = "User";
+    email = "";
     phone = null;
     image = null;
   }

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'feedback/admin_feedback_screen.dart';
 import 'profile/admin_profile_screen.dart';
 import 'settings/settings_screen.dart';
 import 'support/admin_support_screen.dart';
@@ -47,6 +47,13 @@ class AdminMoreSheet extends StatelessWidget {
               "Support",
               const AdminSupportScreen(),
             ),
+
+            _item(
+  context,
+  Icons.feedback_outlined,
+  "Feedback",
+  const AdminFeedbackScreen(),
+),
 
             const Divider(),
 

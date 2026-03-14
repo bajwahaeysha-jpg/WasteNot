@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:wastenot/services/session_service.dart';
 
 class ImpactScreen extends StatelessWidget {
   const ImpactScreen({super.key});
@@ -26,8 +27,8 @@ class ImpactScreen extends StatelessWidget {
           const Text("Keep doing the Good work,here is your impact on community", style: TextStyle(color: Colors.black)),
           const SizedBox(height: 4),
 
-          const Text(
-            "Khair Foundation",
+          Text(
+            SessionService.user?.displayName ?? "NGO",
             style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,

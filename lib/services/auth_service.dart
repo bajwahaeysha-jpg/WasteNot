@@ -49,7 +49,7 @@ class AuthService {
 
     if (user.email?.toLowerCase() == adminEmail) {
       final admin = _adminUser();
-      SessionService.setUser(admin);
+      SessionService.setUser(admin, syncFromFirestore: false);
       return admin;
     }
 
@@ -73,7 +73,7 @@ class AuthService {
       throw AuthFailure('Your NGO request is still pending admin approval.');
     }
 
-    SessionService.setUser(profile);
+    SessionService.setUser(profile, firestoreService: _firestoreService);
     return profile;
   }
 
@@ -87,7 +87,7 @@ class AuthService {
     try {
       if (normalizedEmail == adminEmail && password == adminPassword) {
         final admin = _adminUser(name);
-        SessionService.setUser(admin);
+        SessionService.setUser(admin, syncFromFirestore: false);
         return admin;
       }
 
@@ -119,7 +119,7 @@ class AuthService {
         throw AuthFailure('Your NGO request is still pending admin approval.');
       }
 
-      SessionService.setUser(profile);
+      SessionService.setUser(profile, firestoreService: _firestoreService);
       return profile;
     } on FirebaseAuthException catch (error) {
       if (error.code == 'user-not-found' || error.code == 'invalid-credential') {
@@ -156,6 +156,12 @@ class AuthService {
       }
       final profileImageUrl = await _firestoreService.uploadProfileImage(
         folder: 'users',
+        identifier: firebaseUser.uid,
+        imageFile: profileImage,
+      );
+
+      final profileImageUrl = await _firestoreService.uploadProfileImage(
+        folder: 'donor',
         identifier: firebaseUser.uid,
         imageFile: profileImage,
       );
@@ -216,6 +222,12 @@ class AuthService {
       throw AuthFailure('This email is already in use.');
     }
 
+    final profileImageUrl = await _firestoreService.uploadProfileImage(
+      folder: 'ngo_requests',
+      identifier: normalizedEmail.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_'),
+      imageFile: profileImage,
+    );
+
     await _firestoreService.submitNgoRequest(
       organizationName: organizationName.trim(),
       email: normalizedEmail,
@@ -224,8 +236,63 @@ class AuthService {
       address: address.trim(),
       registrationNumber: registrationNumber.trim(),
       description: description.trim(),
-      profileImageUrl: null,
+      profileImageUrl: profileImageUrl,
     );
+  }
+
+  Future<AppUserModel> updateCurrentUserProfile({
+    required String email,
+    String? name,
+    String? phone,
+    String? address,
+    String? organizationName,
+    String? registrationNumber,
+    String? organizationDescription,
+    File? profileImage,
+  }) async {
+    final sessionUser = SessionService.user;
+    final firebaseUser = _auth.currentUser;
+    if (sessionUser == null || firebaseUser == null) {
+      throw AuthFailure('Please log in again to update your profile.');
+    }
+
+    final normalizedEmail = email.trim().toLowerCase();
+    if (normalizedEmail != firebaseUser.email?.toLowerCase()) {
+      await firebaseUser.updateEmail(normalizedEmail);
+    }
+
+    final profileImageUrl = profileImage == null
+        ? sessionUser.profileImageUrl
+        : await _firestoreService.uploadProfileImage(
+            folder: sessionUser.role,
+            identifier: sessionUser.uid,
+            imageFile: profileImage,
+          );
+
+    final data = <String, dynamic>{
+      'email': normalizedEmail,
+      'phone': phone?.trim(),
+      'address': address?.trim(),
+      'profileImageUrl': profileImageUrl,
+    };
+
+    if (sessionUser.isDonor) {
+      data['name'] = name?.trim();
+    }
+
+    if (sessionUser.isNgo) {
+      data['organizationName'] = organizationName?.trim();
+      data['registrationNumber'] = registrationNumber?.trim();
+      data['organizationDescription'] = organizationDescription?.trim();
+    }
+
+    final updatedUser = await _firestoreService.updateUserDocument(
+      uid: sessionUser.uid,
+      data: data,
+    );
+
+    SessionService.setUser(updatedUser, firestoreService: _firestoreService);
+    return updatedUser;
   }
 
   Future<void> signOut() async {
