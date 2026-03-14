@@ -63,11 +63,11 @@ class _DonorPersonalInformationScreenState
     setState(() => _saving = true);
     try {
       await _authService.updateCurrentUserProfile(
-        email: _emailController.text,
-        name: _nameController.text,
-        phone: _phoneController.text,
-        address: _addressController.text,
-      );
+  email: _emailController.text,
+  name: _nameController.text,
+  phone: _phoneController.text,
+  address: _addressController.text,
+);
 
       if (!mounted) {
         return;

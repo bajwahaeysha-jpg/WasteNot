@@ -94,7 +94,10 @@ class AppUserModel {
       'profileImageUrl': profileImageUrl,
     };
   }
-  factory AppUserModel.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+
+  factory AppUserModel.fromFirestore(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
     final data = doc.data() ?? <String, dynamic>{};
     final createdAt = data['createdAt'];
 

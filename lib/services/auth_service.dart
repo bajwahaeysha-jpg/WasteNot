@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:wastenot/models/app_user_model.dart';
 import 'package:wastenot/services/firestore_service.dart';
 import 'package:wastenot/services/session_service.dart';
