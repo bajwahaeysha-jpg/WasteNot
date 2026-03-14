@@ -95,38 +95,9 @@ class AppUserModel {
     };
   }
 
-  AppUserModel copyWith({
-    String? uid,
-    String? email,
-    String? role,
-    DateTime? createdAt,
-    String? name,
-    String? phone,
-    String? address,
-    String? profileImageUrl,
-    String? organizationName,
-    String? registrationNumber,
-    String? organizationDescription,
-    bool? approvedByAdmin,
-  }) {
-    return AppUserModel(
-      uid: uid ?? this.uid,
-      email: email ?? this.email,
-      role: role ?? this.role,
-      createdAt: createdAt ?? this.createdAt,
-      name: name ?? this.name,
-      phone: phone ?? this.phone,
-      address: address ?? this.address,
-      profileImageUrl: profileImageUrl ?? this.profileImageUrl,
-      organizationName: organizationName ?? this.organizationName,
-      registrationNumber: registrationNumber ?? this.registrationNumber,
-      organizationDescription:
-          organizationDescription ?? this.organizationDescription,
-      approvedByAdmin: approvedByAdmin ?? this.approvedByAdmin,
-    );
-  }
-
-  factory AppUserModel.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+  factory AppUserModel.fromFirestore(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
     final data = doc.data() ?? <String, dynamic>{};
     final createdAt = data['createdAt'];
 

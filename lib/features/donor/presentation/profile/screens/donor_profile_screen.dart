@@ -78,11 +78,12 @@ class _DonorProfileScreenState extends State<DonorProfileScreen> {
     setState(() => _saving = true);
     try {
       await _authService.updateCurrentUserProfile(
-        name: _nameController.text,
-        phone: _phoneController.text,
-        address: _addressController.text,
-        profileImage: _selectedImage,
-      );
+  email: _emailController.text,
+  name: _nameController.text,
+  phone: _phoneController.text,
+  address: _addressController.text,
+  profileImage: _selectedImage,
+);
 
       if (!mounted) {
         return;
