@@ -154,11 +154,6 @@ class AuthService {
       if (firebaseUser == null) {
         throw AuthFailure('Donor registration failed. Please try again.');
       }
-      final profileImageUrl = await _firestoreService.uploadProfileImage(
-        folder: 'users',
-        identifier: firebaseUser.uid,
-        imageFile: profileImage,
-      );
 
       final profileImageUrl = await _firestoreService.uploadProfileImage(
         folder: 'donor',
@@ -298,51 +293,6 @@ class AuthService {
   Future<void> signOut() async {
     await _auth.signOut();
     SessionService.clear();
-  }
-
-  Future<AppUserModel> updateCurrentUserProfile({
-    String? name,
-    String? email,
-    String? phone,
-    String? address,
-    File? profileImage,
-  }) async {
-    final currentUser = _auth.currentUser;
-    final sessionUser = SessionService.user;
-
-    if (currentUser == null || sessionUser == null) {
-      throw AuthFailure('Please login again to update your profile.');
-    }
-
-    try {
-      String? profileImageUrl = sessionUser.profileImageUrl;
-      if (profileImage != null) {
-        profileImageUrl = await _firestoreService.uploadProfileImage(
-          folder: 'users',
-          identifier: currentUser.uid,
-          imageFile: profileImage,
-        );
-      }
-
-      await _firestoreService.updateUserProfile(
-        uid: currentUser.uid,
-        name: name?.trim(),
-        email: email?.trim().toLowerCase(),
-        phone: phone?.trim(),
-        address: address?.trim(),
-        profileImageUrl: profileImageUrl,
-      );
-
-      final refreshed = await _firestoreService.getUserByUid(currentUser.uid);
-      if (refreshed == null) {
-        throw AuthFailure('Could not refresh profile. Please login again.');
-      }
-
-      SessionService.setUser(refreshed);
-      return refreshed;
-    } on FirebaseException catch (error) {
-      throw AuthFailure(_mapFirebaseError(error));
-    }
   }
 
   Future<void> deleteCurrentAccount() async {

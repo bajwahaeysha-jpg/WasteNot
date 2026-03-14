@@ -12,19 +12,17 @@ class DonorProfileScreen extends StatelessWidget {
     required this.donor,
   });
 
-  static const primary =  Color(0xFF0F4C45);
+  static const Color primary = Color(0xFF0F4C45);
 
   @override
   Widget build(BuildContext context) {
-
     final screenWidth = MediaQuery.of(context).size.width;
     final imageHeight = screenWidth * 0.45;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7F6),
-
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F4C45),
+        backgroundColor: primary,
         elevation: 0,
         title: Text(
           donor['name'] ?? "Donor",
@@ -32,22 +30,45 @@ class DonorProfileScreen extends StatelessWidget {
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 16),
         children: [
-
           /// IMAGE
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: Image.asset(
-                donor['logo'],
-                height: imageHeight,
-                width: double.infinity,
-                fit: BoxFit.cover,
-              ),
+              child: donor['logo'] != null
+                  ? Image.asset(
+                      donor['logo'],
+                      height: imageHeight,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          height: imageHeight,
+                          width: double.infinity,
+                          color: Colors.grey.shade300,
+                          alignment: Alignment.center,
+                          child: const Icon(
+                            Icons.person,
+                            size: 60,
+                            color: Colors.grey,
+                          ),
+                        );
+                      },
+                    )
+                  : Container(
+                      height: imageHeight,
+                      width: double.infinity,
+                      color: Colors.grey.shade300,
+                      alignment: Alignment.center,
+                      child: const Icon(
+                        Icons.person,
+                        size: 60,
+                        color: Colors.grey,
+                      ),
+                    ),
             ),
           ),
 
@@ -59,58 +80,64 @@ class DonorProfileScreen extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-
-                    Text(
-                      donor['name'],
-                      style: TextStyle(
-                        fontSize: screenWidth * 0.05,
-                        fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        donor['name'] ?? "Donor",
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.05,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-
-                    const SizedBox(height: 6),
-
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.location_on,
-                          size: 16,
-                          color: Colors.red,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          donor['location'],
-                          style: const TextStyle(
-                            color: Colors.grey,
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.location_on,
+                            size: 16,
+                            color: Colors.red,
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              donor['location'] ?? "Unknown location",
+                              style: const TextStyle(color: Colors.grey),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
 
-                /// CALL
-                Row(
-                  children: [
+                IconButton(
+                  icon: const Icon(Icons.call, color: primary),
+                  onPressed: () async {
+                    final phone = donor['phone'];
 
-                    IconButton(
-                      icon: const Icon(Icons.call, color:Color(0xFF0F4C45)),
-                      onPressed: () async {
+                    if (phone != null && phone.toString().isNotEmpty) {
+                      final telUrl = Uri.parse('tel:$phone');
 
-                        final telUrl = 'tel:${donor['phone']}';
-
-                        if (await canLaunchUrl(Uri.parse(telUrl))) {
-                          await launchUrl(Uri.parse(telUrl));
-                        }
-                      },
-                    ),
-
-                  
-                  ],
+                      if (await canLaunchUrl(telUrl)) {
+                        await launchUrl(telUrl);
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Unable to open dialer"),
+                          ),
+                        );
+                      }
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Phone number not available"),
+                        ),
+                      );
+                    }
+                  },
                 ),
               ],
             ),
@@ -123,16 +150,11 @@ class DonorProfileScreen extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
-
-                _statBox("${donor['meals']}", "Meals"),
-
+                _statBox("${donor['meals'] ?? 0}", "Meals"),
                 const SizedBox(width: 10),
-
-                _statBox("${donor['success']}%", "Success"),
-
+                _statBox("${donor['success'] ?? 0}%", "Success"),
                 const SizedBox(width: 10),
-
-                _statBox(donor['status'] ?? "Approved", "Status"),
+                _statBox("${donor['status'] ?? "Approved"}", "Status"),
               ],
             ),
           ),
@@ -174,7 +196,6 @@ class DonorProfileScreen extends StatelessWidget {
             ),
             title: const Text("Send Notification"),
             onTap: () async {
-
               final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -183,12 +204,11 @@ class DonorProfileScreen extends StatelessWidget {
               );
 
               if (result != null) {
-
                 activityLogs.insert(0, {
                   "title": result['title'],
                   "message": result['message'],
-                  "receiver": donor['name'],
-                  "time": "Now"
+                  "receiver": donor['name'] ?? "Donor",
+                  "time": "Now",
                 });
 
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -198,7 +218,7 @@ class DonorProfileScreen extends StatelessWidget {
             },
           ),
 
-          /// SUSPEND
+          /// SUSPEND DONOR
           ListTile(
             leading: const Icon(
               Icons.block,
@@ -224,21 +244,16 @@ class DonorProfileScreen extends StatelessWidget {
     );
   }
 
-  /// STAT BOX
   Widget _statBox(String value, String label) {
-
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
-
         decoration: BoxDecoration(
           color: const Color(0xFFEDEDED),
           borderRadius: BorderRadius.circular(12),
         ),
-
         child: Column(
           children: [
-
             Text(
               value,
               style: const TextStyle(
@@ -247,9 +262,7 @@ class DonorProfileScreen extends StatelessWidget {
                 color: primary,
               ),
             ),
-
             const SizedBox(height: 4),
-
             Text(
               label,
               style: const TextStyle(
