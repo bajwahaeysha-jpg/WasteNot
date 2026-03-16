@@ -123,7 +123,7 @@ class _DonorRateScreenState extends State<DonorRateScreen> {
         ),
       ),
       body: StreamBuilder<List<AppUserModel>>(
-        stream: _firestoreService.usersByRole('ngo'),
+        stream: _firestoreService.registeredNgos(),
         builder: (context, snapshot) {
           final ngos = snapshot.data ?? const <AppUserModel>[];
           final loading = snapshot.connectionState == ConnectionState.waiting &&
@@ -240,6 +240,7 @@ class _DonorRateScreenState extends State<DonorRateScreen> {
                             border: Border.all(color: AppColors.border),
                           ),
                           child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               _ProfileAvatar(
                                 name: _selectedNgo!.displayName,
@@ -257,6 +258,15 @@ class _DonorRateScreenState extends State<DonorRateScreen> {
                                         fontWeight: FontWeight.w700,
                                       ),
                                     ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      _selectedNgo!.email,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
                                     Text(
                                       'NGO ID: ${_selectedNgo!.uid}',
                                       style: const TextStyle(

@@ -179,6 +179,10 @@ class FirestoreService {
     });
   }
 
+  Stream<List<AppUserModel>> registeredNgos() {
+    return usersByRole('ngo');
+  }
+
   Stream<List<NgoRequestModel>> pendingNgoRequests() {
     return _ngoRequests
         .where('status', isEqualTo: 'pending')
@@ -200,18 +204,13 @@ class FirestoreService {
     required String feedbackText,
     required int rating,
   }) {
-    return _feedback.add({
-      'ngoId': ngo.uid,
-      'ngoName': ngo.displayName,
-      'ngoProfileImage': ngo.profileImageUrl,
-      'donorId': donor.uid,
-      'donorName': donor.displayName,
-      'donorProfileImage': donor.profileImageUrl,
-      'feedbackText': feedbackText.trim(),
-      'rating': rating,
-      'submittedByRole': 'ngo',
-      'timestamp': FieldValue.serverTimestamp(),
-    });
+    return _submitFeedbackRecord(
+      donor: donor,
+      ngo: ngo,
+      feedbackText: feedbackText,
+      rating: rating,
+      submittedByRole: 'ngo',
+    );
   }
 
   Future<void> submitDonorFeedback({
@@ -219,6 +218,22 @@ class FirestoreService {
     required AppUserModel ngo,
     required String feedbackText,
     required int rating,
+  }) {
+    return _submitFeedbackRecord(
+      donor: donor,
+      ngo: ngo,
+      feedbackText: feedbackText,
+      rating: rating,
+      submittedByRole: 'donor',
+    );
+  }
+
+  Future<void> _submitFeedbackRecord({
+    required AppUserModel donor,
+    required AppUserModel ngo,
+    required String feedbackText,
+    required int rating,
+    required String submittedByRole,
   }) {
     return _feedback.add({
       'donorId': donor.uid,
@@ -229,7 +244,7 @@ class FirestoreService {
       'ngoProfileImage': ngo.profileImageUrl,
       'feedbackText': feedbackText.trim(),
       'rating': rating,
-      'submittedByRole': 'donor',
+      'submittedByRole': submittedByRole,
       'timestamp': FieldValue.serverTimestamp(),
     });
   }

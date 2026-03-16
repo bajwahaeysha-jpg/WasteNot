@@ -14,6 +14,14 @@ class FeedbackDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final senderName = feedback.senderName.trim().isEmpty
+        ? 'Unknown Sender'
+        : feedback.senderName.trim();
+
+    final targetName = feedback.targetName.trim().isEmpty
+        ? 'Unknown User'
+        : feedback.targetName.trim();
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -31,8 +39,8 @@ class FeedbackDetailScreen extends StatelessWidget {
             child: Row(
               children: [
                 _ProfileAvatar(
-                  name: feedback.complainantName,
-                  imageUrl: feedback.complainantProfileImage,
+                  name: senderName,
+                  imageUrl: feedback.senderProfileImage,
                   radius: 30,
                 ),
                 const SizedBox(width: 14),
@@ -41,7 +49,7 @@ class FeedbackDetailScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        feedback.complainantName,
+                        'Posted by: $senderName',
                         style: const TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 18,
@@ -49,7 +57,7 @@ class FeedbackDetailScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Complainant ${feedback.complainantRoleLabel}',
+                        'Sender ${feedback.senderRoleLabel}',
                         style: const TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 12,
@@ -69,99 +77,84 @@ class FeedbackDetailScreen extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 16),
-          _section(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Complaint About ${feedback.targetRoleLabel}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    _ProfileAvatar(
-                      name: feedback.complaintTargetName,
-                      imageUrl: feedback.complaintTargetProfileImage,
-                      radius: 24,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        feedback.complaintTargetName,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 15,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+          const SizedBox(height: 20),
+          Text(
+            'About ${feedback.targetRoleLabel}',
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 20,
+              color: Color(0xFF1A1E1D),
             ),
           ),
-          const SizedBox(height: 16),
-          _section(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Rating',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Row(
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              _ProfileAvatar(
+                name: targetName,
+                imageUrl: feedback.targetProfileImage,
+                radius: 24,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    ...List.generate(
-                      5,
-                      (index) => Padding(
-                        padding: const EdgeInsets.only(right: 4),
-                        child: Icon(
-                          index < feedback.rating
-                              ? Icons.star
-                              : Icons.star_border,
-                          color: Colors.amber.shade700,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
                     Text(
-                      '${feedback.rating}/5',
+                      targetName,
                       style: const TextStyle(
                         fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                        color: Color(0xFF1A1E1D),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        ...List.generate(
+                          5,
+                          (index) => Padding(
+                            padding: const EdgeInsets.only(right: 2),
+                            child: Icon(
+                              index < feedback.rating
+                                  ? Icons.star
+                                  : Icons.star_border,
+                              color: Colors.amber,
+                              size: 16,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '$senderName rated them ${feedback.rating}/5 stars',
+                      style: const TextStyle(
                         color: AppColors.textSecondary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
                 ),
-              ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'Message',
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 16,
+              color: Color(0xFF1A1E1D),
             ),
           ),
-          const SizedBox(height: 16),
-          _section(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Feedback Message',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  feedback.feedbackText,
-                  style: const TextStyle(height: 1.5),
-                ),
-              ],
+          const SizedBox(height: 10),
+          Text(
+            feedback.feedbackText,
+            style: const TextStyle(
+              height: 1.5,
+              fontSize: 15,
+              color: Color(0xFF1A1E1D),
             ),
           ),
         ],

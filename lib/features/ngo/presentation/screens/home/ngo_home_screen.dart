@@ -709,5 +709,3 @@ class _DashCard extends StatelessWidget {
     );
   }
 }
-
-
