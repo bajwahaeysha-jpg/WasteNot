@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:wastenot/features/donor/models/accepted_donation_model.dart';
-import 'accepted_donation_detail_screen.dart';
+import 'package:wastenot/features/donor/presentation/home/screens/accepted_donation_detail_screen.dart';
+import 'package:wastenot/services/donation_services.dart';
+import 'package:wastenot/services/session_service.dart';
 
 const Color mainGreen = Color(0xFF0E5E53);
 
@@ -9,164 +11,98 @@ class AcceptedDonationsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
-    final List<Map<String, dynamic>> donations = [
-
-      // ===== Today =====
-      {
-        "date": "Today",
-        "data": AcceptedDonation(
-          food: "Chicken Biryani",
-          place: "Allah Malik Restaurant",
-          time: "12:30 PM",
-          image: "assets/images/biryani.jpg",
-          donor: "Allah Malik Restaurant",
-          acceptedBy: "Khair Foundation",
-          location: "Kotli Loharan, Sialkot",
-          uploadedAt: "5:33 PM",
-          acceptedAt: "5:45 PM",
-          pickedAt: "6:13 PM",
-          servings: 80,
-        ),
-      },
-      {
-        "date": "Today",
-        "data": AcceptedDonation(
-          food: "Chicken Sajji Rice",
-          place: "Allah Malik Restaurant",
-          time: "11:15 AM",
-          image: "assets/images/chicken sajji.jpg",
-          donor: "Allah Malik Restaurant",
-          acceptedBy: "SOS Village",
-          location: "Kotli Loharan, Sialkot",
-          uploadedAt: "4:40 PM",
-          acceptedAt: "5:00 PM",
-          pickedAt: "5:30 PM",
-          servings: 60,
-        ),
-      },
-
-      // ===== Yesterday =====
-      {
-        "date": "Yesterday",
-        "data": AcceptedDonation(
-          food: "Fresh Meal",
-          place: "Allah Malik Restaurant",
-          time: "9:40 AM",
-          image: "assets/images/meals.jpg",
-          donor: "Allah Malik Restaurant",
-          acceptedBy: "Khair Foundation",
-          location: "Kotli Loharan, Sialkot",
-          uploadedAt: "3:20 PM",
-          acceptedAt: "3:45 PM",
-          pickedAt: "4:10 PM",
-          servings: 40,
-        ),
-      },
-      {
-        "date": "Yesterday",
-        "data": AcceptedDonation(
-          food: "Cooked Rice",
-          place: "Allah Malik Restaurant",
-          time: "8:20 PM",
-          image: "assets/images/cooked rice.png",
-          donor: "Allah Malik Restaurant",
-          acceptedBy: "SOS Village",
-          location: "Kotli Loharan, Sialkot",
-          uploadedAt: "7:10 PM",
-          acceptedAt: "7:40 PM",
-          pickedAt: "8:05 PM",
-          servings: 50,
-        ),
-      },
-
-      // ===== 4/01/2026 =====
-      {
-        "date": "4/01/2026",
-        "data": AcceptedDonation(
-          food: "Chicken Biryani",
-          place: "Allah Malik Restaurant",
-          time: "2:10 PM",
-          image: "assets/images/biryani.jpg",
-          donor: "Allah Malik Restaurant",
-          acceptedBy: "Khair Foundation",
-          location: "Kotli Loharan, Sialkot",
-          uploadedAt: "1:40 PM",
-          acceptedAt: "1:55 PM",
-          pickedAt: "2:30 PM",
-          servings: 70,
-        ),
-      },
-
-      // ===== 3/01/2026 =====
-      {
-        "date": "3/01/2026",
-        "data": AcceptedDonation(
-          food: "Chicken Sajji Rice",
-          place: "Allah Malik Restaurant",
-          time: "1:45 PM",
-          image: "assets/images/chicken sajji.jpg",
-          donor: "Allah Malik Restaurant",
-          acceptedBy: "SOS Village",
-          location: "Kotli Loharan, Sialkot",
-          uploadedAt: "12:50 PM",
-          acceptedAt: "1:10 PM",
-          pickedAt: "1:30 PM",
-          servings: 55,
-        ),
-      },
-    ];
-
-    String lastDate = "";
+    final donor = SessionService.user;
+    final service = DonationService();
+    debugPrint(
+      '[DonorAcceptedDonationsScreen] current donor uid=${donor?.uid} role=${donor?.role}',
+    );
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9F9),
       appBar: AppBar(
         backgroundColor: mainGreen,
-        title: const Text("Accepted Donations", style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Accepted Donations',
+          style: TextStyle(color: Colors.white),
+        ),
         leading: const BackButton(color: Colors.white),
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: donations.length,
-        itemBuilder: (context, index) {
-          final item = donations[index];
-          final AcceptedDonation d = item["data"];
-          final String date = item["date"];
+      body: donor == null
+          ? const Center(child: Text('Please log in to view donations.'))
+          : FutureBuilder<List<DonationModel>>(
+              future: service.getDonorDonations(donorId: donor.uid),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-          final bool showHeader = date != lastDate;
-          lastDate = date;
+                if (snapshot.hasError) {
+                  debugPrint(
+                    '[DonorAcceptedDonationsScreen] load error for uid=${donor.uid}: ${snapshot.error}',
+                  );
+                  return Center(
+                    child: Text(
+                      'Unable to load accepted donations.\n${snapshot.error}',
+                    ),
+                  );
+                }
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+                final donations = (snapshot.data ?? const <DonationModel>[])
+                    .where((d) => d.isAccepted)
+                    .toList()
+                  ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
-              if (showHeader)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  child: Text(
-                    date,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                ),
+                if (donations.isEmpty) {
+                  return const Center(
+                    child: Text('No accepted donations found.'),
+                  );
+                }
 
-              GestureDetector(
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => AcceptedDonationDetailScreen(donation: d),
-                  ),
-                ),
-                child: _donationCard(d),
-              ),
-            ],
-          );
-        },
-      ),
+                String lastDate = '';
+
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: donations.length,
+                  itemBuilder: (context, index) {
+                    final donation = donations[index];
+                    final date = _groupLabel(donation.createdAt);
+                    final showHeader = date != lastDate;
+                    lastDate = date;
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (showHeader)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            child: Text(
+                              date,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        GestureDetector(
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  AcceptedDonationDetailScreen(donation: donation),
+                            ),
+                          ),
+                          child: _donationCard(donation),
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
+            ),
     );
   }
 
-  Widget _donationCard(AcceptedDonation d) {
+  Widget _donationCard(DonationModel donation) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
@@ -179,24 +115,61 @@ class AcceptedDonationsScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: Image.asset(d.image, height: 48, width: 48, fit: BoxFit.cover),
+          Container(
+            height: 48,
+            width: 48,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.fastfood),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(d.food, style: const TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              Text(d.place, style: const TextStyle(color: Colors.grey)),
-            ]),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  donation.foodItems.join(', '),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  donation.acceptedByNgoName ?? 'Accepted NGO',
+                  style: const TextStyle(color: Colors.grey),
+                ),
+              ],
+            ),
           ),
           Text(
-            d.time,
-            style: const TextStyle(color: mainGreen, fontWeight: FontWeight.bold),
+            _timeOnly(donation.acceptedAt ?? donation.createdAt),
+            style: const TextStyle(
+              color: mainGreen,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),
     );
   }
+}
+
+String _groupLabel(DateTime d) {
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final date = DateTime(d.year, d.month, d.day);
+  if (date == today) {
+    return 'Today';
+  }
+  if (date == today.subtract(const Duration(days: 1))) {
+    return 'Yesterday';
+  }
+  return '${d.day}/${d.month}/${d.year}';
+}
+
+String _timeOnly(DateTime value) {
+  final hour = value.hour == 0 ? 12 : (value.hour > 12 ? value.hour - 12 : value.hour);
+  final suffix = value.hour >= 12 ? 'PM' : 'AM';
+  final minute = value.minute.toString().padLeft(2, '0');
+  return '$hour:$minute $suffix';
 }

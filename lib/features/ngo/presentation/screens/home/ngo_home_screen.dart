@@ -12,11 +12,10 @@ import '../home/setting/account/personal_information_screen.dart';
 import '..//home/concern/raise_concern_screen.dart';
 import 'package:wastenot/core/state/ngo_concern.dart';
 import '../home/goal/ngo_goal_screen.dart';
-import '../home/all_donations/donation_details_screen.dart';
-import '../home/all_donations/donation_model.dart';
 import 'package:wastenot/features/ngo/presentation/screens/ngo_feedback_screen.dart';
 import 'package:wastenot/models/app_user_model.dart';
 import 'package:wastenot/services/session_service.dart';
+import 'package:wastenot/services/goal_services.dart';
 
 class NgoHomeScreen extends StatefulWidget {
   final Map<String, dynamic>? user;
@@ -31,6 +30,7 @@ class NgoHomeScreen extends StatefulWidget {
 
 class _NgoHomeScreenState extends State<NgoHomeScreen> {
   int _index = 0;
+  final GoalService _goalService = GoalService();
 
   Widget _getBody() {
     if (_index == 0) {
@@ -154,33 +154,54 @@ Positioned(
   left: 16,
   right: 16,
   top: 32,
-  child: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: const [
-          Text(
-            "Monthly Donation Goal",
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+  child: StreamBuilder<GoalProgress>(
+    stream: user == null
+        ? null
+        : _goalService.streamCurrentUserMonthlyGoalProgress(user: user),
+    builder: (context, snapshot) {
+      final progress = snapshot.data;
+      final achieved = progress?.achievedCount ?? 0;
+      final target = progress?.monthlyTarget ?? 0;
+      final ratio = target <= 0 ? 0.0 : achieved / target.toDouble();
+      final percent = target <= 0 ? 0 : (ratio * 100).round();
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "Monthly Donation Goal",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Text(
+                "$achieved / $target  •  $percent%",
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
-          Text(
-            "73 / 100  •  73%",
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: LinearProgressIndicator(
+              value: ratio.clamp(0.0, 1.0),
+              minHeight: 6,
+              backgroundColor: const Color(0x26FFFFFF),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                Color(0xFFFFD54F),
+              ),
+            ),
           ),
         ],
-      ),
-      const SizedBox(height: 8),
-      ClipRRect(
-        borderRadius: BorderRadius.circular(10),
-        child: LinearProgressIndicator(
-          value: 0.73,
-          minHeight: 6,
-          backgroundColor: const Color(0x26FFFFFF),
-          valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFFD54F)),
-        ),
-      ),
-    ],
+      );
+    },
   ),
 ),
 
@@ -564,25 +585,10 @@ Widget _moreItem(IconData icon, String title, VoidCallback onTap) {
   required String time,
 }) {
   return GestureDetector(
-    onTap: () {
-
-      final donation = DonationModel(
-        hotel: location,
-        items: title,
-        time: time,
-        servings: 60,
-        precaution: "Consume within 4 hours",
-        description: title,
-        image: "assets/images/food.jpg",
-      );
-
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => DonationDetailsScreen(donation: donation),
-        ),
-      );
-    },
+    onTap: () => Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AllDonationsScreen()),
+    ),
 
     child: Container(
       margin: const EdgeInsets.only(bottom: 14),

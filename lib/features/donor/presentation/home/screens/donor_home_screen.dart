@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'your_donations_screen.dart';
 import 'accepted_donations_screen.dart';
 import 'expired_donations_screen.dart';
+import 'donation_detail_screen.dart';
 import 'emergency_detail_screen.dart';
 import '../../donate/screens/add_donation_screen.dart';
-import 'donation_detail_screen.dart';
-import 'package:wastenot/features/donor/models/accepted_donation_model.dart';
 import '../../messages/screens/chat_screen.dart';
 import 'package:wastenot/services/session_service.dart';
+import 'package:wastenot/services/donation_services.dart';
+import 'package:wastenot/services/goal_services.dart';
+import 'package:wastenot/models/app_user_model.dart';
 
 class DonorHomeScreen extends StatefulWidget {
    final Map<String, dynamic> user;
@@ -23,6 +25,11 @@ class DonorHomeScreen extends StatefulWidget {
 }
  
 class _DonorHomeScreenState extends State<DonorHomeScreen> {
+  static const int _recentDonationsLimit = 3;
+  final DonationService _donationService = DonationService();
+  final GoalService _goalService = GoalService();
+  late Future<List<DonationModel>> _recentDonationsFuture;
+
   String get donorName {
     final sessionName = SessionService.user?.displayName.trim();
     if (sessionName != null && sessionName.isNotEmpty) {
@@ -37,13 +44,23 @@ class _DonorHomeScreenState extends State<DonorHomeScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final List<Map<String, String>> recentDonations = [
-      {"ngo": "SOS Village", "time": "Donated 30 mins ago", "logo": "assets/images/sos logo.png"},
-      {"ngo": "Khair Foundation", "time": "Donated 2 hours ago", "logo": "assets/images/khair logo.png"},
-      {"ngo": "SOS Village", "time": "Donated yesterday", "logo": "assets/images/sos logo.png"},
-    ];
+  void initState() {
+    super.initState();
+    _recentDonationsFuture = _loadRecentDonations();
+  }
 
+  Future<List<DonationModel>> _loadRecentDonations() {
+    return _donationService.getRecentCompletedDonations(
+      limit: _recentDonationsLimit,
+    );
+  }
+
+  void _refreshRecentDonations() {
+    setState(() => _recentDonationsFuture = _loadRecentDonations());
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9F9),
         body: SingleChildScrollView(
@@ -195,18 +212,91 @@ class _DonorHomeScreenState extends State<DonorHomeScreen> {
           const _SectionHeader("Recent Donations"),
           const SizedBox(height: 12),
 
-          ...recentDonations.map(
-            (d) => _RecentDonationTile(
-              d["ngo"]!,
-              d["time"]!,
-              d["logo"]!,
-              donorName,
-            ),
+          FutureBuilder<List<DonationModel>>(
+            future: _recentDonationsFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+
+              if (snapshot.hasError) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Unable to load recent donations.",
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                      TextButton(
+                        onPressed: _refreshRecentDonations,
+                        child: const Text("Retry"),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              final donations = snapshot.data ?? const <DonationModel>[];
+              if (donations.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Text(
+                    "No recent donations yet.",
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                );
+              }
+
+              return Column(
+                children: donations
+                    .map(
+                      (donation) => _RecentDonationTile(
+                        donation: donation,
+                        donorName: donorName,
+                        onUpdated: _refreshRecentDonations,
+                      ),
+                    )
+                    .toList(),
+              );
+            },
           ),
 
           const SizedBox(height: 16),
 
-          const _ImpactSection(),
+          ValueListenableBuilder<AppUserModel?>(
+            valueListenable: SessionService.currentUser,
+            builder: (context, user, _) {
+              if (user == null) {
+                return const _ImpactSection(
+                  donationsCount: 0,
+                  achievedCount: 0,
+                  monthlyTarget: 0,
+                  isLoading: false,
+                );
+              }
+
+              return StreamBuilder<GoalProgress>(
+                stream: _goalService.streamCurrentUserMonthlyGoalProgress(
+                  user: user,
+                ),
+                builder: (context, snapshot) {
+                  final data = snapshot.data;
+                  return _ImpactSection(
+                    donationsCount: data?.donationsCount ?? 0,
+                    achievedCount: data?.achievedCount ?? 0,
+                    monthlyTarget: data?.monthlyTarget ?? 0,
+                    isLoading:
+                        snapshot.connectionState == ConnectionState.waiting,
+                  );
+                },
+              );
+            },
+          ),
         ]),
       ),
     );
@@ -284,83 +374,44 @@ class _DonationCard extends StatelessWidget {
 }
 
 class _RecentDonationTile extends StatelessWidget {
-  final String name, time, logo;
+  final DonationModel donation;
   final String donorName;
+  final VoidCallback onUpdated;
 
-  const _RecentDonationTile(this.name, this.time, this.logo, this.donorName);
-
-  AcceptedDonation getDonationData() {
-
-    if (name == "SOS Village" && time.contains("30 mins")) {
-      return AcceptedDonation(
-        donor: donorName,
-        acceptedBy: "SOS Village",
-        location: "Sialkot",
-        uploadedAt: "10:00 AM",
-        acceptedAt: "10:30 AM",
-        pickedAt: null,
-        food: "Cooked Rice",
-        servings: 25,
-        image: "assets/images/cooked rice.png",
-        status: "ACTIVE", place: '', time: '',
-      );
-    }
-
-    if (name == "Khair Foundation") {
-      return AcceptedDonation(
-        donor: donorName,
-        acceptedBy: "Khair Foundation",
-        location: "Sialkot",
-        uploadedAt: "9:30 AM",
-        acceptedAt: "10:00 AM",
-        pickedAt: "11:00 AM",
-        food: "Chicken Biryani",
-        servings: 40,
-        image: "assets/images/biryani.jpg",
-        status: "COMPLETED", place: '', time: '',
-      );
-    }
-
-    return AcceptedDonation(
-      donor: donorName,
-      acceptedBy: "SOS Village",
-      location: "Sialkot",
-      uploadedAt: "Yesterday",
-      acceptedAt: "Yesterday",
-      pickedAt: null,
-      food: "Chicken Sajji",
-      servings: 30,
-      image: "assets/images/chicken sajji.jpg",
-      status: "ACTIVE", place: '', time: '',
-    );
-  }
+  const _RecentDonationTile({
+    required this.donation,
+    required this.donorName,
+    required this.onUpdated,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final rawName = (donation.acceptedByNgoName ?? donation.donorName).trim();
+    final displayName = rawName.isNotEmpty ? rawName : donorName;
+    final donatedAt = donation.completedAt ?? donation.createdAt;
+    final time = _formatRelativeDonationTime(donatedAt);
 
     return ListTile(
       leading: CircleAvatar(
         backgroundColor: Colors.white,
-        backgroundImage: AssetImage(logo),
+        backgroundImage: _resolveAvatar(donation),
       ),
 
-      title: Text(name),
+      title: Text(displayName),
       subtitle: Text(time),
 
       trailing: const Icon(Icons.chevron_right),
-
-      onTap: () {
-
-        Navigator.push(
+      onTap: () async {
+        await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (_) => DonationDetailScreen(
-              donation: getDonationData(),
-              onStatusChanged: () {},
+              donation: donation,
+              onStatusChanged: onUpdated,
             ),
           ),
         );
-
+        onUpdated();
       },
     );
   }
@@ -399,10 +450,25 @@ class _MakeDifferenceCard extends StatelessWidget {
 }
 
 class _ImpactSection extends StatelessWidget {
-  const _ImpactSection();
+  const _ImpactSection({
+    required this.donationsCount,
+    required this.achievedCount,
+    required this.monthlyTarget,
+    required this.isLoading,
+  });
+
+  final int donationsCount;
+  final int achievedCount;
+  final int monthlyTarget;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
+    final safeTarget = monthlyTarget <= 0 ? 0 : monthlyTarget;
+    final progress =
+        safeTarget == 0 ? 0.0 : achievedCount / safeTarget.toDouble();
+    final percent = safeTarget == 0 ? 0 : (progress * 100).round();
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -417,9 +483,15 @@ class _ImpactSection extends StatelessWidget {
           Text("Your Impact This Month", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         ]),
         const SizedBox(height: 12),
-        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: const [
-          _ImpactItem(title: "Donations Made", value: "12"),
-          _ImpactItem(title: "People Fed", value: "240"),
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          _ImpactItem(
+            title: "Donations Made",
+            value: donationsCount.toString(),
+          ),
+          _ImpactItem(
+            title: "People Fed",
+            value: achievedCount.toString(),
+          ),
         ]),
         const SizedBox(height: 14),
         const Text("Monthly Goal Progress", style: TextStyle(fontWeight: FontWeight.bold)),
@@ -427,14 +499,18 @@ class _ImpactSection extends StatelessWidget {
         ClipRRect(
           borderRadius: BorderRadius.circular(10),
           child: LinearProgressIndicator(
-            value: 0.48,
+            value: progress.clamp(0.0, 1.0),
             minHeight: 10,
             backgroundColor: Colors.grey,
             color: DonorHomeScreen.mainGreen,
           ),
         ),
         const SizedBox(height: 8),
-        const Text("48% completed — Keep it up! 🌟"),
+        Text(
+          isLoading
+              ? "Updating goal progress..."
+              : "$percent% completed — Keep it up! 🌟",
+        ),
       ]),
     );
   }
@@ -451,4 +527,34 @@ class _ImpactItem extends StatelessWidget {
       Text(title, style: const TextStyle(color: Colors.grey)),
     ]);
   }
+}
+
+ImageProvider _resolveAvatar(DonationModel donation) {
+  final url =
+      donation.acceptedByNgoProfileImageUrl ?? donation.donorProfileImageUrl;
+  if (url != null && url.trim().isNotEmpty) {
+    return NetworkImage(url.trim());
+  }
+  return const AssetImage('assets/images/logo.png');
+}
+
+String _formatRelativeDonationTime(DateTime time) {
+  final now = DateTime.now();
+  final difference = now.difference(time);
+  if (difference.isNegative) {
+    return 'Donated just now';
+  }
+  if (difference.inMinutes < 1) {
+    return 'Donated just now';
+  }
+  if (difference.inMinutes < 60) {
+    return 'Donated ${difference.inMinutes} mins ago';
+  }
+  if (difference.inHours < 24) {
+    return 'Donated ${difference.inHours} hours ago';
+  }
+  if (difference.inDays == 1) {
+    return 'Donated yesterday';
+  }
+  return 'Donated ${difference.inDays} days ago';
 }
