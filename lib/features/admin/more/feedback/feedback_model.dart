@@ -28,17 +28,25 @@ class FeedbackModel {
   final String submittedByRole;
 
   bool get submittedByDonor => submittedByRole == 'donor';
+  bool get submittedByNgo => submittedByRole == 'ngo';
 
-  String get complainantName => submittedByDonor ? donorName : ngoName;
-  String? get complainantProfileImage =>
+  String get senderId => submittedByDonor ? donorId : ngoId;
+  String get senderName => submittedByDonor ? donorName : ngoName;
+  String? get senderProfileImage =>
       submittedByDonor ? donorProfileImage : ngoProfileImage;
+  String get senderRoleLabel => submittedByDonor ? 'Donor' : 'NGO';
 
-  String get complaintTargetName => submittedByDonor ? ngoName : donorName;
-  String? get complaintTargetProfileImage =>
+  String get targetId => submittedByDonor ? ngoId : donorId;
+  String get targetName => submittedByDonor ? ngoName : donorName;
+  String? get targetProfileImage =>
       submittedByDonor ? ngoProfileImage : donorProfileImage;
-
-  String get complainantRoleLabel => submittedByDonor ? 'Donor' : 'NGO';
   String get targetRoleLabel => submittedByDonor ? 'NGO' : 'Donor';
+
+  String get complainantName => senderName;
+  String? get complainantProfileImage => senderProfileImage;
+  String get complaintTargetName => targetName;
+  String? get complaintTargetProfileImage => targetProfileImage;
+  String get complainantRoleLabel => senderRoleLabel;
 
   factory FeedbackModel.fromFirestore(
     DocumentSnapshot<Map<String, dynamic>> doc,

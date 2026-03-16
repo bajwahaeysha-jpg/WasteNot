@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:wastenot/core/constants/app_colors.dart';
+import 'package:wastenot/models/app_user_model.dart';
+import 'package:wastenot/services/firestore_service.dart';
+import 'package:wastenot/services/session_service.dart';
 
 class FeedbackScreen extends StatefulWidget {
   const FeedbackScreen({super.key});
@@ -8,232 +12,305 @@ class FeedbackScreen extends StatefulWidget {
 }
 
 class _FeedbackScreenState extends State<FeedbackScreen> {
+  final FirestoreService _firestoreService = FirestoreService();
+  final TextEditingController _feedbackController = TextEditingController();
 
-  static const Color mainGreen = Color(0xFF0E5E53);
+  AppUserModel? _selectedNgo;
+  int _rating = 0;
+  bool _isSubmitting = false;
 
-  String? selectedNgo;
+  AppUserModel? get _currentDonor => SessionService.user;
 
-  int rating = 0;
+  @override
+  void dispose() {
+    _feedbackController.dispose();
+    super.dispose();
+  }
 
-  final TextEditingController feedbackController = TextEditingController();
+  Future<void> _submitFeedback() async {
+    final donor = _currentDonor;
+    final ngo = _selectedNgo;
+    final feedbackText = _feedbackController.text.trim();
 
-  final List<String> ngoList = [
-    "Green Hands Foundation",
-    "Hope For Life",
-    "Helping Souls",
-    "Save Earth NGO",
-    "Children First",
-    "Water For All",
-    "Care & Share",
-    "Plant Pakistan"
-  ];
+    if (donor == null || !donor.isDonor) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Donor profile not found. Please log in again.'),
+        ),
+      );
+      return;
+    }
+
+    if (ngo == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select an NGO.')),
+      );
+      return;
+    }
+
+    if (feedbackText.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please write feedback before submitting.'),
+        ),
+      );
+      return;
+    }
+
+    if (_rating < 1 || _rating > 5) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a star rating from 1 to 5.'),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      await _firestoreService.submitDonorFeedback(
+        donor: donor,
+        ngo: ngo,
+        feedbackText: feedbackText,
+        rating: _rating,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _selectedNgo = null;
+        _rating = 0;
+        _feedbackController.clear();
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Feedback submitted successfully.')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not submit feedback. Please try again.'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
-
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: mainGreen,
-        elevation: 0,
+        backgroundColor: AppColors.primary,
         iconTheme: const IconThemeData(color: Colors.white),
+        elevation: 0,
         title: const Text(
-          "Feedback",
+          'Feedback',
           style: TextStyle(
             color: Colors.white,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),
+      body: StreamBuilder<List<AppUserModel>>(
+        stream: _firestoreService.registeredNgos(),
+        builder: (context, snapshot) {
+          final ngos = snapshot.data ?? const <AppUserModel>[];
+          final loading = snapshot.connectionState == ConnectionState.waiting &&
+              snapshot.data == null;
 
-      body: Padding(
-        padding: const EdgeInsets.all(20),
+          if (_selectedNgo != null) {
+            final match = ngos.where((ngo) => ngo.uid == _selectedNgo!.uid);
+            _selectedNgo = match.isNotEmpty ? match.first : null;
+          }
 
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-
-          children: [
-
-            const Text(
-              "Select NGO",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-
-            const SizedBox(height: 10),
-
-            DropdownButtonFormField<String>(
-
-              value: selectedNgo,
-
-              hint: const Text("Choose NGO"),
-
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.grey.shade100,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-
-              items: ngoList.map((ngo) {
-
-                return DropdownMenuItem(
-                  value: ngo,
-                  child: Text(ngo),
-                );
-
-              }).toList(),
-
-              onChanged: (value) {
-
-                setState(() {
-                  selectedNgo = value;
-                });
-
-              },
-            ),
-
-            const SizedBox(height: 25),
-
-            const Text(
-              "Write Feedback",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-
-            const SizedBox(height: 10),
-
-            TextField(
-
-              controller: feedbackController,
-              maxLines: 4,
-
-              decoration: InputDecoration(
-
-                hintText: "Write your feedback here...",
-
-                filled: true,
-                fillColor: Colors.grey.shade100,
-
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 25),
-
-            const Text(
-              "Rate NGO",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-
-            const SizedBox(height: 10),
-
-            Row(
-              children: List.generate(5, (index) {
-
-                return IconButton(
-
-                  icon: Icon(
-                    Icons.star,
-                    size: 34,
-                    color: index < rating
-                        ? Colors.amber
-                        : Colors.grey,
-                  ),
-
-                  onPressed: () {
-
-                    setState(() {
-                      rating = index + 1;
-                    });
-
+          return SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                DropdownButtonFormField<String>(
+                  value: ngos.any((ngo) => ngo.uid == _selectedNgo?.uid)
+                      ? _selectedNgo?.uid
+                      : null,
+                  isExpanded: true,
+                  hint: Text(loading ? 'Loading NGOs...' : 'Choose NGO'),
+                  decoration: _inputDecoration(),
+                  items: ngos
+                      .map(
+                        (ngo) => DropdownMenuItem<String>(
+                          value: ngo.uid,
+                          child: Text(
+                            ngo.displayName,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  selectedItemBuilder: (context) {
+                    return ngos
+                        .map(
+                          (ngo) => Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              ngo.displayName,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        )
+                        .toList();
                   },
-                );
-              }),
-            ),
-
-            const SizedBox(height: 30),
-
-            SizedBox(
-
-              width: double.infinity,
-              height: 50,
-
-              child: ElevatedButton(
-
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: mainGreen,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
+                  onChanged: loading || ngos.isEmpty
+                      ? null
+                      : (value) {
+                          setState(() {
+                            _selectedNgo = ngos.firstWhere(
+                              (ngo) => ngo.uid == value,
+                            );
+                          });
+                        },
                 ),
-
-                onPressed: () {
-
-                  if (selectedNgo == null) {
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Please select an NGO"),
-                      ),
-                    );
-
-                    return;
-                  }
-
-                  if (feedbackController.text.isEmpty) {
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Please write feedback"),
-                      ),
-                    );
-
-                    return;
-                  }
-
-                  if (rating == 0) {
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Please give rating"),
-                      ),
-                    );
-
-                    return;
-                  }
-
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Feedback Submitted"),
+                if (!loading && ngos.isEmpty) ...[
+                  const SizedBox(height: 8),
+                  const Text(
+                    'No registered NGOs found in Firebase.',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12.5,
                     ),
-                  );
-                },
-
-                child: const Text(
-                  "Submit Feedback",
+                  ),
+                ],
+                const SizedBox(height: 22),
+                const Text(
+                  'Message',
                   style: TextStyle(
                     fontSize: 16,
-                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
                   ),
                 ),
-              ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _feedbackController,
+                  maxLines: 4,
+                  decoration: _inputDecoration(
+                    hintText: 'Write your message...',
+                  ),
+                ),
+                const SizedBox(height: 18),
+                const Center(
+                  child: Text(
+                    'Rate NGO',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Center(
+                  child: Wrap(
+                    spacing: 2,
+                    children: List.generate(
+                      5,
+                      (index) => IconButton(
+                        constraints: const BoxConstraints(
+                          minWidth: 36,
+                          minHeight: 36,
+                        ),
+                        padding: EdgeInsets.zero,
+                        onPressed: () {
+                          setState(() {
+                            _rating = index + 1;
+                          });
+                        },
+                        icon: Icon(
+                          index < _rating ? Icons.star : Icons.star_border,
+                          color: Colors.amber.shade700,
+                          size: 28,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 26),
+                Center(
+                  child: SizedBox(
+                    width: 220,
+                    child: ElevatedButton(
+                      onPressed: _isSubmitting ? null : _submitFeedback,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                      ),
+                      child: _isSubmitting
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text(
+                              'Submit Feedback',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15,
+                              ),
+                            ),
+                    ),
+                  ),
+                ),
+              ],
             ),
+          );
+        },
+      ),
+    );
+  }
 
-          ],
-        ),
+  InputDecoration _inputDecoration({String? hintText}) {
+    return InputDecoration(
+      hintText: hintText,
+      filled: true,
+      fillColor: Colors.white,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(22),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(22),
+        borderSide: const BorderSide(color: AppColors.border),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(22),
+        borderSide: const BorderSide(color: AppColors.primary),
       ),
     );
   }

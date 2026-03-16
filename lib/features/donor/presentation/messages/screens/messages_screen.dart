@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:wastenot/features/messaging/models/chat_models.dart';
+import 'package:wastenot/features/messaging/services/messaging_service.dart';
+import 'package:wastenot/models/app_user_model.dart';
+import 'package:wastenot/services/session_service.dart';
+
 import 'chat_screen.dart';
-import 'chat_store.dart';
 
 class MessagesScreen extends StatefulWidget {
   final String donorName;
@@ -14,179 +18,251 @@ class MessagesScreen extends StatefulWidget {
 class _MessagesScreenState extends State<MessagesScreen> {
   static const Color mainGreen = Color(0xFF0E5E53);
 
-  final List<Color> _softColors = [
+  final MessagingService _messagingService = MessagingService();
+  final TextEditingController _searchController = TextEditingController();
+
+  final List<Color> _softColors = const [
     Color(0xFFFFE0E0),
     Color(0xFFE0F0FF),
     Color(0xFFE6FFE8),
   ];
 
-  final List<Map<String, String>> _ngos = [
-    {
-      "name": "Khair Foundation",
-      "last": "Thank you for your support",
-      "time": "Now"
-    },
-    {
-      "name": "Edhi Foundation",
-      "last": "Pickup scheduled tomorrow",
-      "time": "Yesterday"
-    },
-    {
-      "name": "SOS Children's Village",
-      "last": "Food received successfully",
-      "time": "2 days ago"
-    },
-  ];
-
-  List<Map<String, String>> _filtered = [];
-
-  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
-  void initState() {
-    super.initState();
-    _filtered = _ngos;
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
-  void _search(String value) {
-    setState(() {
-      _filtered = _ngos
-          .where((d) =>
-              d["name"]!.toLowerCase().contains(value.toLowerCase()))
-          .toList();
-    });
-  }
+  String _formatTime(DateTime? time) {
+    if (time == null) {
+      return '';
+    }
 
-  String _formatTime(DateTime time) {
     final now = DateTime.now();
-
-    if (now.difference(time).inMinutes < 60) {
-      return "Now";
+    final difference = now.difference(time);
+    if (difference.inMinutes < 1) {
+      return 'Now';
     }
-
-    if (now.difference(time).inHours < 24) {
-      return "${now.difference(time).inHours}h ago";
+    if (difference.inHours < 24) {
+      return difference.inHours == 0 ? '${difference.inMinutes}m' : '${difference.inHours}h';
     }
-
-    if (now.difference(time).inDays == 1) {
-      return "Yesterday";
+    if (difference.inDays == 1) {
+      return 'Yesterday';
     }
-
-    return "${now.difference(time).inDays} days ago";
+    return '${difference.inDays}d';
   }
 
   @override
   Widget build(BuildContext context) {
+    final currentUser = SessionService.user;
+    if (currentUser == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7F6),
+      body: StreamBuilder<List<AppUserModel>>(
+        stream: _messagingService.usersForRole('ngo'),
+        builder: (context, userSnapshot) {
+          final ngos = (userSnapshot.data ?? const <AppUserModel>[])
+              .where((user) => user.uid != currentUser.uid)
+              .toList();
 
-      body: Column(
-        children: [
+          return StreamBuilder<List<ConversationSummary>>(
+            stream: _messagingService.conversationsForUser(currentUser.uid),
+            builder: (context, conversationSnapshot) {
+              final conversations =
+                  conversationSnapshot.data ?? const <ConversationSummary>[];
+              final tiles = _buildTiles(
+                currentUser: currentUser,
+                ngos: ngos,
+                conversations: conversations,
+              );
 
-          const SizedBox(height: 16),
-
-          // 🔍 Search Bar
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(40),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 6,
-                    offset: Offset(0, 3),
-                  )
-                ],
-              ),
-              child: TextField(
-                controller: _searchController,
-                onChanged: _search,
-                decoration: const InputDecoration(
-                  hintText: "Search conversation...",
-                  border: InputBorder.none,
-                  icon: Icon(Icons.search),
-                ),
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 10),
-
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _filtered.length,
-              itemBuilder: (context, index) {
-
-                final ngo = _filtered[index];
-
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: ListTile(
-
-                    leading: CircleAvatar(
-                      backgroundColor:
-                          _softColors[index % _softColors.length],
-                      child: Text(
-                        ngo["name"]![0],
-                        style: const TextStyle(color: Colors.black),
+              return Column(
+                children: [
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(40),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Colors.black12,
+                            blurRadius: 6,
+                            offset: Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: TextField(
+                        controller: _searchController,
+                        onChanged: (value) => setState(() => _searchQuery = value.trim().toLowerCase()),
+                        decoration: const InputDecoration(
+                          hintText: 'Search conversation...',
+                          border: InputBorder.none,
+                          icon: Icon(Icons.search),
+                        ),
                       ),
                     ),
-
-                    title: Text(
-                      ngo["name"]!,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-
-                    subtitle: Text(
-                      ngo["last"]!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-
-                    trailing: Text(
-                      ngo["time"]!,
-                      style: const TextStyle(fontSize: 12),
-                    ),
-
-                    onTap: () async {
-
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ChatScreen(
-                            donorName: widget.donorName,
-                            ngoName: ngo["name"]!,
-                          ),
-                        ),
-                      );
-
-                      final msgs = ChatStore.getMessages(
-                          "${widget.donorName}_${ngo["name"]}");
-
-                      if (msgs.isNotEmpty) {
-
-                        final last = msgs.last;
-
-                        setState(() {
-                          ngo["last"] = last.text;
-                          ngo["time"] = _formatTime(last.time);
-                        });
-
-                      }
-                    },
                   ),
-                );
-              },
-            ),
-          ),
-        ],
+                  const SizedBox(height: 10),
+                  Expanded(
+                    child: tiles.isEmpty
+                        ? const Center(child: Text('No NGOs found.'))
+                        : ListView.builder(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: tiles.length,
+                            itemBuilder: (context, index) {
+                              final item = tiles[index];
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: ListTile(
+                                  leading: CircleAvatar(
+                                    backgroundColor: _softColors[index % _softColors.length],
+                                    backgroundImage: item.user.profileImageUrl != null &&
+                                            item.user.profileImageUrl!.isNotEmpty
+                                        ? NetworkImage(item.user.profileImageUrl!)
+                                        : null,
+                                    child: (item.user.profileImageUrl == null ||
+                                            item.user.profileImageUrl!.isEmpty)
+                                        ? Text(
+                                            item.user.displayName.isEmpty
+                                                ? 'N'
+                                                : item.user.displayName[0].toUpperCase(),
+                                            style: const TextStyle(color: Colors.black),
+                                          )
+                                        : null,
+                                  ),
+                                  title: Text(
+                                    item.user.displayName,
+                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  subtitle: Text(
+                                    item.preview.isEmpty ? 'Tap to start conversation' : item.preview,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  trailing: SizedBox(
+                                    width: 52,
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      children: [
+                                        Text(
+                                          _formatTime(item.previewTime),
+                                          style: const TextStyle(fontSize: 12),
+                                        ),
+                                        if (item.unreadCount > 0) ...[
+                                          const SizedBox(height: 4),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 7,
+                                              vertical: 2,
+                                            ),
+                                            decoration: const BoxDecoration(
+                                              color: Colors.red,
+                                              borderRadius: BorderRadius.all(Radius.circular(12)),
+                                            ),
+                                            child: Text(
+                                              item.unreadCount > 99
+                                                  ? '99+'
+                                                  : item.unreadCount.toString(),
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => ChatScreen(ngoUser: item.user),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              );
+            },
+          );
+        },
       ),
     );
   }
+
+  List<_MessageListItem> _buildTiles({
+    required AppUserModel currentUser,
+    required List<AppUserModel> ngos,
+    required List<ConversationSummary> conversations,
+  }) {
+    final conversationByPeerId = <String, ConversationSummary>{};
+    for (final conversation in conversations) {
+      final peerId = conversation.otherParticipantId(currentUser.uid);
+      if (peerId.isNotEmpty) {
+        conversationByPeerId[peerId] = conversation;
+      }
+    }
+
+    final filtered = ngos.where((user) {
+      return _searchQuery.isEmpty ||
+          user.displayName.toLowerCase().contains(_searchQuery);
+    }).toList();
+
+    filtered.sort((a, b) {
+      final aConversation = conversationByPeerId[a.uid];
+      final bConversation = conversationByPeerId[b.uid];
+      final aTime = aConversation?.updatedAt ?? aConversation?.previewTimeFor(currentUser.uid);
+      final bTime = bConversation?.updatedAt ?? bConversation?.previewTimeFor(currentUser.uid);
+
+      if (aTime != null && bTime != null) {
+        return bTime.compareTo(aTime);
+      }
+      if (aTime != null) {
+        return -1;
+      }
+      if (bTime != null) {
+        return 1;
+      }
+      return a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase());
+    });
+
+    return filtered.map((user) {
+      final conversation = conversationByPeerId[user.uid];
+      return _MessageListItem(
+        user: user,
+        preview: conversation?.previewFor(currentUser.uid) ?? '',
+        previewTime: conversation?.previewTimeFor(currentUser.uid),
+        unreadCount: conversation?.unreadFor(currentUser.uid) ?? 0,
+      );
+    }).toList();
+  }
 }
 
+class _MessageListItem {
+  const _MessageListItem({
+    required this.user,
+    required this.preview,
+    required this.previewTime,
+    required this.unreadCount,
+  });
+
+  final AppUserModel user;
+  final String preview;
+  final DateTime? previewTime;
+  final int unreadCount;
+}

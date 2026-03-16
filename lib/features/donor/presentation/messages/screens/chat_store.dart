@@ -1,24 +1,8 @@
-class ChatMessage {
-  final String text;
-  final DateTime time;
-  final bool fromNgo;
+import 'package:wastenot/features/messaging/models/chat_models.dart';
+import 'package:wastenot/features/messaging/services/messaging_service.dart';
 
-  ChatMessage({required this.text, required this.time, required this.fromNgo});
-}
+typedef ChatMessage = ConversationMessage;
 
 class ChatStore {
-  static final Map<String, List<ChatMessage>> _store = {};
-
-  static List<ChatMessage> getMessages(String chatId) {
-    return _store[chatId] ?? [];
-  }
-
-  static void addMessage(String chatId, String msg, {bool fromNgo = false}) {
-    _store.putIfAbsent(chatId, () => []);
-    _store[chatId]!.add(ChatMessage(
-      text: msg,
-      time: DateTime.now(),
-      fromNgo: fromNgo,
-    ));
-  }
+  static final MessagingService service = MessagingService();
 }
