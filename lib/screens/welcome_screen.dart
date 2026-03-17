@@ -32,7 +32,7 @@ class WelcomeScreen extends StatelessWidget {
                         width: 160,
                         height: 160,
                         decoration: BoxDecoration(
-                          color: mainGreen.withOpacity(0.06),
+                          color: mainGreen.withValues(alpha:0.06),
                           shape: BoxShape.circle,
                         ),
                         child: ClipOval(

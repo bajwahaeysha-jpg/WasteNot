@@ -14,6 +14,8 @@ import 'package:wastenot/core/state/ngo_concern.dart';
 import '../home/goal/ngo_goal_screen.dart';
 import 'package:wastenot/features/ngo/presentation/screens/ngo_feedback_screen.dart';
 import 'package:wastenot/models/app_user_model.dart';
+import 'package:wastenot/screens/login_screen.dart';
+import 'package:wastenot/services/notification_badge_service.dart';
 import 'package:wastenot/services/session_service.dart';
 import 'package:wastenot/services/goal_services.dart';
 
@@ -384,7 +386,25 @@ Container(
       builder: (context, user, _) {
         final profileImageUrl = user?.profileImageUrl;
 
-        return Scaffold(
+        return PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, result) {
+            if (didPop) return;
+
+            if (_index != 0) {
+              setState(() {
+                _index = 0;
+              });
+              return;
+            }
+
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (_) => const LoginScreen()),
+              (route) => false,
+            );
+          },
+          child: Scaffold(
           backgroundColor: const Color.fromRGBO(245, 247, 246, 1),
           appBar: AppBar(
             backgroundColor: AppColors.primary,
@@ -413,24 +433,38 @@ Container(
                       );
                     },
                   ),
-                  Positioned(
-                    right: 8,
-                    top: 8,
-                    child: Container(
-                      padding: const EdgeInsets.all(3),
-                      decoration: const BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Text(
-                        '3',
-                        style: TextStyle(
-                          color: Color(0xFFFFFFFF),
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                  StreamBuilder<int>(
+                    stream: NotificationBadgeService().ngoBellCount(
+                      uid: user?.uid,
+                      email: user?.email,
                     ),
+                    builder: (context, snapshot) {
+                      final count = snapshot.data ?? 0;
+                      if (count <= 0) {
+                        return const SizedBox.shrink();
+                      }
+
+                      final label = count > 9 ? '9+' : '$count';
+                      return Positioned(
+                        right: 8,
+                        top: 8,
+                        child: Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: const BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Text(
+                            label,
+                            style: const TextStyle(
+                              color: Color(0xFFFFFFFF),
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -481,10 +515,10 @@ Container(
               unselectedItemColor: AppColors.primary.withValues(alpha: .35),
               showUnselectedLabels: true,
               type: BottomNavigationBarType.fixed,
-              items: const [
-                BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.inventory),
+               items: const [
+                 BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
+                 BottomNavigationBarItem(
+                   icon: Icon(Icons.inventory),
                   label: "Active",
                 ),
                 BottomNavigationBarItem(
@@ -494,9 +528,10 @@ Container(
                 BottomNavigationBarItem(
                   icon: Icon(Icons.more_horiz),
                   label: "More",
-                ),
-              ],
-            ),
+                 ),
+               ],
+             ),
+           ),
           ),
         );
       },

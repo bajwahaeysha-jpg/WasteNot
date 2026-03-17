@@ -57,7 +57,7 @@ class _NgoSignUpScreenState extends State<NgoSignUpScreen> {
                 onTap: pickImage,
                 child: CircleAvatar(
                   radius: 55,
-                  backgroundColor: primary.withOpacity(0.1),
+                  backgroundColor: primary.withValues(alpha:0.1),
                   backgroundImage:
                       _image != null ? FileImage(_image!) : null,
                   child: _image == null

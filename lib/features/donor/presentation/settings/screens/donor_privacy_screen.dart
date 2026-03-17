@@ -63,7 +63,7 @@ class _DonorPrivacyScreenState extends State<DonorPrivacyScreen> {
 
             trailing: Switch(
               value: allowMessages,
-              activeColor: Colors.white,
+              inactiveThumbColor: Colors.white,
               activeTrackColor: Colors.deepPurple,
               onChanged: (value) {
                 setState(() {

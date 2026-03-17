@@ -155,7 +155,7 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
               child: CircleAvatar(
                 radius: 54,
                 backgroundColor:
-                    mainGreen.withOpacity(0.15),
+                    mainGreen.withValues(alpha:.15),
 
                 backgroundImage:
                     selectedImage != null

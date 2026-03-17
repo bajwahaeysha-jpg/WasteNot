@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:wastenot/screens/login_screen.dart';
 
 import '../analytics/analytics_screen.dart';
 import '../home/admin_home_screen.dart';
@@ -37,7 +38,7 @@ class _AdminBottomNavigationState extends State<AdminBottomNavigation> {
   Widget build(BuildContext context) {
     return PopScope(
       // ✅ Only allow system back when already on Home
-      canPop: _currentIndex == 0,
+      canPop: false,
 
       // ✅ NEW API (Flutter 3.22+)
       onPopInvokedWithResult: (didPop, result) {
@@ -46,7 +47,14 @@ class _AdminBottomNavigationState extends State<AdminBottomNavigation> {
         // 🔁 If user is NOT on Home → go to Home
         if (_currentIndex != 0) {
           setState(() => _currentIndex = 0);
+          return;
         }
+
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          (route) => false,
+        );
       },
 
       child: Scaffold(

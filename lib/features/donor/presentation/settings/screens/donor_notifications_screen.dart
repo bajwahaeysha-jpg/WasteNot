@@ -63,7 +63,7 @@ class _DonorNotificationsScreenState extends State<DonorNotificationsScreen> {
 
                 trailing: Switch(
                   value: notifications,
-                  activeColor: Colors.white,
+                  inactiveThumbColor: Colors.white,
                   activeTrackColor: Colors.deepPurple,
                   onChanged: (value) {
                     setState(() {
@@ -103,7 +103,7 @@ class _DonorNotificationsScreenState extends State<DonorNotificationsScreen> {
 
                 trailing: Switch(
                   value: reminders,
-                  activeColor: Colors.white,
+                  inactiveThumbColor: Colors.white,
                   activeTrackColor: Colors.deepPurple,
                   onChanged: (value) {
                     setState(() {

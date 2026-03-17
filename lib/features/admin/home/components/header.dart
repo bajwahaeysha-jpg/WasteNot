@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../notifications/notification_screen.dart';
 import '../../more/profile/admin_profile_screen.dart';
+import 'package:wastenot/features/admin/home/services/admin_header_notification_service.dart';
 
 class Header extends StatefulWidget {
   final Map<String, dynamic> user;
@@ -16,8 +17,7 @@ class Header extends StatefulWidget {
 }
 
 class _HeaderState extends State<Header> {
-
-  int _notificationCount = 3;
+ 
   File? profileImage;
 
   @override
@@ -85,18 +85,13 @@ class _HeaderState extends State<Header> {
           /// NOTIFICATION
           Stack(
             children: [
-
+ 
               IconButton(
                 icon: const Icon(
                   Icons.notifications_none,
                   color: Colors.white,
                 ),
                 onPressed: () {
-
-                  setState(() {
-                    _notificationCount = 0;
-                  });
-
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -105,23 +100,33 @@ class _HeaderState extends State<Header> {
                   );
                 },
               ),
+              StreamBuilder<int>(
+                stream: AdminHeaderNotificationService()
+                    .streamRegistrationBadgeCount(),
+                builder: (context, snapshot) {
+                  final count = snapshot.data ?? 0;
+                  if (count <= 0) {
+                    return const SizedBox.shrink();
+                  }
 
-              if (_notificationCount > 0)
-                Positioned(
-                  right: 6,
-                  top: 6,
-                  child: CircleAvatar(
-                    radius: 7,
-                    backgroundColor: Colors.red,
-                    child: Text(
-                      "$_notificationCount",
-                      style: const TextStyle(
-                        fontSize: 9,
-                        color: Colors.white,
+                  final label = count > 9 ? '9+' : '$count';
+                  return Positioned(
+                    right: 6,
+                    top: 6,
+                    child: CircleAvatar(
+                      radius: 7,
+                      backgroundColor: Colors.red,
+                      child: Text(
+                        label,
+                        style: const TextStyle(
+                          fontSize: 9,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
-                  ),
-                ),
+                  );
+                },
+              ),
             ],
           ),
 

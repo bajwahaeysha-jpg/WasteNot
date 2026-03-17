@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'feedback/admin_feedback_screen.dart';
 import 'profile/admin_profile_screen.dart';
 import 'settings/settings_screen.dart';
-import 'support/admin_support_screen.dart';
 import 'package:wastenot/screens/login_screen.dart';
 
 class AdminMoreSheet extends StatelessWidget {
@@ -40,14 +39,6 @@ class AdminMoreSheet extends StatelessWidget {
               "Settings",
               SettingsScreen(user: user)
             ),
-
-            _item(
-              context,
-              Icons.support_agent_outlined,
-              "Support",
-              const AdminSupportScreen(),
-            ),
-
             _item(
   context,
   Icons.feedback_outlined,

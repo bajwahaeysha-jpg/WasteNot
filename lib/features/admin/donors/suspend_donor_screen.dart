@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:wastenot/features/admin/donors/services/admin_donor_management_service.dart';
 
 class SuspendDonorScreen extends StatefulWidget {
-  final Map<String, dynamic> donor;
-
   const SuspendDonorScreen({super.key, required this.donor});
+
+  final AdminManagedDonor donor;
 
   @override
   State<SuspendDonorScreen> createState() => _SuspendDonorScreenState();
@@ -12,8 +13,10 @@ class SuspendDonorScreen extends StatefulWidget {
 class _SuspendDonorScreenState extends State<SuspendDonorScreen> {
   final TextEditingController reasonCtrl = TextEditingController();
   final TextEditingController detailCtrl = TextEditingController();
+  final _service = AdminDonorManagementService();
 
   static const primary = Color(0xFF0F5F54);
+  bool _saving = false;
 
   @override
   Widget build(BuildContext context) {
@@ -40,9 +43,7 @@ class _SuspendDonorScreenState extends State<SuspendDonorScreen> {
               fontWeight: FontWeight.w600,
             ),
           ),
-
           const SizedBox(height: 10),
-
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
@@ -63,9 +64,7 @@ class _SuspendDonorScreenState extends State<SuspendDonorScreen> {
               ),
             ),
           ),
-
           const SizedBox(height: 18),
-
           const Text(
             "Details",
             style: TextStyle(
@@ -73,9 +72,7 @@ class _SuspendDonorScreenState extends State<SuspendDonorScreen> {
               fontWeight: FontWeight.w600,
             ),
           ),
-
           const SizedBox(height: 10),
-
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
@@ -97,9 +94,7 @@ class _SuspendDonorScreenState extends State<SuspendDonorScreen> {
               ),
             ),
           ),
-
           const SizedBox(height: 30),
-
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -121,17 +116,16 @@ class _SuspendDonorScreenState extends State<SuspendDonorScreen> {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-
                 const SizedBox(height: 12),
-
-                _detailRow("Name", widget.donor['name'] ?? "Unknown"),
+                _detailRow("Name", widget.donor.name),
                 const SizedBox(height: 8),
-                _detailRow("Location", widget.donor['location'] ?? "Unknown"),
+                _detailRow("Location", widget.donor.locationLabel),
                 const SizedBox(height: 8),
-                _detailRow("Phone", widget.donor['phone'] ?? "No phone"),
-
+                _detailRow(
+                  "Phone",
+                  widget.donor.phone.isEmpty ? "No phone" : widget.donor.phone,
+                ),
                 const SizedBox(height: 12),
-
                 Text(
                   "The donor will be suspended and notified regarding this action.",
                   style: TextStyle(
@@ -142,9 +136,7 @@ class _SuspendDonorScreenState extends State<SuspendDonorScreen> {
               ],
             ),
           ),
-
           const SizedBox(height: 40),
-
           SizedBox(
             height: 50,
             width: double.infinity,
@@ -155,28 +147,11 @@ class _SuspendDonorScreenState extends State<SuspendDonorScreen> {
                   borderRadius: BorderRadius.circular(26),
                 ),
               ),
-              onPressed: () {
-                if (reasonCtrl.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Please enter suspension reason"),
-                    ),
-                  );
-                  return;
-                }
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text("Donor suspended successfully"),
-                  ),
-                );
-
-                Navigator.pop(context);
-              },
+              onPressed: _saving ? null : _submit,
               icon: const Icon(Icons.block, color: Colors.white),
-              label: const Text(
-                "Suspend & Notify Donor",
-                style: TextStyle(
+              label: Text(
+                _saving ? "Suspending..." : "Suspend & Notify Donor",
+                style: const TextStyle(
                   fontWeight: FontWeight.w600,
                   color: Colors.white,
                 ),
@@ -186,6 +161,42 @@ class _SuspendDonorScreenState extends State<SuspendDonorScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _submit() async {
+    if (reasonCtrl.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Please enter suspension reason"),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _saving = true);
+    try {
+      await _service.suspendDonor(
+        donorId: widget.donor.id,
+        donorName: widget.donor.name,
+        reason: reasonCtrl.text,
+        details: detailCtrl.text,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Donor suspended successfully"),
+        ),
+      );
+      Navigator.pop(context, true);
+    } finally {
+      if (mounted) {
+        setState(() => _saving = false);
+      }
+    }
   }
 
   Widget _detailRow(String label, String value) {

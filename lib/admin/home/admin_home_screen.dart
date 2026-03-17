@@ -14,37 +14,23 @@ class AdminHomeScreen extends StatefulWidget {
 }
 
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
-  String _searchQuery = "";
-
-  /// 🔍 SEARCH CALLBACK (CONNECTED WITH HEADER)
-  void _handleSearch(String value) {
-    setState(() {
-      _searchQuery = value;
-    });
-
-    // 🔹 Abhi sirf debug — future mein yahin filter lagay ga
-    debugPrint("Admin search query: $_searchQuery");
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Column(
         children: [
-          /// ✅ HEADER CONNECTED
           Header(
             user: widget.user,
           ),
-
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: const [
-                  StatsSection(),       // ❌ untouched
+                  StatsSection(),
                   SizedBox(height: 20),
-                  QuickActionsSection(), // ❌ untouched
+                  QuickActionsSection(),
                 ],
               ),
             ),

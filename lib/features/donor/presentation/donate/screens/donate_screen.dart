@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:wastenot/services/session_service.dart';
 import 'add_donation_screen.dart';
 
 class DonateScreen extends StatelessWidget {
@@ -122,6 +123,17 @@ class DonateScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(12)),
                       ),
                       onPressed: () {
+                        if (SessionService.user?.isSuspended == true) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                "Your account is suspended. You cannot donate right now.",
+                              ),
+                            ),
+                          );
+                          return;
+                        }
+
                         Navigator.push(
                           context,
                           MaterialPageRoute(

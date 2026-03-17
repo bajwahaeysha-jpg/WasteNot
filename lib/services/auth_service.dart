@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:wastenot/models/app_user_model.dart';
 import 'package:wastenot/services/firestore_service.dart';
+import 'package:wastenot/services/admin_registration_notification_service.dart';
 import 'package:wastenot/services/session_service.dart';
 
 class AuthService {
@@ -74,6 +75,12 @@ class AuthService {
       throw AuthFailure('Your NGO request is still pending admin approval.');
     }
 
+    if (profile.isSuspended) {
+      await _auth.signOut();
+      SessionService.clear();
+      throw AuthFailure('Your account is suspended. Please contact support.');
+    }
+
     SessionService.setUser(profile, firestoreService: _firestoreService);
     return profile;
   }
@@ -120,6 +127,12 @@ class AuthService {
         throw AuthFailure('Your NGO request is still pending admin approval.');
       }
 
+      if (profile.isSuspended) {
+        await _auth.signOut();
+        SessionService.clear();
+        throw AuthFailure('Your account is suspended. Please contact support.');
+      }
+
       SessionService.setUser(profile, firestoreService: _firestoreService);
       return profile;
     } on FirebaseAuthException catch (error) {
@@ -142,6 +155,7 @@ class AuthService {
     required String password,
     required String phone,
     required String address,
+    required String about,
     File? profileImage,
   }) async {
     try {
@@ -168,7 +182,14 @@ class AuthService {
         email: normalizedEmail,
         phone: phone.trim(),
         address: address.trim(),
+        about: about.trim(),
         profileImageUrl: profileImageUrl,
+      );
+
+      // Admin bell notification (separate service; does not touch FirestoreService).
+      await AdminRegistrationNotificationService().createDonorRegistered(
+        uid: firebaseUser.uid,
+        name: name.trim(),
       );
 
       final profile = AppUserModel(
@@ -234,6 +255,12 @@ class AuthService {
       description: description.trim(),
       profileImageUrl: profileImageUrl,
     );
+
+    // Admin bell notification for new NGO registration request (separate service).
+    await AdminRegistrationNotificationService().createNgoRegistered(
+      email: normalizedEmail,
+      organizationName: organizationName.trim(),
+    );
   }
 
   Future<AppUserModel> updateCurrentUserProfile({
@@ -241,6 +268,7 @@ class AuthService {
     String? name,
     String? phone,
     String? address,
+    String? about,
     String? organizationName,
     String? registrationNumber,
     String? organizationDescription,
@@ -274,6 +302,7 @@ class AuthService {
 
     if (sessionUser.isDonor) {
       data['name'] = name?.trim();
+      data['about'] = about?.trim();
     }
 
     if (sessionUser.isNgo) {

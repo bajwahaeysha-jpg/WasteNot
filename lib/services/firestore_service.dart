@@ -60,6 +60,7 @@ class FirestoreService {
     required String email,
     required String phone,
     required String address,
+    required String about,
     String? profileImageUrl,
   }) {
     return _users.doc(uid).set({
@@ -67,6 +68,7 @@ class FirestoreService {
       'email': email,
       'phone': phone,
       'address': address,
+      'about': about,
       'profileImageUrl': profileImageUrl,
       'role': 'donor',
       'approvedByAdmin': true,
@@ -385,28 +387,53 @@ class FirestoreService {
     if (uid != null && uid.isNotEmpty) {
       return _notifications
           .where('uid', isEqualTo: uid)
-          .orderBy('createdAt', descending: true)
           .snapshots()
           .map(
-            (snapshot) => snapshot.docs
-                .map((doc) => {'id': doc.id, ...doc.data()})
-                .toList(),
+            (snapshot) {
+              final items = snapshot.docs
+                  .map((doc) => {'id': doc.id, ...doc.data()})
+                  .toList();
+              items.sort((a, b) {
+                final aDate = _notificationCreatedAt(a);
+                final bDate = _notificationCreatedAt(b);
+                return bDate.compareTo(aDate);
+              });
+              return items;
+            },
           );
     }
 
     if (email != null && email.isNotEmpty) {
       return _notifications
           .where('email', isEqualTo: email)
-          .orderBy('createdAt', descending: true)
           .snapshots()
           .map(
-            (snapshot) => snapshot.docs
-                .map((doc) => {'id': doc.id, ...doc.data()})
-                .toList(),
+            (snapshot) {
+              final items = snapshot.docs
+                  .map((doc) => {'id': doc.id, ...doc.data()})
+                  .toList();
+              items.sort((a, b) {
+                final aDate = _notificationCreatedAt(a);
+                final bDate = _notificationCreatedAt(b);
+                return bDate.compareTo(aDate);
+              });
+              return items;
+            },
           );
     }
 
     return const Stream<List<Map<String, dynamic>>>.empty();
+  }
+
+  static DateTime _notificationCreatedAt(Map<String, dynamic> data) {
+    final createdAt = data['createdAt'];
+    if (createdAt is Timestamp) {
+      return createdAt.toDate();
+    }
+    if (createdAt is DateTime) {
+      return createdAt;
+    }
+    return DateTime.fromMillisecondsSinceEpoch(0);
   }
 
   Future<void> _createNotification({

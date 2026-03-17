@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:wastenot/features/admin/activity_log/activity_log_data.dart';
-import 'suspend_ngo_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:wastenot/features/admin/ngos/services/admin_ngo_management_service.dart';
+
+import 'suspend_ngo_screen.dart';
 
 class NGOProfileScreen extends StatelessWidget {
-  final Map ngo;
+  const NGOProfileScreen({
+    super.key,
+    required this.ngoId,
+  });
 
-  const NGOProfileScreen({super.key, required this.ngo});
+  final String ngoId;
 
   static const primary = Color(0xFF0F4C45);
 
@@ -14,198 +18,217 @@ class NGOProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final imageHeight = screenWidth * 0.45;
+    final service = AdminNgoManagementService();
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F7F6),
+    return StreamBuilder<AdminManagedNgo?>(
+      stream: service.streamNgoById(ngoId),
+      builder: (context, snapshot) {
+        final ngo = snapshot.data;
 
-      appBar: AppBar(
-        backgroundColor: primary,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: Text(
-          ngo['name'],
-          style: const TextStyle(color: Colors.white),
-        ),
-      ),
+        if (snapshot.connectionState == ConnectionState.waiting && ngo == null) {
+          return const Scaffold(
+            backgroundColor: Color(0xFFF5F7F6),
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
 
-      body: ListView(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        children: [
-
-          /// NGO IMAGE
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Container(
-              height: imageHeight,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.asset(
-                  ngo['logo'],
-                  fit: BoxFit.contain, // 👈 image puri show hogi
-                ),
-              ),
+        return Scaffold(
+          backgroundColor: const Color(0xFFF5F7F6),
+          appBar: AppBar(
+            backgroundColor: primary,
+            elevation: 0,
+            iconTheme: const IconThemeData(color: Colors.white),
+            title: Text(
+              ngo?.name ?? "NGO",
+              style: const TextStyle(color: Colors.white),
             ),
           ),
-
-          const SizedBox(height: 18),
-
-          /// NAME + LOCATION + CALL
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          body: ngo == null
+              ? const Center(child: Text("NGO not found"))
+              : ListView(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                   children: [
-
-                    Text(
-                      ngo['name'],
-                      style: TextStyle(
-                        fontSize: screenWidth * 0.05,
-                        fontWeight: FontWeight.bold,
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Container(
+                        height: imageHeight,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: ngo.imageUrl.isNotEmpty
+                              ? Image.network(
+                                  ngo.imageUrl,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (_, _, _) =>
+                                      _imageFallback(imageHeight),
+                                )
+                              : _imageFallback(imageHeight),
+                        ),
                       ),
                     ),
-
-                    const SizedBox(height: 6),
-
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.location_on,
-                          size: 16,
-                          color: Colors.red,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          ngo['location'],
-                          style: const TextStyle(color: Colors.grey),
-                        ),
-                      ],
+                    const SizedBox(height: 18),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  ngo.name,
+                                  style: TextStyle(
+                                    fontSize: screenWidth * 0.05,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  ngo.phone.isEmpty
+                                      ? "Phone not available"
+                                      : ngo.phone,
+                                  style: const TextStyle(
+                                    color: Colors.black54,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  ngo.email,
+                                  style: const TextStyle(
+                                    color: Colors.black54,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.location_on,
+                                      size: 16,
+                                      color: Colors.red,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                      child: Text(
+                                        ngo.locationLabel,
+                                        style: const TextStyle(
+                                          color: Colors.grey,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.call, color: primary),
+                            onPressed: () => _callNgo(context, ngo.phone),
+                          ),
+                        ],
+                      ),
                     ),
+                    const SizedBox(height: 20),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        children: [
+                          _statBox(
+                            ngo.totalMealsReceived.toString(),
+                            "Meals",
+                          ),
+                          const SizedBox(width: 10),
+                          _statBox(
+                            "${ngo.successRate}%",
+                            "Success",
+                          ),
+                          const SizedBox(width: 10),
+                          _statBox(
+                            ngo.statusLabel,
+                            "Status",
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        "About",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        ngo.aboutLabel,
+                        style: const TextStyle(
+                          color: Colors.black87,
+                          height: 1.5,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+                    ListTile(
+                      leading: const Icon(
+                        Icons.notifications,
+                        color: primary,
+                      ),
+                      title: const Text("Send Notification"),
+                      onTap: () => _showNotificationDialog(context, service, ngo),
+                    ),
+                    ListTile(
+                      leading: Icon(
+                        ngo.isSuspended ? Icons.check_circle : Icons.block,
+                        color: ngo.isSuspended ? Colors.green : Colors.red,
+                      ),
+                      title: Text(
+                        ngo.isSuspended ? "Unsuspend NGO" : "Suspend NGO",
+                        style: TextStyle(
+                          color: ngo.isSuspended ? Colors.green : Colors.red,
+                        ),
+                      ),
+                      onTap: () async {
+                        if (ngo.isSuspended) {
+                          await service.unsuspendNgo(
+                            ngoId: ngo.id,
+                            ngoName: ngo.name,
+                          );
+
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("NGO re-enabled successfully"),
+                            ),
+                          );
+                          return;
+                        }
+
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => SuspendNGOScreen(ngo: ngo),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 20),
                   ],
                 ),
-
-                /// CALL BUTTON
-                IconButton(
-                  icon: const Icon(Icons.call, color: primary),
-                  onPressed: () async {
-
-                    final telUrl = 'tel:${ngo['phone']}';
-
-                    if (await canLaunchUrl(Uri.parse(telUrl))) {
-                      await launchUrl(Uri.parse(telUrl));
-                    }
-                  },
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          /// STATS
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-
-                _statBox(
-                  ngo['mealsReceived'].toString(),
-                  "Meals",
-                ),
-
-                const SizedBox(width: 10),
-
-                _statBox(
-                  "${ngo['successRate']}%",
-                  "Success",
-                ),
-
-                const SizedBox(width: 10),
-
-                _statBox(
-                  ngo['status'],
-                  "Status",
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 28),
-
-          /// ABOUT TITLE
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              "About",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 8),
-
-          /// DYNAMIC ABOUT TEXT
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              ngo['about'] ??
-                  "This organization works to collect surplus food and distribute it to people in need, helping reduce food waste and hunger.",
-              style: const TextStyle(
-                color: Colors.black87,
-                height: 1.5,
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 30),
-
-          /// SEND NOTIFICATION
-          ListTile(
-            leading: const Icon(
-              Icons.notifications,
-              color: primary,
-            ),
-            title: const Text("Send Notification"),
-            onTap: () => _showNotificationDialog(context),
-          ),
-
-          /// SUSPEND NGO
-          ListTile(
-            leading: const Icon(
-              Icons.block,
-              color: Colors.red,
-            ),
-            title: const Text(
-              "Suspend NGO",
-              style: TextStyle(color: Colors.red),
-            ),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => SuspendNGOScreen(ngo: ngo),
-                ),
-              );
-            },
-          ),
-
-          const SizedBox(height: 20),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  /// STAT BOX
   static Widget _statBox(String value, String label) {
     return Expanded(
       child: Container(
@@ -216,18 +239,17 @@ class NGOProfileScreen extends StatelessWidget {
         ),
         child: Column(
           children: [
-
             Text(
               value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
                 color: primary,
               ),
             ),
-
             const SizedBox(height: 4),
-
             Text(
               label,
               style: const TextStyle(color: Colors.black54),
@@ -238,33 +260,43 @@ class NGOProfileScreen extends StatelessWidget {
     );
   }
 
-  /// SEND NOTIFICATION DIALOG
-  void _showNotificationDialog(BuildContext context) {
+  Widget _imageFallback(double imageHeight) {
+    return Container(
+      height: imageHeight,
+      width: double.infinity,
+      color: Colors.grey.shade300,
+      alignment: Alignment.center,
+      child: const Icon(
+        Icons.apartment,
+        size: 60,
+        color: Colors.grey,
+      ),
+    );
+  }
 
+  void _showNotificationDialog(
+    BuildContext context,
+    AdminNgoManagementService service,
+    AdminManagedNgo ngo,
+  ) {
     final titleCtrl = TextEditingController();
     final msgCtrl = TextEditingController();
 
     showDialog(
       context: context,
       builder: (dialogContext) {
-
         return AlertDialog(
-
           title: const Text("Send Notification"),
-
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-
               TextField(
                 controller: titleCtrl,
                 decoration: const InputDecoration(
                   labelText: "Title",
                 ),
               ),
-
               const SizedBox(height: 10),
-
               TextField(
                 controller: msgCtrl,
                 maxLines: 3,
@@ -274,32 +306,30 @@ class NGOProfileScreen extends StatelessWidget {
               ),
             ],
           ),
-
           actions: [
-
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
               child: const Text("Cancel"),
             ),
-
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: primary,
               ),
-              onPressed: () {
+              onPressed: () async {
+                if (titleCtrl.text.trim().isEmpty ||
+                    msgCtrl.text.trim().isEmpty) {
+                  return;
+                }
 
-                if (titleCtrl.text.isEmpty || msgCtrl.text.isEmpty) return;
+                await service.sendNotificationToNgo(
+                  ngoId: ngo.id,
+                  ngoName: ngo.name,
+                  title: titleCtrl.text.trim(),
+                  message: msgCtrl.text.trim(),
+                );
 
-                activityLogs.insert(0, {
-                  "title": titleCtrl.text,
-                  "message": msgCtrl.text,
-                  "receiver": ngo['name'],
-                  "type": "ngo",
-                  "time": "Now"
-                });
-
+                if (!context.mounted) return;
                 Navigator.pop(dialogContext);
-
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text("Notification sent to NGO"),
@@ -311,6 +341,32 @@ class NGOProfileScreen extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+
+  Future<void> _callNgo(BuildContext context, String phone) async {
+    final trimmedPhone = phone.trim();
+
+    if (trimmedPhone.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Phone number not available"),
+        ),
+      );
+      return;
+    }
+
+    final telUrl = Uri.parse('tel:$trimmedPhone');
+    if (await canLaunchUrl(telUrl)) {
+      await launchUrl(telUrl);
+      return;
+    }
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Unable to open dialer"),
+      ),
     );
   }
 }

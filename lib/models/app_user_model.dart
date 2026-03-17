@@ -14,6 +14,11 @@ class AppUserModel {
     this.registrationNumber,
     this.organizationDescription,
     this.approvedByAdmin = false,
+    this.status,
+    this.isSuspended = false,
+    this.suspensionReason,
+    this.suspendedAt,
+    this.suspendedBy,
   });
 
   final String uid;
@@ -28,6 +33,11 @@ class AppUserModel {
   final String? registrationNumber;
   final String? organizationDescription;
   final bool approvedByAdmin;
+  final String? status;
+  final bool isSuspended;
+  final String? suspensionReason;
+  final DateTime? suspendedAt;
+  final String? suspendedBy;
 
   String get displayName => organizationName ?? name ?? email;
 
@@ -48,6 +58,11 @@ class AppUserModel {
     String? registrationNumber,
     String? organizationDescription,
     bool? approvedByAdmin,
+    String? status,
+    bool? isSuspended,
+    String? suspensionReason,
+    DateTime? suspendedAt,
+    String? suspendedBy,
   }) {
     return AppUserModel(
       uid: uid ?? this.uid,
@@ -63,6 +78,11 @@ class AppUserModel {
       organizationDescription:
           organizationDescription ?? this.organizationDescription,
       approvedByAdmin: approvedByAdmin ?? this.approvedByAdmin,
+      status: status ?? this.status,
+      isSuspended: isSuspended ?? this.isSuspended,
+      suspensionReason: suspensionReason ?? this.suspensionReason,
+      suspendedAt: suspendedAt ?? this.suspendedAt,
+      suspendedBy: suspendedBy ?? this.suspendedBy,
     );
   }
 
@@ -79,6 +99,11 @@ class AppUserModel {
       'organizationDescription': organizationDescription,
       'role': role,
       'approvedByAdmin': approvedByAdmin,
+      'status': status,
+      'isSuspended': isSuspended,
+      'suspensionReason': suspensionReason,
+      'suspendedAt': suspendedAt == null ? null : Timestamp.fromDate(suspendedAt!),
+      'suspendedBy': suspendedBy,
       'createdAt': Timestamp.fromDate(createdAt),
     };
   }
@@ -92,6 +117,8 @@ class AppUserModel {
       'phone': phone,
       'address': address,
       'profileImageUrl': profileImageUrl,
+      'status': status,
+      'isSuspended': isSuspended,
     };
   }
 
@@ -100,6 +127,9 @@ class AppUserModel {
   ) {
     final data = doc.data() ?? <String, dynamic>{};
     final createdAt = data['createdAt'];
+    final suspendedAt = data['suspendedAt'];
+    final isSuspended = (data['isSuspended'] as bool?) ??
+        ((data['status'] as String?)?.toLowerCase() == 'suspended');
 
     return AppUserModel(
       uid: doc.id,
@@ -113,6 +143,11 @@ class AppUserModel {
       organizationDescription: data['organizationDescription'] as String?,
       role: (data['role'] as String?) ?? 'donor',
       approvedByAdmin: (data['approvedByAdmin'] as bool?) ?? false,
+      status: data['status'] as String?,
+      isSuspended: isSuspended,
+      suspensionReason: data['suspensionReason'] as String?,
+      suspendedAt: suspendedAt is Timestamp ? suspendedAt.toDate() : null,
+      suspendedBy: data['suspendedBy'] as String?,
       createdAt: createdAt is Timestamp ? createdAt.toDate() : DateTime.now(),
     );
   }

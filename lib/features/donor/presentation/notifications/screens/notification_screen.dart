@@ -1,18 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:wastenot/features/donor/models/donor_notification_model.dart';
+import 'package:wastenot/services/admin_notification_read_receipt_service.dart';
+import 'package:wastenot/services/donor_notification_service.dart';
+import 'package:wastenot/services/notification_read_service.dart';
+import 'package:wastenot/services/session_service.dart';
 
 class NotificationScreen extends StatelessWidget {
+  const NotificationScreen({super.key});
 
   static const Color mainGreen = Color(0xFF0E5E53);
 
-  const NotificationScreen({super.key});
-
   @override
   Widget build(BuildContext context) {
+    final user = SessionService.user;
+    final service = DonorNotificationService();
 
     return Scaffold(
-
       backgroundColor: const Color(0xFFF5F7F6),
-
       appBar: AppBar(
         backgroundColor: mainGreen,
         title: const Text(
@@ -26,107 +31,284 @@ class NotificationScreen extends StatelessWidget {
           },
         ),
       ),
+      body: StreamBuilder<List<Map<String, dynamic>>>(
+        stream: service.notificationsForDonor(
+          uid: user?.uid,
+          email: user?.email,
+        ),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-      body: ListView(
+          if (snapshot.hasError) {
+            return const Center(
+              child: Text(
+                "Unable to load notifications",
+                style: TextStyle(color: Colors.grey),
+              ),
+            );
+          }
 
-        padding: const EdgeInsets.all(16),
+          final raw = snapshot.data ?? const <Map<String, dynamic>>[];
+          final notifications = raw.map((item) {
+            final idValue = item['id'];
+            final id = idValue == null ? 'unknown' : idValue.toString();
+            try {
+              return DonorNotificationModel.fromMap(id: id, data: item);
+            } catch (_) {
+              return DonorNotificationModel.fromMap(
+                id: id,
+                data: const <String, dynamic>{},
+              );
+            }
+          }).toList();
 
-        children: [
+          if (notifications.isEmpty) {
+            return const Center(
+              child: Text(
+                "No notifications yet",
+                style: TextStyle(color: Colors.grey),
+              ),
+            );
+          }
 
-          _notificationTile(
-            Icons.check_circle,
-            Colors.green,
-            "Donation Accepted",
-            "You have accepted 100 cooked meals from Cafe Aroma.",
-            "10 minutes ago",
-          ),
-
-          const SizedBox(height: 10),
-
-          _notificationTile(
-            Icons.notifications,
-            Colors.blue,
-            "New Donation Available",
-            "Fresh bread packets are available in Sector 11.",
-            "1 hour ago",
-          ),
-
-          const SizedBox(height: 10),
-
-          _notificationTile(
-            Icons.warning_amber_rounded,
-            Colors.orange,
-            "Urgent Need Alert",
-            "Food demand increased due to flood emergency.",
-            "Yesterday",
-          ),
-        ],
+          return ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: notifications.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 10),
+            itemBuilder: (context, index) {
+              final item = notifications[index];
+              return _notificationTile(
+                context,
+                _iconForType(item.type),
+                _colorForType(item.type),
+                item.title,
+                item.message,
+                _formatTime(item.createdAt),
+                item,
+              );
+            },
+          );
+        },
       ),
     );
   }
 
   Widget _notificationTile(
+    BuildContext context,
     IconData icon,
     Color color,
     String title,
     String subtitle,
     String time,
+    DonorNotificationModel item,
   ) {
+    final currentUid = SessionService.user?.uid;
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: () {
+        // Mark as read to remove badge in real time.
+        if (currentUid != null && currentUid.trim().isNotEmpty) {
+          final audience = item.targetAudience.trim().toLowerCase();
+          if (audience == 'donor' || audience == 'both') {
+            AdminNotificationReadReceiptService().markBroadcastNotificationRead(
+              uid: currentUid,
+              notificationId: item.id,
+              audience: 'donor',
+            );
+          } else {
+            NotificationReadService().markUserNotificationRead(
+              notificationId: item.id,
+            );
+          }
+        }
 
-    return Container(
-
-      padding: const EdgeInsets.all(14),
-
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-      ),
-
-      child: Row(
-
-        children: [
-
-          CircleAvatar(
-            backgroundColor: color.withOpacity(0.15),
-            child: Icon(icon, color: color),
-          ),
-
-          const SizedBox(width: 12),
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-
-                const SizedBox(height: 4),
-
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    color: Colors.grey,
-                  ),
-                ),
-
-                const SizedBox(height: 4),
-
-                Text(
-                  time,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey,
-                  ),
-                ),
-              ],
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => NotificationDetailScreen(
+              icon: icon,
+              color: color,
+              title: title,
+              description: subtitle,
+              time: time,
             ),
           ),
-        ],
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              backgroundColor: color.withValues(alpha:0.15),
+              child: Icon(icon, color: color),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    time,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: Colors.grey,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  IconData _iconForType(String? type) {
+    switch (type) {
+      case 'donor_suspension':
+        return Icons.block;
+      case 'donor_unsuspension':
+        return Icons.check_circle;
+      default:
+        return Icons.notifications;
+    }
+  }
+
+  Color _colorForType(String? type) {
+    switch (type) {
+      case 'donor_suspension':
+        return Colors.red;
+      case 'donor_unsuspension':
+        return Colors.green;
+      default:
+        return Colors.blue;
+    }
+  }
+
+  String _formatTime(DateTime? rawValue) {
+    if (rawValue == null) {
+      return 'Just now';
+    }
+
+    final difference = DateTime.now().difference(rawValue);
+    if (difference.inMinutes < 1) {
+      return 'Just now';
+    }
+    if (difference.inHours < 1) {
+      return '${difference.inMinutes} minutes ago';
+    }
+    if (difference.inDays < 1) {
+      return '${difference.inHours} hours ago';
+    }
+    return DateFormat('dd/MM/yyyy').format(rawValue);
+  }
+}
+
+class NotificationDetailScreen extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String description;
+  final String time;
+
+  const NotificationDetailScreen({
+    super.key,
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.description,
+    required this.time,
+  });
+
+  static const Color mainGreen = Color(0xFF0E5E53);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F7F6),
+      appBar: AppBar(
+        backgroundColor: mainGreen,
+        title: const Text(
+          "Notification Detail",
+          style: TextStyle(color: Colors.white),
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleAvatar(
+                radius: 24,
+                backgroundColor: color.withValues(alpha: .15),
+                child: Icon(icon, color: color, size: 26),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                time,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 18),
+              const Text(
+                "Description",
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                description,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.black87,
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

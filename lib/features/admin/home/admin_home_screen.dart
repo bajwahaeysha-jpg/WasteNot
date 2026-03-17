@@ -15,10 +15,6 @@ class AdminHomeScreen extends StatefulWidget {
 
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
-  void _handleSearch(String value) {
-    // future search logic
-  }
-
   @override
   Widget build(BuildContext context) {
 
@@ -48,7 +44,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
                     /// 🔍 SEARCH BAR (NOW FIRST)
                     TextField(
-                      onChanged: _handleSearch,
+                      onChanged: (_) {},
                       decoration: InputDecoration(
                         hintText: "Search donors, NGOs, donations...",
                         prefixIcon: const Icon(Icons.search),

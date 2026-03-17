@@ -92,13 +92,21 @@ class _SendNotificationScreenState extends State<SendNotificationScreen> {
                 ),
 
                 onPressed: () {
+                  if (titleController.text.trim().isEmpty ||
+                      messageController.text.trim().isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Please enter title and message"),
+                      ),
+                    );
+                    return;
+                  }
 
-                  Navigator.pop(context,{
-                    "title": titleController.text,
-                    "message": messageController.text,
-                    "time":"Now"
+                  Navigator.pop(context, {
+                    "title": titleController.text.trim(),
+                    "message": messageController.text.trim(),
+                    "time": "Now"
                   });
-
                 },
 
                 child: const Text(

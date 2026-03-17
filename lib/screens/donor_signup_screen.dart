@@ -19,6 +19,8 @@ class _DonorSignupScreenState extends State<DonorSignupScreen> {
   final _passwordController = TextEditingController();
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
+  final _aboutController = TextEditingController();
+
   final AuthService _authService = AuthService();
   final ImagePicker _picker = ImagePicker();
 
@@ -35,6 +37,7 @@ class _DonorSignupScreenState extends State<DonorSignupScreen> {
     _passwordController.dispose();
     _phoneController.dispose();
     _addressController.dispose();
+    _aboutController.dispose();
     super.dispose();
   }
 
@@ -60,8 +63,11 @@ class _DonorSignupScreenState extends State<DonorSignupScreen> {
                   child: CircleAvatar(
                     radius: 50,
                     backgroundColor: Colors.grey.shade300,
-                    backgroundImage: _profileImage != null ? FileImage(_profileImage!) : null,
-                    child: _profileImage == null ? const Icon(Icons.add_a_photo, size: 28) : null,
+                    backgroundImage:
+                        _profileImage != null ? FileImage(_profileImage!) : null,
+                    child: _profileImage == null
+                        ? const Icon(Icons.add_a_photo, size: 28)
+                        : null,
                   ),
                 ),
               ),
@@ -86,8 +92,14 @@ class _DonorSignupScreenState extends State<DonorSignupScreen> {
                 _passwordController,
                 obscure: _obscurePassword,
                 suffix: IconButton(
-                  icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
-                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                  icon: Icon(
+                    _obscurePassword
+                        ? Icons.visibility_off
+                        : Icons.visibility,
+                  ),
+                  onPressed: () {
+                    setState(() => _obscurePassword = !_obscurePassword);
+                  },
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -114,6 +126,17 @@ class _DonorSignupScreenState extends State<DonorSignupScreen> {
                 },
               ),
               _field('Address', _addressController),
+              _field(
+                'About',
+                _aboutController,
+                maxLines: 4,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'About is required';
+                  }
+                  return null;
+                },
+              ),
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
@@ -128,7 +151,10 @@ class _DonorSignupScreenState extends State<DonorSignupScreen> {
                       ? const SizedBox(
                           width: 18,
                           height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
                         )
                       : const Text('Create Account'),
                 ),
@@ -146,6 +172,7 @@ class _DonorSignupScreenState extends State<DonorSignupScreen> {
     TextInputType keyboard = TextInputType.text,
     bool obscure = false,
     Widget? suffix,
+    int maxLines = 1,
     String? Function(String?)? validator,
   }) {
     return Padding(
@@ -154,6 +181,7 @@ class _DonorSignupScreenState extends State<DonorSignupScreen> {
         controller: controller,
         keyboardType: keyboard,
         obscureText: obscure,
+        maxLines: obscure ? 1 : maxLines,
         validator: validator ??
             (value) {
               if (value == null || value.trim().isEmpty) {
@@ -163,6 +191,7 @@ class _DonorSignupScreenState extends State<DonorSignupScreen> {
             },
         decoration: InputDecoration(
           labelText: title,
+          alignLabelWithHint: maxLines > 1,
           filled: true,
           fillColor: Colors.white,
           border: OutlineInputBorder(
@@ -196,6 +225,7 @@ class _DonorSignupScreenState extends State<DonorSignupScreen> {
         password: _passwordController.text,
         phone: _phoneController.text,
         address: _addressController.text,
+        about: _aboutController.text,
         profileImage: _profileImage,
       );
 

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:wastenot/features/admin/ngos/services/admin_ngo_management_service.dart';
 
 class SuspendNGOScreen extends StatefulWidget {
-
-  final Map ngo;
+  final AdminManagedNgo ngo;
 
   const SuspendNGOScreen({super.key, required this.ngo});
 
@@ -11,18 +11,17 @@ class SuspendNGOScreen extends StatefulWidget {
 }
 
 class _SuspendNGOScreenState extends State<SuspendNGOScreen> {
-
   final TextEditingController reasonCtrl = TextEditingController();
   final TextEditingController detailCtrl = TextEditingController();
+  final _service = AdminNgoManagementService();
 
   static const primary = Color(0xFF0F5F54);
+  bool _saving = false;
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9F8),
-
       appBar: AppBar(
         backgroundColor: primary,
         title: const Text(
@@ -34,12 +33,9 @@ class _SuspendNGOScreenState extends State<SuspendNGOScreen> {
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-
-          /// REASON TITLE
           const Text(
             "Reason for Suspension",
             style: TextStyle(
@@ -47,10 +43,7 @@ class _SuspendNGOScreenState extends State<SuspendNGOScreen> {
               fontWeight: FontWeight.w600,
             ),
           ),
-
           const SizedBox(height: 10),
-
-          /// REASON FIELD
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
@@ -62,7 +55,6 @@ class _SuspendNGOScreenState extends State<SuspendNGOScreen> {
                 )
               ],
             ),
-
             child: TextField(
               controller: reasonCtrl,
               decoration: const InputDecoration(
@@ -72,10 +64,7 @@ class _SuspendNGOScreenState extends State<SuspendNGOScreen> {
               ),
             ),
           ),
-
           const SizedBox(height: 18),
-
-          /// DETAILS TITLE
           const Text(
             "Details",
             style: TextStyle(
@@ -83,10 +72,7 @@ class _SuspendNGOScreenState extends State<SuspendNGOScreen> {
               fontWeight: FontWeight.w600,
             ),
           ),
-
           const SizedBox(height: 10),
-
-          /// DETAILS BOX
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
@@ -98,7 +84,6 @@ class _SuspendNGOScreenState extends State<SuspendNGOScreen> {
                 )
               ],
             ),
-
             child: TextField(
               controller: detailCtrl,
               maxLines: 6,
@@ -109,13 +94,9 @@ class _SuspendNGOScreenState extends State<SuspendNGOScreen> {
               ),
             ),
           ),
-
           const SizedBox(height: 30),
-
-          /// INFO CARD
           Container(
             padding: const EdgeInsets.all(16),
-
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
@@ -126,26 +107,25 @@ class _SuspendNGOScreenState extends State<SuspendNGOScreen> {
                 )
               ],
             ),
-
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-
                 const Text(
                   "NGO Information",
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-
                 const SizedBox(height: 12),
-
-                _detailRow("Name", widget.ngo['name']),
+                _detailRow("Name", widget.ngo.name),
                 const SizedBox(height: 8),
-                _detailRow("Location", widget.ngo['location']),
-
+                _detailRow("Location", widget.ngo.locationLabel),
+                const SizedBox(height: 8),
+                _detailRow(
+                  "Phone",
+                  widget.ngo.phone.isEmpty ? "No phone" : widget.ngo.phone,
+                ),
                 const SizedBox(height: 12),
-
                 Text(
                   "The NGO will be suspended and notified regarding this action.",
                   style: TextStyle(
@@ -156,43 +136,22 @@ class _SuspendNGOScreenState extends State<SuspendNGOScreen> {
               ],
             ),
           ),
-
           const SizedBox(height: 40),
-
-          /// SUSPEND BUTTON
           SizedBox(
             height: 50,
             width: double.infinity,
-
             child: ElevatedButton.icon(
-
               style: ElevatedButton.styleFrom(
                 backgroundColor: primary,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(26),
                 ),
               ),
-
-              onPressed: () {
-
-                if (reasonCtrl.text.isEmpty) {
-
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Please enter suspension reason"),
-                    ),
-                  );
-
-                  return;
-                }
-
-                Navigator.pop(context);
-              },
-
-              icon: const Icon(Icons.block),
-              label: const Text(
-                "Suspend & Notify NGO",
-                style: TextStyle(
+              onPressed: _saving ? null : _submit,
+              icon: const Icon(Icons.block, color: Colors.white),
+              label: Text(
+                _saving ? "Suspending..." : "Suspend & Notify NGO",
+                style: const TextStyle(
                   fontWeight: FontWeight.w600,
                   color: Colors.white,
                 ),
@@ -204,11 +163,42 @@ class _SuspendNGOScreenState extends State<SuspendNGOScreen> {
     );
   }
 
-  Widget _detailRow(String label, String value) {
+  Future<void> _submit() async {
+    if (reasonCtrl.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Please enter suspension reason"),
+        ),
+      );
+      return;
+    }
 
+    setState(() => _saving = true);
+    try {
+      await _service.suspendNgo(
+        ngoId: widget.ngo.id,
+        ngoName: widget.ngo.name,
+        reason: reasonCtrl.text,
+        details: detailCtrl.text,
+      );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("NGO suspended successfully"),
+        ),
+      );
+      Navigator.pop(context, true);
+    } finally {
+      if (mounted) {
+        setState(() => _saving = false);
+      }
+    }
+  }
+
+  Widget _detailRow(String label, String value) {
     return Row(
       children: [
-
         Expanded(
           child: Text(
             label,
@@ -217,7 +207,6 @@ class _SuspendNGOScreenState extends State<SuspendNGOScreen> {
             ),
           ),
         ),
-
         Text(
           value,
           style: const TextStyle(
@@ -226,5 +215,12 @@ class _SuspendNGOScreenState extends State<SuspendNGOScreen> {
         ),
       ],
     );
+  }
+
+  @override
+  void dispose() {
+    reasonCtrl.dispose();
+    detailCtrl.dispose();
+    super.dispose();
   }
 }

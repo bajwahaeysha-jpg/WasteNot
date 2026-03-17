@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:wastenot/features/admin/donors/services/admin_donor_management_service.dart';
+
 import 'donor_profile_screen.dart';
 
 class AllDonorsScreen extends StatefulWidget {
@@ -10,47 +12,14 @@ class AllDonorsScreen extends StatefulWidget {
 
 class _AllDonorsScreenState extends State<AllDonorsScreen> {
   String selectedStatus = "All";
-
-  final List<Map<String, dynamic>> donors = [
-    {
-      "name": "Allah Malik",
-      "type": "Restaurant",
-      "location": "Cantt",
-      "meals": 145,
-      "rating": 4.6,
-      "status": "Active",
-      "logo": "assets/images/allah_malak.png",
-    },
-    {
-      "name": "Javson Hotel",
-      "type": "Hotel",
-      "location": "City Housing",
-      "meals": 210,
-      "rating": 4.8,
-      "status": "Active",
-      "logo": "assets/images/hotel_javson.png",
-    },
-    {
-      "name": "Sialkot Food Services",
-      "type": "Catering",
-      "location": "Sialkot",
-      "meals": 98,
-      "rating": 4.3,
-      "status": "Suspended",
-      "logo": "assets/images/sialkot_donor.png",
-    },
-  ];
+  final _service = AdminDonorManagementService();
 
   @override
   Widget build(BuildContext context) {
-    final filtered = selectedStatus == "All"
-        ? donors
-        : donors.where((d) => d['status'] == selectedStatus).toList();
-
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9F8),
       appBar: AppBar(
-       backgroundColor: const Color(0xFF0F4C45),
+        backgroundColor: const Color(0xFF0F4C45),
         elevation: 0,
         title: const Text(
           "All Donors",
@@ -63,7 +32,6 @@ class _AllDonorsScreenState extends State<AllDonorsScreen> {
       ),
       body: Column(
         children: [
-          /// FILTER BAR
           statusFilterBar(
             selectedStatus: selectedStatus,
             filters: const ["All", "Active", "Suspended"],
@@ -71,11 +39,33 @@ class _AllDonorsScreenState extends State<AllDonorsScreen> {
               setState(() => selectedStatus = value);
             },
           ),
-
           Expanded(
-            child: ListView.builder(
-              itemCount: filtered.length,
-              itemBuilder: (_, i) => donorCard(filtered[i]),
+            child: StreamBuilder<List<AdminManagedDonor>>(
+              stream: _service.streamDonors(filter: _selectedFilter),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting &&
+                    !snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return const Center(
+                    child: Text("Unable to load donors"),
+                  );
+                }
+
+                final donors = snapshot.data ?? const <AdminManagedDonor>[];
+                if (donors.isEmpty) {
+                  return const Center(
+                    child: Text("No donors found"),
+                  );
+                }
+
+                return ListView.builder(
+                  itemCount: donors.length,
+                  itemBuilder: (_, i) => donorCard(donors[i]),
+                );
+              },
             ),
           ),
         ],
@@ -83,17 +73,31 @@ class _AllDonorsScreenState extends State<AllDonorsScreen> {
     );
   }
 
-  // ───────── DONOR CARD ─────────
+  DonorStatusFilter get _selectedFilter {
+    switch (selectedStatus) {
+      case 'Active':
+        return DonorStatusFilter.active;
+      case 'Suspended':
+        return DonorStatusFilter.suspended;
+      default:
+        return DonorStatusFilter.all;
+    }
+  }
 
-  Widget donorCard(Map<String, dynamic> d) {
-    final bool active = d['status'] == "Active";
+  Widget donorCard(AdminManagedDonor donor) {
+    final active = !donor.isSuspended;
+    final donorType = donor.donorType;
+    final infoLine = <String>[
+      if (donorType != null && donorType.isNotEmpty) donorType,
+      donor.locationLabel,
+    ].join(" • ");
 
     return InkWell(
       borderRadius: BorderRadius.circular(18),
       onTap: () => Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => DonorProfileScreen(donor: d),
+          builder: (_) => DonorProfileScreen(donorId: donor.id),
         ),
       ),
       child: Container(
@@ -112,7 +116,6 @@ class _AllDonorsScreenState extends State<AllDonorsScreen> {
         ),
         child: Row(
           children: [
-            /// LOGO
             Container(
               width: 52,
               height: 52,
@@ -122,22 +125,30 @@ class _AllDonorsScreenState extends State<AllDonorsScreen> {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(14),
-                child: Image.asset(
-                  d['logo'],
-                  fit: BoxFit.cover,
-                ),
+                child: donor.imageUrl.isNotEmpty
+                    ? Image.network(
+                        donor.imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => const Icon(
+                          Icons.person,
+                          color: Color(0xFF0F4C45),
+                        ),
+                      )
+                    : const Icon(
+                        Icons.person,
+                        color: Color(0xFF0F4C45),
+                      ),
               ),
             ),
-
             const SizedBox(width: 12),
-
-            /// DETAILS
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    d['name'],
+                    donor.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -145,7 +156,9 @@ class _AllDonorsScreenState extends State<AllDonorsScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    "${d['type']} • ${d['location']}",
+                    infoLine,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontSize: 13,
                       color: Colors.black54,
@@ -153,7 +166,9 @@ class _AllDonorsScreenState extends State<AllDonorsScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    "Meals: ${d['meals']} • Rating: ${d['rating']} ⭐",
+                    "Meals: ${donor.totalMealsDonated} • Rating: ${donor.averageRating.toStringAsFixed(1)}",
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontSize: 12,
                       color: Colors.grey,
@@ -162,24 +177,19 @@ class _AllDonorsScreenState extends State<AllDonorsScreen> {
                 ],
               ),
             ),
-
+            const SizedBox(width: 10),
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: active
-                    ? Colors.green.shade100
-                    : Colors.red.shade100,
+                color: active ? Colors.green.shade100 : Colors.red.shade100,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                d['status'],
+                donor.statusLabel,
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: active
-                      ? Colors.green.shade700
-                      : Colors.red.shade700,
+                  color: active ? Colors.green.shade700 : Colors.red.shade700,
                 ),
               ),
             ),
@@ -190,8 +200,6 @@ class _AllDonorsScreenState extends State<AllDonorsScreen> {
   }
 }
 
-/// ───────── FILTER BAR ─────────
-
 Widget statusFilterBar({
   required String selectedStatus,
   required List<String> filters,
@@ -199,12 +207,12 @@ Widget statusFilterBar({
 }) {
   return Padding(
     padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
-    child: Align( // 👈 THIS IS THE KEY
+    child: Align(
       alignment: Alignment.centerLeft,
       child: Wrap(
         spacing: 10,
         children: filters.map((status) {
-          final bool selected = selectedStatus == status;
+          final selected = selectedStatus == status;
 
           return GestureDetector(
             onTap: () => onChanged(status),
@@ -215,8 +223,7 @@ Widget statusFilterBar({
                 vertical: 9,
               ),
               decoration: BoxDecoration(
-                color:
-                    selected ? const Color(0xFF0F4C45) : Colors.white,
+                color: selected ? const Color(0xFF0F4C45) : Colors.white,
                 borderRadius: BorderRadius.circular(22),
                 border: Border.all(
                   color: const Color(0xFF0F5F54),
@@ -227,9 +234,8 @@ Widget statusFilterBar({
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: selected
-                      ? Colors.white
-                      : const Color(0xFF0F5F54),
+                  color:
+                      selected ? Colors.white : const Color(0xFF0F5F54),
                 ),
               ),
             ),

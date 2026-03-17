@@ -91,7 +91,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: isSelected ? mainGreen.withOpacity(0.08) : Colors.white,
+          color: isSelected ? mainGreen.withValues(alpha:0.08) : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: isSelected ? mainGreen : Colors.grey.shade300),
         ),
@@ -99,7 +99,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
           children: [
             CircleAvatar(
               radius: 26,
-              backgroundColor: isSelected ? mainGreen : mainGreen.withOpacity(0.12),
+              backgroundColor: isSelected ? mainGreen : mainGreen.withValues(alpha:0.12),
               child: Icon(icon, color: isSelected ? Colors.white : mainGreen),
             ),
             const SizedBox(width: 16),

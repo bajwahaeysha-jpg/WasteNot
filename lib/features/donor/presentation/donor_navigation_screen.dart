@@ -8,6 +8,8 @@ import 'goal/screens/donor_goal_screen.dart';
 import 'auth/screens/donor_logout_screen.dart';
 import 'package:wastenot/features/donor/presentation/notifications/screens/notification_screen.dart';
 import 'package:wastenot/features/donor/presentation/feedback/screens/feedback_screen.dart';
+import 'package:wastenot/screens/login_screen.dart';
+import 'package:wastenot/services/notification_badge_service.dart';
 import 'package:wastenot/services/session_service.dart';
 
 class DonorNavigationScreen extends StatefulWidget {
@@ -51,12 +53,30 @@ class _DonorNavigationScreenState extends State<DonorNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
+ 
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
 
-    return Scaffold(
+        if (_currentIndex != 0) {
+          setState(() {
+            _currentIndex = 0;
+          });
+          return;
+        }
 
-      appBar: AppBar(
-        backgroundColor: mainGreen,
-        elevation: 0,
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          (route) => false,
+        );
+      },
+      child: Scaffold(
+ 
+        appBar: AppBar(
+          backgroundColor: mainGreen,
+          elevation: 0,
 
         iconTheme: const IconThemeData(
           color: Colors.white,
@@ -71,19 +91,62 @@ class _DonorNavigationScreenState extends State<DonorNavigationScreen> {
         ),
 
         actions: [
+ 
+          StreamBuilder<int>(
+            stream: NotificationBadgeService().donorBellCount(
+              uid: (SessionService.user?.uid) ?? widget.user['uid']?.toString(),
+              email:
+                  (SessionService.user?.email) ?? widget.user['email']?.toString(),
+            ),
+            builder: (context, snapshot) {
+              final count = snapshot.data ?? 0;
+              final label = count > 9 ? '9+' : '$count';
 
-          IconButton(
-            icon: const Icon(Icons.notifications_none, color: Colors.white),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const NotificationScreen(),
-                ),
+              return Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.notifications_none, color: Colors.white),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const NotificationScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  if (count > 0)
+                    Positioned(
+                      right: 6,
+                      top: 6,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 5,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 14,
+                        ),
+                        child: Text(
+                          label,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 9,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               );
             },
           ),
-
+ 
           const SizedBox(width: 10),
 
           Padding(
@@ -153,6 +216,7 @@ class _DonorNavigationScreenState extends State<DonorNavigationScreen> {
           ),
         ],
       ),
+    ),
     );
   }
 

@@ -164,7 +164,7 @@ class _PersonalInformationScreenState
                 radius: 54,
 
                 backgroundColor:
-                    mainGreen.withOpacity(0.15),
+                    mainGreen.withValues(alpha:0.15),
 
                 backgroundImage:
                     selectedImage != null

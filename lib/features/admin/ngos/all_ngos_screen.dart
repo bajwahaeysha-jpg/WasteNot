@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:wastenot/features/admin/ngos/services/admin_ngo_management_service.dart';
+
 import 'ngo_profile_screen.dart';
 
 class AllNGOsScreen extends StatefulWidget {
@@ -10,40 +12,21 @@ class AllNGOsScreen extends StatefulWidget {
 
 class _AllNGOsScreenState extends State<AllNGOsScreen> {
   String selectedStatus = "All";
+  final _service = AdminNgoManagementService();
 
-  final ngos = [
-    {
-      "name": "Khair Foundation",
-      "location": "Iqbal chowk, Sialkot",
-      "mealsReceived": 1240,
-      "successRate": 92,
-      "status": "Approved",
-      "logo": "assets/images/ngo1.png",
-    },
-    {
-      "name": "Edhi Foundation",
-      "location": "Defence road, Sialkot",
-      "mealsReceived": 980,
-      "successRate": 88,
-      "status": "Approved",
-      "logo": "assets/images/ngo2.png",
-    },
-    {
-      "name": "SOS Children’s Village",
-      "location": "Khadam Ali chok,Sialkot",
-      "mealsReceived": 670,
-      "successRate": 81,
-      "status": "Suspended",
-      "logo": "assets/images/ngo3.png",
-    },
-  ];
+  NgoStatusFilter get _selectedFilter {
+    switch (selectedStatus) {
+      case 'Active':
+        return NgoStatusFilter.active;
+      case 'Suspended':
+        return NgoStatusFilter.suspended;
+      default:
+        return NgoStatusFilter.all;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final filtered = selectedStatus == "All"
-        ? ngos
-        : ngos.where((n) => n['status'] == selectedStatus).toList();
-
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9F8),
       appBar: AppBar(
@@ -61,23 +44,40 @@ class _AllNGOsScreenState extends State<AllNGOsScreen> {
       ),
       body: Column(
         children: [
-
-          /// 🔹 FILTER BAR
           _filterBar(),
-
-          /// 🔹 NGO LIST
           Expanded(
-            child: ListView.builder(
-              itemCount: filtered.length,
-              itemBuilder: (_, i) => _ngoCard(filtered[i]),
+            child: StreamBuilder<List<AdminManagedNgo>>(
+              stream: _service.streamNgos(filter: _selectedFilter),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting &&
+                    !snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return const Center(
+                    child: Text("Unable to load NGOs"),
+                  );
+                }
+
+                final ngos = snapshot.data ?? const <AdminManagedNgo>[];
+                if (ngos.isEmpty) {
+                  return const Center(
+                    child: Text("No NGOs found"),
+                  );
+                }
+
+                return ListView.builder(
+                  itemCount: ngos.length,
+                  itemBuilder: (_, i) => _ngoCard(ngos[i]),
+                );
+              },
             ),
           ),
         ],
       ),
     );
   }
-
-  // ───────────── FILTER BAR ─────────────
 
   Widget _filterBar() {
     return Padding(
@@ -88,7 +88,7 @@ class _AllNGOsScreenState extends State<AllNGOsScreen> {
           spacing: 10,
           children: [
             _statusChip("All"),
-            _statusChip("Approved"),
+            _statusChip("Active"),
             _statusChip("Suspended"),
           ],
         ),
@@ -121,10 +121,8 @@ class _AllNGOsScreenState extends State<AllNGOsScreen> {
     );
   }
 
-  // ───────────── NGO CARD ─────────────
-
-  Widget _ngoCard(Map n) {
-    final bool approved = n['status'] == "Approved";
+  Widget _ngoCard(AdminManagedNgo ngo) {
+    final bool approved = !ngo.isSuspended;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -144,12 +142,10 @@ class _AllNGOsScreenState extends State<AllNGOsScreen> {
         borderRadius: BorderRadius.circular(18),
         onTap: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => NGOProfileScreen(ngo: n)),
+          MaterialPageRoute(builder: (_) => NGOProfileScreen(ngoId: ngo.id)),
         ),
         child: Row(
           children: [
-
-            /// 🏢 NGO LOGO
             Container(
               width: 52,
               height: 52,
@@ -158,21 +154,30 @@ class _AllNGOsScreenState extends State<AllNGOsScreen> {
                 color: const Color(0xFF0F5F54).withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: Image.asset(
-                n['logo'],
-                fit: BoxFit.contain,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: ngo.imageUrl.isNotEmpty
+                    ? Image.network(
+                        ngo.imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => const Icon(
+                          Icons.apartment,
+                          color: Color(0xFF0F4C45),
+                        ),
+                      )
+                    : const Icon(
+                        Icons.apartment,
+                        color: Color(0xFF0F4C45),
+                      ),
               ),
             ),
-
             const SizedBox(width: 12),
-
-            /// 📋 NGO DETAILS
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    n['name'],
+                    ngo.name,
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -180,7 +185,7 @@ class _AllNGOsScreenState extends State<AllNGOsScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    n['location'],
+                    ngo.locationLabel,
                     style: const TextStyle(
                       fontSize: 13,
                       color: Colors.black54,
@@ -188,7 +193,7 @@ class _AllNGOsScreenState extends State<AllNGOsScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    "Meals: ${n['mealsReceived']} • Success: ${n['successRate']}%",
+                    "Meals: ${ngo.totalMealsReceived} | Success: ${ngo.successRate}%",
                     style: const TextStyle(
                       fontSize: 12,
                       color: Colors.grey,
@@ -197,24 +202,18 @@ class _AllNGOsScreenState extends State<AllNGOsScreen> {
                 ],
               ),
             ),
-
-            /// 🟢 STATUS BADGE
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: approved
-                    ? Colors.green.shade100
-                    : Colors.red.shade100,
+                color: approved ? Colors.green.shade100 : Colors.red.shade100,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                n['status'],
+                ngo.statusLabel,
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: approved
-                      ? Colors.green.shade700
-                      : Colors.red.shade700,
+                  color: approved ? Colors.green.shade700 : Colors.red.shade700,
                 ),
               ),
             ),

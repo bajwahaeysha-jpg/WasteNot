@@ -16,7 +16,6 @@ class MessagesScreen extends StatefulWidget {
 }
 
 class _MessagesScreenState extends State<MessagesScreen> {
-  static const Color mainGreen = Color(0xFF0E5E53);
 
   final MessagingService _messagingService = MessagingService();
   final TextEditingController _searchController = TextEditingController();
