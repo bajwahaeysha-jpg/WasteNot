@@ -1,33 +1,38 @@
 import 'package:flutter/material.dart';
-import 'your_donations_screen.dart';
-import 'accepted_donations_screen.dart';
-import 'expired_donations_screen.dart';
-import 'donation_detail_screen.dart';
-import 'emergency_detail_screen.dart';
-import '../../donate/screens/add_donation_screen.dart';
-import '../../messages/screens/chat_screen.dart';
-import 'package:wastenot/services/session_service.dart';
+import 'package:wastenot/models/app_user_model.dart';
+import 'package:wastenot/services/concern_services.dart';
 import 'package:wastenot/services/donation_services.dart';
 import 'package:wastenot/services/goal_services.dart';
-import 'package:wastenot/models/app_user_model.dart';
+import 'package:wastenot/services/session_service.dart';
+
+import '../../donate/screens/add_donation_screen.dart';
+import '../../messages/screens/chat_screen.dart';
+import 'accepted_donations_screen.dart';
+import 'donation_detail_screen.dart';
+import 'emergency_detail_screen.dart';
+import 'expired_donations_screen.dart';
+import 'your_donations_screen.dart';
 
 class DonorHomeScreen extends StatefulWidget {
-   final Map<String, dynamic> user;
+  final Map<String, dynamic> user;
 
   const DonorHomeScreen({
     super.key,
     required this.user,
   });
+
   static const Color mainGreen = Color(0xFF0E5E53);
 
   @override
   State<DonorHomeScreen> createState() => _DonorHomeScreenState();
 }
- 
+
 class _DonorHomeScreenState extends State<DonorHomeScreen> {
   static const int _recentDonationsLimit = 3;
+
   final DonationService _donationService = DonationService();
   final GoalService _goalService = GoalService();
+  final ConcernService _concernService = ConcernService();
   late Future<List<DonationModel>> _recentDonationsFuture;
 
   String get donorName {
@@ -63,258 +68,407 @@ class _DonorHomeScreenState extends State<DonorHomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9F9),
-        body: SingleChildScrollView(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-
-          // 🔍 Search Bar
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(40),
-              boxShadow: const [
-                BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3))
-              ],
-            ),
-            child: const TextField(
-              decoration: InputDecoration(
-                hintText: "Search donations, locations, features...",
-                border: InputBorder.none,
-                icon: Icon(Icons.search),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(40),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 6,
+                    offset: Offset(0, 3),
+                  ),
+                ],
               ),
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          const Text("Welcome Back!", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 6),
-          Text("$donorName, ready to make a difference?"),
-
-          const SizedBox(height: 16),
-
-          // 🎁 Summary Cards
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8)],
-            ),
-            child: Row(children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const YourDonationsScreen())),
-                  child: const _SummaryCard("Your Donations", Icons.card_giftcard, Colors.purple),
+              child: const TextField(
+                decoration: InputDecoration(
+                  hintText: 'Search donations, locations, features...',
+                  border: InputBorder.none,
+                  icon: Icon(Icons.search),
                 ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AcceptedDonationsScreen())),
-                  child: const _SummaryCard("Accepted Donations", Icons.check_circle, Colors.green),
-                ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Welcome Back!',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 6),
+            Text('$donorName, ready to make a difference?'),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: const [
+                  BoxShadow(color: Colors.black12, blurRadius: 8),
+                ],
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ExpiredDonationsScreen())),
-                  child: const _SummaryCard("Expired Donations", Icons.error_outline, Colors.redAccent),
-                ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const YourDonationsScreen(),
+                        ),
+                      ),
+                      child: const _SummaryCard(
+                        'Your Donations',
+                        Icons.card_giftcard,
+                        Colors.purple,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const AcceptedDonationsScreen(),
+                        ),
+                      ),
+                      child: const _SummaryCard(
+                        'Accepted Donations',
+                        Icons.check_circle,
+                        Colors.green,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ExpiredDonationsScreen(),
+                        ),
+                      ),
+                      child: const _SummaryCard(
+                        'Expired Donations',
+                        Icons.error_outline,
+                        Colors.redAccent,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ]),
-          ),
-
-          const SizedBox(height: 24),
-
-          // 🧑‍🤝‍🧑 Emergency Help
-          GestureDetector(
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EmergencyDetailScreen())),
-            child: Container(
+            ),
+            const SizedBox(height: 24),
+            Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(18),
-                boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8)],
+                boxShadow: const [
+                  BoxShadow(color: Colors.black12, blurRadius: 8),
+                ],
               ),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: const [
-                  Text("Emergency Help", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                  Text("See all", style: TextStyle(color: DonorHomeScreen.mainGreen)),
-                ]),
-                const SizedBox(height: 10),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.asset("assets/images/emergency.jpg", height: 140, width: double.infinity, fit: BoxFit.cover),
-                ),
-                const SizedBox(height: 10),
-                const Text("Donations For Flood Affectes", style: TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
-                const Text("Target: 5000", style: TextStyle(color: DonorHomeScreen.mainGreen)),
-              ]),
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
-          const _MakeDifferenceCard(),
-
-          const SizedBox(height: 24),
-
-          const _SectionHeader("Local Donation Opportunities"),
-          const SizedBox(height: 8),
-          const Text("Assist local charities and help those in the Sialkot community."),
-          const SizedBox(height: 12),
-
-          Row(children: [
-            Expanded(
-              child: _DonationCard(
-                "SOS Village",
-                "Help provide meals to orphaned children.",
-                "assets/images/sos.png",
-                () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => ChatScreen(
-                        donorName: donorName,
-                        ngoName: "SOS Village",
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _DonationCard(
-                "Sialkot Shelter",
-                "Support a local shelter with essential supplies.",
-                "assets/images/sialkot.png",
-                () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => ChatScreen(
-                        donorName: donorName,
-                        ngoName: "Sialkot Shelter",
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ]),
-
-          const SizedBox(height: 24),
-
-          const _SectionHeader("Recent Donations"),
-          const SizedBox(height: 12),
-
-          FutureBuilder<List<DonationModel>>(
-            future: _recentDonationsFuture,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12),
-                  child: Center(child: CircularProgressIndicator()),
-                );
-              }
-
-              if (snapshot.hasError) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        "Unable to load recent donations.",
-                        style: TextStyle(color: Colors.grey),
+                      Text(
+                        'Emergency Help',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                      TextButton(
-                        onPressed: _refreshRecentDonations,
-                        child: const Text("Retry"),
+                      Text(
+                        'Live concerns',
+                        style: TextStyle(color: DonorHomeScreen.mainGreen),
                       ),
                     ],
                   ),
-                );
-              }
+                  const SizedBox(height: 12),
+                  StreamBuilder<List<ConcernModel>>(
+                    stream: _concernService.getActiveConcerns(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 18),
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      }
 
-              final donations = snapshot.data ?? const <DonationModel>[];
-              if (donations.isEmpty) {
-                return const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8),
-                  child: Text(
-                    "No recent donations yet.",
-                    style: TextStyle(color: Colors.grey),
+                      final concerns = snapshot.hasError
+                          ? const <ConcernModel>[]
+                          : (snapshot.data ?? const <ConcernModel>[]);
+                      if (concerns.isEmpty) {
+                        return const Text(
+                          'No active concerns right now.',
+                          style: TextStyle(color: Colors.grey),
+                        );
+                      }
+
+                      return Column(
+                        children: concerns.take(3).map((concern) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _EmergencyConcernCard(concern: concern),
+                          );
+                        }).toList(),
+                      );
+                    },
                   ),
-                );
-              }
-
-              return Column(
-                children: donations
-                    .map(
-                      (donation) => _RecentDonationTile(
-                        donation: donation,
-                        donorName: donorName,
-                        onUpdated: _refreshRecentDonations,
-                      ),
-                    )
-                    .toList(),
-              );
-            },
-          ),
-
-          const SizedBox(height: 16),
-
-          ValueListenableBuilder<AppUserModel?>(
-            valueListenable: SessionService.currentUser,
-            builder: (context, user, _) {
-              if (user == null) {
-                return const _ImpactSection(
-                  donationsCount: 0,
-                  achievedCount: 0,
-                  monthlyTarget: 0,
-                  isLoading: false,
-                );
-              }
-
-              return StreamBuilder<GoalProgress>(
-                stream: _goalService.streamCurrentUserMonthlyGoalProgress(
-                  user: user,
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            const _MakeDifferenceCard(),
+            const SizedBox(height: 24),
+            const _SectionHeader('Local Donation Opportunities'),
+            const SizedBox(height: 8),
+            const Text(
+              'Assist local charities and help those in the Sialkot community.',
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _DonationCard(
+                    'SOS Village',
+                    'Help provide meals to orphaned children.',
+                    'assets/images/sos.png',
+                    () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ChatScreen(
+                            donorName: donorName,
+                            ngoName: 'SOS Village',
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                 ),
-                builder: (context, snapshot) {
-                  final data = snapshot.data;
-                  return _ImpactSection(
-                    donationsCount: data?.donationsCount ?? 0,
-                    achievedCount: data?.achievedCount ?? 0,
-                    monthlyTarget: data?.monthlyTarget ?? 0,
-                    isLoading:
-                        snapshot.connectionState == ConnectionState.waiting,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _DonationCard(
+                    'Sialkot Shelter',
+                    'Support a local shelter with essential supplies.',
+                    'assets/images/sialkot.png',
+                    () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ChatScreen(
+                            donorName: donorName,
+                            ngoName: 'Sialkot Shelter',
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            const _SectionHeader('Recent Donations'),
+            const SizedBox(height: 12),
+            FutureBuilder<List<DonationModel>>(
+              future: _recentDonationsFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Center(child: CircularProgressIndicator()),
                   );
-                },
-              );
-            },
-          ),
-        ]),
+                }
+
+                if (snapshot.hasError) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Unable to load recent donations.',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                        TextButton(
+                          onPressed: _refreshRecentDonations,
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                final donations = snapshot.data ?? const <DonationModel>[];
+                if (donations.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      'No recent donations yet.',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  );
+                }
+
+                return Column(
+                  children: donations
+                      .map(
+                        (donation) => _RecentDonationTile(
+                          donation: donation,
+                          donorName: donorName,
+                          onUpdated: _refreshRecentDonations,
+                        ),
+                      )
+                      .toList(),
+                );
+              },
+            ),
+            const SizedBox(height: 16),
+            ValueListenableBuilder<AppUserModel?>(
+              valueListenable: SessionService.currentUser,
+              builder: (context, user, _) {
+                if (user == null) {
+                  return const _ImpactSection(
+                    donationsCount: 0,
+                    achievedCount: 0,
+                    monthlyTarget: 0,
+                    isLoading: false,
+                  );
+                }
+
+                return StreamBuilder<GoalProgress>(
+                  stream: _goalService.streamCurrentUserMonthlyGoalProgress(
+                    user: user,
+                  ),
+                  builder: (context, snapshot) {
+                    final data = snapshot.data;
+                    return _ImpactSection(
+                      donationsCount: data?.donationsCount ?? 0,
+                      achievedCount: data?.achievedCount ?? 0,
+                      monthlyTarget: data?.monthlyTarget ?? 0,
+                      isLoading:
+                          snapshot.connectionState == ConnectionState.waiting,
+                    );
+                  },
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-/* ================= COMPONENTS ================= */
+class _EmergencyConcernCard extends StatelessWidget {
+  const _EmergencyConcernCard({required this.concern});
+
+  final ConcernModel concern;
+
+  @override
+  Widget build(BuildContext context) {
+    final imageUrl = concern.imageUrl.trim();
+
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => EmergencyDetailScreen(concern: concern),
+        ),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF7F9F9),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: imageUrl.isEmpty
+                  ? Image.asset(
+                      'assets/images/emergency.jpg',
+                      height: 74,
+                      width: 74,
+                      fit: BoxFit.cover,
+                    )
+                  : Image.network(
+                      imageUrl,
+                      height: 74,
+                      width: 74,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Image.asset(
+                        'assets/images/emergency.jpg',
+                        height: 74,
+                        width: 74,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    concern.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    concern.message,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.black87),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'By ${concern.ngoName}',
+                    style: const TextStyle(
+                      color: DonorHomeScreen.mainGreen,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class _SectionHeader extends StatelessWidget {
   final String title;
+
   const _SectionHeader(this.title);
 
   @override
   Widget build(BuildContext context) {
-    return Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-      Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-      const Text("View all >", style: TextStyle(color: Colors.grey)),
-    ]);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        const Text('View all >', style: TextStyle(color: Colors.grey)),
+      ],
+    );
   }
 }
 
@@ -322,6 +476,7 @@ class _SummaryCard extends StatelessWidget {
   final String title;
   final IconData icon;
   final Color color;
+
   const _SummaryCard(this.title, this.icon, this.color);
 
   @override
@@ -329,18 +484,30 @@ class _SummaryCard extends StatelessWidget {
     return Container(
       height: 120,
       padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(color: color.withValues(alpha: .12), borderRadius: BorderRadius.circular(16)),
-      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        Icon(icon, color: color, size: 26),
-        const SizedBox(height: 10),
-        Text(title, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12)),
-      ]),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: .12),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, color: color, size: 26),
+          const SizedBox(height: 10),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 12),
+          ),
+        ],
+      ),
     );
   }
 }
 
 class _DonationCard extends StatelessWidget {
-  final String title, subtitle, image;
+  final String title;
+  final String subtitle;
+  final String image;
   final VoidCallback onDonate;
 
   const _DonationCard(this.title, this.subtitle, this.image, this.onDonate);
@@ -348,27 +515,46 @@ class _DonationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+      ),
       padding: const EdgeInsets.all(12),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(10),
-          child: Image.asset(image, height: 90, width: double.infinity, fit: BoxFit.cover),
-        ),
-        const SizedBox(height: 8),
-        Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        const SizedBox(height: 4),
-        Text(subtitle, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-        const SizedBox(height: 10),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: DonorHomeScreen.mainGreen),
-            onPressed: onDonate,
-            child: const Text("Donate Now", style: TextStyle(color: Colors.white)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Image.asset(
+              image,
+              height: 90,
+              width: double.infinity,
+              fit: BoxFit.cover,
+            ),
           ),
-        ),
-      ]),
+          const SizedBox(height: 8),
+          Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            style: const TextStyle(color: Colors.grey, fontSize: 12),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: DonorHomeScreen.mainGreen,
+              ),
+              onPressed: onDonate,
+              child: const Text(
+                'Donate Now',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -396,10 +582,8 @@ class _RecentDonationTile extends StatelessWidget {
         backgroundColor: Colors.white,
         backgroundImage: _resolveAvatar(donation),
       ),
-
       title: Text(displayName),
       subtitle: Text(time),
-
       trailing: const Icon(Icons.chevron_right),
       onTap: () async {
         await Navigator.push(
@@ -424,27 +608,50 @@ class _MakeDifferenceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18)),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: const [
-          Icon(Icons.favorite, color: DonorHomeScreen.mainGreen),
-          SizedBox(width: 6),
-          Text("Make a Difference", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        ]),
-        const SizedBox(height: 6),
-        const Text("Fight food waste and hunger by donating your surplus food to those in need."),
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: DonorHomeScreen.mainGreen),
-            onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const AddDonationScreen()));
-            },
-            child: const Text("Donate Surplus Food", style: TextStyle(color: Colors.white)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.favorite, color: DonorHomeScreen.mainGreen),
+              SizedBox(width: 6),
+              Text(
+                'Make a Difference',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ],
           ),
-        ),
-      ]),
+          const SizedBox(height: 6),
+          const Text(
+            'Fight food waste and hunger by donating your surplus food to those in need.',
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: DonorHomeScreen.mainGreen,
+              ),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AddDonationScreen(),
+                  ),
+                );
+              },
+              child: const Text(
+                'Donate Surplus Food',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -476,56 +683,82 @@ class _ImpactSection extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8)],
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: const [
-          Icon(Icons.insights, color: DonorHomeScreen.mainGreen),
-          SizedBox(width: 6),
-          Text("Your Impact This Month", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        ]),
-        const SizedBox(height: 12),
-        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          _ImpactItem(
-            title: "Donations Made",
-            value: donationsCount.toString(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.insights, color: DonorHomeScreen.mainGreen),
+              SizedBox(width: 6),
+              Text(
+                'Your Impact This Month',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ],
           ),
-          _ImpactItem(
-            title: "People Fed",
-            value: achievedCount.toString(),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _ImpactItem(
+                title: 'Donations Made',
+                value: donationsCount.toString(),
+              ),
+              _ImpactItem(
+                title: 'People Fed',
+                value: achievedCount.toString(),
+              ),
+            ],
           ),
-        ]),
-        const SizedBox(height: 14),
-        const Text("Monthly Goal Progress", style: TextStyle(fontWeight: FontWeight.bold)),
-        const SizedBox(height: 6),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(10),
-          child: LinearProgressIndicator(
-            value: progress.clamp(0.0, 1.0),
-            minHeight: 10,
-            backgroundColor: Colors.grey,
-            color: DonorHomeScreen.mainGreen,
+          const SizedBox(height: 14),
+          const Text(
+            'Monthly Goal Progress',
+            style: TextStyle(fontWeight: FontWeight.bold),
           ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          isLoading
-              ? "Updating goal progress..."
-              : "$percent% completed — Keep it up! 🌟",
-        ),
-      ]),
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: LinearProgressIndicator(
+              value: progress.clamp(0.0, 1.0),
+              minHeight: 10,
+              backgroundColor: Colors.grey,
+              color: DonorHomeScreen.mainGreen,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            isLoading
+                ? 'Updating goal progress...'
+                : '$percent% completed - Keep it up!',
+          ),
+        ],
+      ),
     );
   }
 }
 
 class _ImpactItem extends StatelessWidget {
-  final String title, value;
+  final String title;
+  final String value;
+
   const _ImpactItem({required this.title, required this.value});
 
   @override
   Widget build(BuildContext context) {
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: DonorHomeScreen.mainGreen)),
-      Text(title, style: const TextStyle(color: Colors.grey)),
-    ]);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: DonorHomeScreen.mainGreen,
+          ),
+        ),
+        Text(title, style: const TextStyle(color: Colors.grey)),
+      ],
+    );
   }
 }
 
@@ -541,10 +774,7 @@ ImageProvider _resolveAvatar(DonationModel donation) {
 String _formatRelativeDonationTime(DateTime time) {
   final now = DateTime.now();
   final difference = now.difference(time);
-  if (difference.isNegative) {
-    return 'Donated just now';
-  }
-  if (difference.inMinutes < 1) {
+  if (difference.isNegative || difference.inMinutes < 1) {
     return 'Donated just now';
   }
   if (difference.inMinutes < 60) {
