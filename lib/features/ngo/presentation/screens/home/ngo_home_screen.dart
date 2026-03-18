@@ -101,7 +101,8 @@ class _NgoHomeScreenState extends State<NgoHomeScreen> {
                           child: TextField(
                             decoration: InputDecoration(
                               prefixIcon: Icon(Icons.search),
-                              hintText: 'Search donations, locations, features...',
+                              hintText:
+                                  'Search donations, locations, features...',
                               border: InputBorder.none,
                               contentPadding: EdgeInsets.symmetric(vertical: 12),
                             ),
@@ -169,8 +170,7 @@ class _NgoHomeScreenState extends State<NgoHomeScreen> {
                                     target <= 0 ? 0 : (ratio * 100).round();
 
                                 return Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Row(
                                       mainAxisAlignment:
@@ -672,6 +672,24 @@ class _ConcernSummaryCard extends StatelessWidget {
                   style: TextStyle(color: Colors.black54),
                 )
               else ...[
+                if (activeConcern.imageUrl.trim().isNotEmpty) ...[
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      activeConcern.imageUrl,
+                      height: 120,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        height: 120,
+                        color: Colors.grey.shade200,
+                        alignment: Alignment.center,
+                        child: const Icon(Icons.image_not_supported),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                ],
                 Text(
                   activeConcern.title,
                   style: const TextStyle(

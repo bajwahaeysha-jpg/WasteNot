@@ -54,6 +54,32 @@ class FirestoreService {
     }
   }
 
+  Future<String?> uploadDonationImage({
+    required String donorId,
+    required String donationId,
+    File? imageFile,
+  }) async {
+    if (imageFile == null) {
+      return null;
+    }
+
+    final segments = imageFile.path.split('.');
+    final extension = segments.length > 1 ? segments.last : 'jpg';
+    final ref = _storage.ref().child(
+          'donation_images/$donorId/${donationId}_${DateTime.now().millisecondsSinceEpoch}.$extension',
+        );
+
+    try {
+      await ref.putFile(imageFile);
+      return await ref.getDownloadURL();
+    } on FirebaseException catch (error) {
+      if (error.code == 'object-not-found') {
+        return null;
+      }
+      rethrow;
+    }
+  }
+
   Future<void> saveDonor({
     required String uid,
     required String name,

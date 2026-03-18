@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:wastenot/screens/login_screen.dart';
+import 'package:wastenot/services/auth_service.dart';
 
 class NgoSignUpScreen extends StatefulWidget {
   const NgoSignUpScreen({super.key});
@@ -10,9 +12,7 @@ class NgoSignUpScreen extends StatefulWidget {
 }
 
 class _NgoSignUpScreenState extends State<NgoSignUpScreen> {
-
   final _formKey = GlobalKey<FormState>();
-
   final TextEditingController ngoNameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
@@ -20,10 +20,12 @@ class _NgoSignUpScreenState extends State<NgoSignUpScreen> {
   final TextEditingController regNumberController = TextEditingController();
   final TextEditingController cityController = TextEditingController();
   final TextEditingController aboutController = TextEditingController();
+  final AuthService _authService = AuthService();
 
   File? _image;
-
   final ImagePicker picker = ImagePicker();
+  bool _obscurePassword = true;
+  bool _loading = false;
 
   Future pickImage() async {
     final picked = await picker.pickImage(source: ImageSource.gallery);
@@ -36,6 +38,18 @@ class _NgoSignUpScreenState extends State<NgoSignUpScreen> {
   }
 
   static const primary = Color(0xFF0F4C45);
+
+  @override
+  void dispose() {
+    ngoNameController.dispose();
+    emailController.dispose();
+    phoneController.dispose();
+    passwordController.dispose();
+    regNumberController.dispose();
+    cityController.dispose();
+    aboutController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,9 +90,58 @@ class _NgoSignUpScreenState extends State<NgoSignUpScreen> {
               const SizedBox(height: 30),
 
               buildField("NGO Name", ngoNameController),
-              buildField("Email Address", emailController),
-              buildField("Phone Number", phoneController),
-              buildField("Password", passwordController, obscure: true),
+              buildField(
+                "Email Address",
+                emailController,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Email is required';
+                  }
+                  if (!value.contains('@')) {
+                    return 'Enter a valid email';
+                  }
+                  return null;
+                },
+              ),
+              buildField(
+                "Phone Number",
+                phoneController,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Phone number is required';
+                  }
+                  if (!RegExp(r'^\d{10,15}$').hasMatch(value.trim())) {
+                    return 'Enter a valid phone number';
+                  }
+                  return null;
+                },
+              ),
+              buildField(
+                "Password",
+                passwordController,
+                obscure: _obscurePassword,
+                suffix: IconButton(
+                  icon: Icon(
+                    _obscurePassword
+                        ? Icons.visibility_off
+                        : Icons.visibility,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _obscurePassword = !_obscurePassword;
+                    });
+                  },
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Password is required';
+                  }
+                  if (value.length < 6) {
+                    return 'Password must be at least 6 characters';
+                  }
+                  return null;
+                },
+              ),
               buildField("Registration Number", regNumberController),
               buildField("City / Country", cityController),
 
@@ -123,11 +186,20 @@ class _NgoSignUpScreenState extends State<NgoSignUpScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  onPressed: submitForm,
-                  child: const Text(
-                    "Register NGO",
-                    style: TextStyle(fontSize: 16),
-                  ),
+                  onPressed: _loading ? null : submitForm,
+                  child: _loading
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text(
+                          "Register NGO",
+                          style: TextStyle(fontSize: 16),
+                        ),
                 ),
               ),
             ],
@@ -137,43 +209,97 @@ class _NgoSignUpScreenState extends State<NgoSignUpScreen> {
     );
   }
 
-  Widget buildField(String label, TextEditingController controller,
-      {bool obscure = false}) {
+  Widget buildField(
+    String label,
+    TextEditingController controller, {
+    bool obscure = false,
+    Widget? suffix,
+    String? Function(String?)? validator,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: TextFormField(
         controller: controller,
         obscureText: obscure,
+        validator: validator ??
+            (value) {
+              if (value == null || value.trim().isEmpty) {
+                return '$label is required';
+              }
+              return null;
+            },
         decoration: InputDecoration(
           labelText: label,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
           ),
+          suffixIcon: suffix,
         ),
       ),
     );
   }
 
-  void submitForm() {
-
+  Future<void> submitForm() async {
     if (!_formKey.currentState!.validate()) return;
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Registration Submitted"),
-        content: const Text(
-          "Your NGO account has been submitted.\n\nPlease wait for admin approval before logging in.",
+    setState(() => _loading = true);
+    try {
+      await _authService.submitNgoRequest(
+        organizationName: ngoNameController.text,
+        email: emailController.text,
+        password: passwordController.text,
+        phone: phoneController.text,
+        address: cityController.text,
+        registrationNumber: regNumberController.text,
+        description: aboutController.text,
+        profileImage: _image,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      await showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text("Registration Submitted"),
+          content: const Text(
+            "Your NGO account has been submitted.\n\nPlease wait for admin approval before logging in.",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("OK"),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-            child: const Text("OK"),
-          )
-        ],
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false,
+      );
+    } on AuthFailure catch (error) {
+      _showMessage(error.message, isError: true);
+    } catch (error) {
+      _showMessage(error.toString(), isError: true);
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
+  }
+
+  void _showMessage(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : primary,
       ),
     );
   }

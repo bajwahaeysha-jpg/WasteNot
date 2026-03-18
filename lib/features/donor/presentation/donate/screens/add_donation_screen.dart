@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:wastenot/services/donation_services.dart';
+import 'package:wastenot/services/firestore_service.dart';
 import 'package:wastenot/services/session_service.dart';
 
 class AddDonationScreen extends StatefulWidget {
@@ -15,6 +16,7 @@ class AddDonationScreen extends StatefulWidget {
 class _AddDonationScreenState extends State<AddDonationScreen> {
   final ImagePicker _picker = ImagePicker();
   final DonationService _donationService = DonationService();
+  final FirestoreService _firestoreService = FirestoreService();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   XFile? pickedImage;
@@ -79,8 +81,17 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
     setState(() => _isSubmitting = true);
 
     try {
+      final donationId =
+          _donationService.createDraftDonationId();
+      final uploadedImageUrl = await _firestoreService.uploadDonationImage(
+        donorId: donor.uid,
+        donationId: donationId,
+        imageFile: pickedImage == null ? null : File(pickedImage!.path),
+      );
+
       await _donationService.createDonation(
         donor: donor,
+        donationId: donationId,
         request: DonationCreateRequest(
           foodItems: foodController.text
               .split(',')
@@ -90,9 +101,9 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
           quantity: selectedServing!,
           description: mergedDescription.isEmpty ? null : mergedDescription,
           location: locationController.text.trim(),
-          // Image upload is not wired in this UI yet, so the document stores
-          // an empty image url list until a storage flow is added.
-          imageUrls: const <String>[],
+          imageUrls: uploadedImageUrl == null
+              ? const <String>[]
+              : <String>[uploadedImageUrl],
         ),
       );
 
@@ -124,6 +135,8 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
       Navigator.of(context).pop(true);
     } on DonationException catch (error) {
       _showError(error.message);
+    } on Exception {
+      _showError('Image upload failed. Please try again.');
     } catch (_) {
       _showError('Unable to submit donation right now. Please try again.');
     } finally {

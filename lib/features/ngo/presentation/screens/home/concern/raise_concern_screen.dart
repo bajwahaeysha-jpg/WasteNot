@@ -260,8 +260,9 @@ class _RaiseConcernScreenState extends State<RaiseConcernScreen> {
                                 decoration: BoxDecoration(
                                   color: expired
                                       ? Colors.red.withValues(alpha: 0.12)
-                                      : const Color(0xFF0F4C45)
-                                          .withValues(alpha: 0.12),
+                                      : const Color(0xFF0F4C45).withValues(
+                                          alpha: 0.12,
+                                        ),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
@@ -310,178 +311,174 @@ class _RaiseConcernScreenState extends State<RaiseConcernScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<AppUserModel?>(
-      valueListenable: SessionService.currentUser,
-      builder: (context, currentUser, _) {
-        return Scaffold(
-          backgroundColor: const Color(0xFFF5F7F6),
-          appBar: AppBar(
-            backgroundColor: const Color(0xFF0F4C45),
-            iconTheme: const IconThemeData(color: Colors.white),
-            centerTitle: false,
-            title: const Text(
-              'Raise a Concern',
+    final currentUser = SessionService.user;
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F7F6),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF0F4C45),
+        iconTheme: const IconThemeData(color: Colors.white),
+        centerTitle: false,
+        title: const Text(
+          'Raise a Concern',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+        ),
+        elevation: 0,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Welcome',
               style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: Colors.black,
               ),
             ),
-            elevation: 0,
-          ),
-          body: currentUser == null
-              ? const Center(child: CircularProgressIndicator())
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Hello, ${currentUser.displayName}',
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.black,
-                        ),
+            const SizedBox(height: 8),
+            const Text(
+              'Here you can raise growing concerns that need immediate attention. Your voice is respected and every report helps us improve our impact.',
+              style: TextStyle(
+                fontSize: 15,
+                color: Colors.black,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'Please note: you can only raise one concern at a time. Submitting a new concern will automatically delete the previous one.',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.black54,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _titleController,
+                    style: const TextStyle(color: Colors.black),
+                    decoration: InputDecoration(
+                      hintText: 'Concern title',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Raise a real-time concern for donors and volunteers. Each concern is stored in Firebase and will expire automatically based on the duration you choose.',
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: Colors.black,
-                          height: 1.4,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _titleController,
-                              style: const TextStyle(color: Colors.black),
-                              decoration: InputDecoration(
-                                hintText: 'Concern title',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          GestureDetector(
-                            onTap: _pickImage,
-                            child: Container(
-                              width: 56,
-                              height: 56,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                color: Colors.grey.shade200,
-                                image: _image != null
-                                    ? DecorationImage(
-                                        image: FileImage(_image!),
-                                        fit: BoxFit.cover,
-                                      )
-                                    : null,
-                              ),
-                              child: _image == null
-                                  ? const Icon(Icons.add_a_photo, size: 20)
-                                  : null,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 18),
-                      const Text(
-                        'Write your concern',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: Colors.black,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: _messageController,
-                        maxLength: _limit,
-                        maxLines: 4,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          color: Colors.black,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: 'Describe the issue briefly...',
-                          hintStyle: const TextStyle(color: Colors.black54),
-                          counterStyle: const TextStyle(color: Colors.black),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      const Text(
-                        'Concern duration',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: Colors.black,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      _durationSelector(),
-                      const SizedBox(height: 18),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 46,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF0F4C45),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          onPressed: _isSubmitting ? null : _submitConcern,
-                          child: _isSubmitting
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      Colors.white,
-                                    ),
-                                  ),
-                                )
-                              : const Text(
-                                  'Send',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                        ),
-                      ),
-                      const SizedBox(height: 28),
-                      const Text(
-                        'Your concerns',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.black,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'Long press a concern to delete it.',
-                        style: TextStyle(color: Colors.black54),
-                      ),
-                      const SizedBox(height: 14),
-                      _ownConcernsSection(currentUser),
-                    ],
+                    ),
                   ),
                 ),
-        );
-      },
+                const SizedBox(width: 10),
+                GestureDetector(
+                  onTap: _pickImage,
+                  child: Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      color: Colors.grey.shade200,
+                      image: _image != null
+                          ? DecorationImage(
+                              image: FileImage(_image!),
+                              fit: BoxFit.cover,
+                            )
+                          : null,
+                    ),
+                    child: _image == null
+                        ? const Icon(Icons.add_a_photo, size: 20)
+                        : null,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Concern visibility',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+                color: Colors.black,
+              ),
+            ),
+            const SizedBox(height: 8),
+            _durationSelector(),
+            const SizedBox(height: 20),
+            const Text(
+              'Write your concern',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: Colors.black,
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _messageController,
+              maxLength: _limit,
+              maxLines: 4,
+              style: const TextStyle(fontSize: 15, color: Colors.black),
+              decoration: InputDecoration(
+                hintText: 'Describe the issue briefly...',
+                hintStyle: const TextStyle(color: Colors.black54),
+                counterStyle: const TextStyle(color: Colors.black),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Center(
+              child: SizedBox(
+                width: 180,
+                height: 44,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0F4C45),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 3,
+                  ),
+                  onPressed: _isSubmitting ? null : _submitConcern,
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text(
+                          'Send',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                ),
+              ),
+            ),
+            if (currentUser != null && currentUser.isNgo) ...[
+              const SizedBox(height: 24),
+              const Text(
+                'Your concerns',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Colors.black,
+                ),
+              ),
+              const SizedBox(height: 10),
+              _ownConcernsSection(currentUser),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

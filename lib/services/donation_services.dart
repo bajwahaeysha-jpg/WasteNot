@@ -210,8 +210,11 @@ class DonationService {
   CollectionReference<Map<String, dynamic>> get _donations =>
       _firestore.collection('donations');
 
+  String createDraftDonationId() => _donations.doc().id;
+
   Future<DonationModel> createDonation({
     required AppUserModel donor,
+    String? donationId,
     required DonationCreateRequest request,
   }) async {
     if (!donor.isDonor) {
@@ -233,7 +236,9 @@ class DonationService {
     }
 
     final now = DateTime.now();
-    final docRef = _donations.doc();
+    final docRef = donationId == null || donationId.trim().isEmpty
+        ? _donations.doc()
+        : _donations.doc(donationId.trim());
     final payload = <String, dynamic>{
       'donationId': docRef.id,
       'donorId': donor.uid,
