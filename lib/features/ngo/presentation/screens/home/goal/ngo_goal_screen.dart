@@ -20,13 +20,31 @@ class _NgoGoalScreenState extends State<NgoGoalScreen> {
   final List<int> quickGoals = [400, 500, 750, 1000];
   final GoalService _goalService = GoalService();
 
-  int selectedGoal = 150;
+  int selectedGoal = 400;
   bool _isSaving = false;
+  late final List<String> _monthLabels;
+  late String _selectedMonthKey;
 
   @override
   void initState() {
     super.initState();
     controller.text = selectedGoal.toString();
+    _monthLabels = const [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+    final now = DateTime.now();
+    _selectedMonthKey = _monthKey(now);
   }
 
   void _selectGoal(int value) {
@@ -68,6 +86,7 @@ class _NgoGoalScreenState extends State<NgoGoalScreen> {
       await _goalService.saveNgoGoal(
         ngo: ngo,
         monthlyTarget: value,
+        monthKey: _selectedMonthKey,
       );
       if (!mounted) {
         return;
@@ -94,6 +113,11 @@ class _NgoGoalScreenState extends State<NgoGoalScreen> {
         setState(() => _isSaving = false);
       }
     }
+  }
+
+  String _monthKey(DateTime date) {
+    final month = date.month.toString().padLeft(2, '0');
+    return '${date.year}-$month';
   }
 
   @override
@@ -149,6 +173,47 @@ class _NgoGoalScreenState extends State<NgoGoalScreen> {
                       ),
                     ),
                     const SizedBox(height: 26),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: cardColor,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: borderColor),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _selectedMonthKey,
+                          isExpanded: true,
+                          icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                          items: List.generate(12, (index) {
+                            final date = DateTime(DateTime.now().year, index + 1);
+                            final key = _monthKey(date);
+                            return DropdownMenuItem<String>(
+                              value: key,
+                              child: Text(
+                                '${_monthLabels[index]} ${date.year}',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            );
+                          }),
+                          onChanged: (value) {
+                            if (value == null) {
+                              return;
+                            }
+                            setState(() => _selectedMonthKey = value);
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
 
                     Container(
                       padding: const EdgeInsets.symmetric(

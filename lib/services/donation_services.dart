@@ -626,6 +626,7 @@ class DonationService {
     String? donorId,
     String? ngoId,
     bool onlyAvailableForNgo = false,
+    bool orderByCreatedAt = true,
   }) {
     Query<Map<String, dynamic>> query = _donations;
     final effectiveStatus =
@@ -647,9 +648,11 @@ class DonationService {
       query = query.where('acceptedByNgoId', isNull: true);
     }
 
-    return query.orderBy('createdAt', descending: true).snapshots().map((
-      snapshot,
-    ) {
+    final effectiveQuery = orderByCreatedAt
+        ? query.orderBy('createdAt', descending: true)
+        : query;
+
+    return effectiveQuery.snapshots().map((snapshot) {
       final now = DateTime.now();
       final donations = snapshot.docs.map(DonationModel.fromFirestore).toList();
       if (!onlyAvailableForNgo) {

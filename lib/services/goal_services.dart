@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:wastenot/models/app_user_model.dart';
 import 'package:wastenot/services/donation_services.dart';
 
@@ -13,6 +14,7 @@ class MonthlyGoal {
     required this.createdAt,
     required this.updatedAt,
     required this.monthKey,
+    required this.isGoalSet,
   });
 
   final String uid;
@@ -22,6 +24,7 @@ class MonthlyGoal {
   final DateTime createdAt;
   final DateTime updatedAt;
   final String monthKey;
+  final bool isGoalSet;
 
   MonthlyGoal copyWith({
     String? uid,
@@ -31,6 +34,7 @@ class MonthlyGoal {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? monthKey,
+    bool? isGoalSet,
   }) {
     return MonthlyGoal(
       uid: uid ?? this.uid,
@@ -40,6 +44,7 @@ class MonthlyGoal {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       monthKey: monthKey ?? this.monthKey,
+      isGoalSet: isGoalSet ?? this.isGoalSet,
     );
   }
 
@@ -55,6 +60,7 @@ class MonthlyGoal {
       'createdAt': Timestamp.fromDate(createdAt ?? this.createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt ?? this.updatedAt),
       'monthKey': monthKey,
+      'isGoalSet': isGoalSet,
     };
   }
 
@@ -64,15 +70,19 @@ class MonthlyGoal {
     final data = doc.data() ?? <String, dynamic>{};
     final createdAt = _dateFromFirestore(data['createdAt']) ?? DateTime.now();
     final updatedAt = _dateFromFirestore(data['updatedAt']) ?? createdAt;
+    final monthlyTarget = _toInt(data['monthlyTarget']);
+    final isGoalSet =
+        (data['isGoalSet'] as bool?) ?? (monthlyTarget > 0);
 
     return MonthlyGoal(
       uid: (data['uid'] as String?)?.trim() ?? doc.id,
       role: (data['role'] as String?)?.trim() ?? 'donor',
-      monthlyTarget: _toInt(data['monthlyTarget']),
+      monthlyTarget: monthlyTarget,
       achievedCount: _toInt(data['achievedCount']),
       createdAt: createdAt,
       updatedAt: updatedAt,
       monthKey: (data['monthKey'] as String?)?.trim() ?? '',
+      isGoalSet: isGoalSet,
     );
   }
 }
@@ -91,7 +101,10 @@ class GoalProgress {
   final String monthKey;
 
   int get monthlyTarget => goal?.monthlyTarget ?? 0;
-  bool get hasGoal => monthlyTarget > 0;
+  bool get hasGoal {
+  if (goal == null) return true; // 🔥 prevent flicker
+  return goal!.isGoalSet;
+}
 }
 
 class GoalService {
@@ -110,24 +123,50 @@ class GoalService {
     return _monthKey(date ?? DateTime.now());
   }
 
+  Stream<String> _currentMonthKeyStream() {
+    return (() async* {
+      var last = currentMonthKey();
+      yield last;
+      await for (final key in Stream<String>.periodic(
+         const Duration(seconds: 1),
+        (_) => currentMonthKey(),
+      )) {
+        if (key != last) {
+          last = key;
+          yield key;
+        }
+      }
+    })();
+  }
+
   Future<MonthlyGoal> saveDonorGoal({
     required AppUserModel donor,
     required int monthlyTarget,
+    String? monthKey,
   }) {
     if (!donor.isDonor) {
       throw const GoalException('Only donor accounts can set donor goals.');
     }
-    return _saveGoal(user: donor, monthlyTarget: monthlyTarget);
+    return _saveGoal(
+      user: donor,
+      monthlyTarget: monthlyTarget,
+      monthKey: monthKey,
+    );
   }
 
   Future<MonthlyGoal> saveNgoGoal({
     required AppUserModel ngo,
     required int monthlyTarget,
+    String? monthKey,
   }) {
     if (!ngo.isNgo) {
       throw const GoalException('Only NGO accounts can set NGO goals.');
     }
-    return _saveGoal(user: ngo, monthlyTarget: monthlyTarget);
+    return _saveGoal(
+      user: ngo,
+      monthlyTarget: monthlyTarget,
+      monthKey: monthKey,
+    );
   }
 
   Future<MonthlyGoal?> getCurrentUserMonthlyGoal({
@@ -136,22 +175,34 @@ class GoalService {
   }) async {
     final monthKey = _monthKey(now ?? DateTime.now());
     final doc = await _goalDoc(user.uid, monthKey).get();
+    debugPrint('[GoalService] currentMonthKey=$monthKey');
     if (!doc.exists) {
       return null;
     }
-    return MonthlyGoal.fromFirestore(doc);
+    final goal = MonthlyGoal.fromFirestore(doc);
+    debugPrint(
+      '[GoalService] fetched goal monthKey=${goal.monthKey} for uid=${user.uid}',
+    );
+    return goal;
   }
 
   Stream<MonthlyGoal?> streamCurrentUserMonthlyGoal({
     required AppUserModel user,
     DateTime? now,
   }) {
-    final monthKey = _monthKey(now ?? DateTime.now());
-    return _goalDoc(user.uid, monthKey).snapshots().map((doc) {
-      if (!doc.exists) {
-        return null;
-      }
-      return MonthlyGoal.fromFirestore(doc);
+    return _currentMonthKeyStream().asyncExpand((monthKey) async* {
+      debugPrint('[GoalService] currentMonthKey=$monthKey');
+      await resetOrCreateMonthlyGoalForMonth(user: user, monthKey: monthKey);
+      yield* _goalDoc(user.uid, monthKey).snapshots().map((doc) {
+        if (!doc.exists) {
+          return null;
+        }
+        final goal = MonthlyGoal.fromFirestore(doc);
+        debugPrint(
+          '[GoalService] fetched goal monthKey=${goal.monthKey} for uid=${user.uid}',
+        );
+        return goal;
+      });
     });
   }
 
@@ -161,6 +212,7 @@ class GoalService {
     final controller = StreamController<GoalProgress>();
     StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? goalSub;
     StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? donationSub;
+    StreamSubscription<String>? monthSub;
     MonthlyGoal? latestGoal;
     int latestAchieved = 0;
     int latestDonationsCount = 0;
@@ -177,48 +229,77 @@ class GoalService {
     }
 
     controller.onListen = () async {
-      await resetOrCreateMonthlyGoalIfNeeded(user: user);
-      final monthKey = currentMonthKey();
+      monthSub = _currentMonthKeyStream().listen((monthKey) async {
+        debugPrint('[GoalService] currentMonthKey=$monthKey');
+        await goalSub?.cancel();
+        await donationSub?.cancel();
+         latestGoal = null;
+  latestAchieved = 0;
+  latestDonationsCount = 0;
 
-      goalSub = _goalDoc(user.uid, monthKey).snapshots().listen((doc) {
-        latestGoal = doc.exists ? MonthlyGoal.fromFirestore(doc) : null;
-        emit();
-      }, onError: controller.addError);
-
-      Query<Map<String, dynamic>> donationQuery =
-          _donations.where('status', isEqualTo: DonationStatus.completed.value);
-      if (user.isDonor) {
-        donationQuery = donationQuery.where('donorId', isEqualTo: user.uid);
-      } else if (user.isNgo) {
-        donationQuery =
-            donationQuery.where('acceptedByNgoId', isEqualTo: user.uid);
-      }
-
-      donationSub = donationQuery.snapshots().listen((snapshot) async {
-        final donations =
-            snapshot.docs.map(DonationModel.fromFirestore).toList();
-        final progress = _calculateProgressForMonth(
+        await resetOrCreateMonthlyGoalForMonth(
           user: user,
-          donations: donations,
-          now: DateTime.now(),
+          monthKey: monthKey,
         );
-        latestAchieved = progress.achievedCount;
-        latestDonationsCount = progress.donationsCount;
-        emit();
-        if (latestGoal != null &&
-            latestGoal!.achievedCount != latestAchieved) {
-          await updateAchievedCount(
-            user: user,
-            achievedCount: latestAchieved,
-            monthKey: latestGoal!.monthKey,
-          );
+
+        goalSub = _goalDoc(user.uid, monthKey).snapshots().listen((doc) {
+          if (doc.exists) {
+  latestGoal = MonthlyGoal.fromFirestore(doc);
+}
+          if (latestGoal != null) {
+            debugPrint(
+              '[GoalService] fetched goal monthKey=${latestGoal!.monthKey} for uid=${user.uid}',
+            );
+          }
+          emit();
+        }, onError: controller.addError);
+
+        final rangeStart = _monthStartFromKey(monthKey);
+        final rangeEnd = _monthEndFromKey(monthKey);
+        Query<Map<String, dynamic>> donationQuery = _donations
+            .where('status', isEqualTo: DonationStatus.completed.value)
+            .where(
+              'completedAt',
+              isGreaterThanOrEqualTo: Timestamp.fromDate(rangeStart),
+            )
+            .where(
+              'completedAt',
+              isLessThan: Timestamp.fromDate(rangeEnd),
+            );
+        if (user.isDonor) {
+          donationQuery = donationQuery.where('donorId', isEqualTo: user.uid);
+        } else if (user.isNgo) {
+          donationQuery =
+              donationQuery.where('acceptedByNgoId', isEqualTo: user.uid);
         }
+
+        donationSub = donationQuery.snapshots().listen((snapshot) async {
+          final donations =
+              snapshot.docs.map(DonationModel.fromFirestore).toList();
+          final progress = _calculateProgressForMonth(
+            user: user,
+            donations: donations,
+            now: rangeStart,
+          );
+          latestAchieved = progress.achievedCount;
+          latestDonationsCount = progress.donationsCount;
+          emit();
+          if (latestGoal != null &&
+              latestGoal!.achievedCount != latestAchieved) {
+            await updateAchievedCount(
+              user: user,
+              achievedCount: latestAchieved,
+              monthKey: latestGoal!.monthKey,
+            );
+          }
+        }, onError: controller.addError);
       }, onError: controller.addError);
     };
 
     controller.onCancel = () async {
       await goalSub?.cancel();
       await donationSub?.cancel();
+      await monthSub?.cancel();
       await controller.close();
     };
 
@@ -244,6 +325,7 @@ class GoalService {
         'achievedCount': achievedCount,
         'createdAt': Timestamp.fromDate(now),
         'updatedAt': Timestamp.fromDate(now),
+        'isGoalSet': false,
       });
       return;
     }
@@ -293,21 +375,47 @@ class GoalService {
       return MonthlyGoal.fromFirestore(doc);
     }
 
-    final achievedCount = await _computeAchievedCountForUser(
-      user: user,
-      now: effectiveNow,
-    );
-
     final payload = MonthlyGoal(
       uid: user.uid,
       role: user.role,
       monthlyTarget: 0,
-      achievedCount: achievedCount,
+      achievedCount: 0,
       createdAt: effectiveNow,
       updatedAt: effectiveNow,
       monthKey: monthKey,
+      isGoalSet: false,
     );
 
+    await docRef.set(payload.toFirestore());
+    return payload;
+  }
+
+  Future<MonthlyGoal> resetOrCreateMonthlyGoalForMonth({
+    required AppUserModel user,
+    required String monthKey,
+  }) async {
+    debugPrint('[GoalService] ensure goal for monthKey=$monthKey');
+    final docRef = _goalDoc(user.uid, monthKey);
+    final doc = await docRef.get();
+    if (doc.exists) {
+      final goal = MonthlyGoal.fromFirestore(doc);
+      debugPrint(
+        '[GoalService] fetched goal monthKey=${goal.monthKey} for uid=${user.uid}',
+      );
+      return goal;
+    }
+
+    final now = DateTime.now();
+    final payload = MonthlyGoal(
+      uid: user.uid,
+      role: user.role,
+      monthlyTarget: 0,
+      achievedCount: 0,
+      createdAt: now,
+      updatedAt: now,
+      monthKey: monthKey,
+      isGoalSet: false,
+    );
     await docRef.set(payload.toFirestore());
     return payload;
   }
@@ -315,38 +423,38 @@ class GoalService {
   Future<MonthlyGoal> _saveGoal({
     required AppUserModel user,
     required int monthlyTarget,
+    String? monthKey,
   }) async {
     if (monthlyTarget <= 0) {
       throw const GoalException('Monthly target must be greater than zero.');
     }
 
     final now = DateTime.now();
-    final monthKey = _monthKey(now);
-    final docRef = _goalDoc(user.uid, monthKey);
+    final effectiveMonthKey = monthKey ?? _monthKey(now);
+    final docRef = _goalDoc(user.uid, effectiveMonthKey);
     final existing = await docRef.get();
 
-    MonthlyGoal goal;
     if (existing.exists) {
       final previous = MonthlyGoal.fromFirestore(existing);
-      goal = previous.copyWith(
+      final updated = previous.copyWith(
         monthlyTarget: monthlyTarget,
         updatedAt: now,
+        isGoalSet: true,
       );
-    } else {
-      final achievedCount = await _computeAchievedCountForUser(
-        user: user,
-        now: now,
-      );
-      goal = MonthlyGoal(
-        uid: user.uid,
-        role: user.role,
-        monthlyTarget: monthlyTarget,
-        achievedCount: achievedCount,
-        createdAt: now,
-        updatedAt: now,
-        monthKey: monthKey,
-      );
+      await docRef.set(updated.toFirestore());
+      return updated;
     }
+
+    final goal = MonthlyGoal(
+      uid: user.uid,
+      role: user.role,
+      monthlyTarget: monthlyTarget,
+      achievedCount: 0,
+      createdAt: now,
+      updatedAt: now,
+      monthKey: effectiveMonthKey,
+      isGoalSet: true,
+    );
 
     await docRef.set(goal.toFirestore());
     return goal;
@@ -377,6 +485,7 @@ class GoalService {
           'achievedCount': delta,
           'createdAt': Timestamp.fromDate(effectiveNow),
           'updatedAt': Timestamp.fromDate(effectiveNow),
+          'isGoalSet': false,
         });
         return;
       }
@@ -392,8 +501,19 @@ class GoalService {
     required AppUserModel user,
     required DateTime now,
   }) async {
+    final startOfMonth = DateTime(now.year, now.month);
+    final endOfMonth = DateTime(now.year, now.month + 1);
     Query<Map<String, dynamic>> query =
         _donations.where('status', isEqualTo: DonationStatus.completed.value);
+    query = query
+        .where(
+          'completedAt',
+          isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth),
+        )
+        .where(
+          'completedAt',
+          isLessThan: Timestamp.fromDate(endOfMonth),
+        );
 
     if (user.isDonor) {
       query = query.where('donorId', isEqualTo: user.uid);
@@ -430,7 +550,10 @@ class GoalService {
         return false;
       }
 
-      final completedAt = donation.completedAt ?? donation.createdAt;
+      final completedAt = donation.completedAt;
+      if (completedAt == null) {
+        return false;
+      }
       if (completedAt.isBefore(start)) {
         return false;
       }
@@ -470,6 +593,22 @@ class GoalException implements Exception {
 String _monthKey(DateTime date) {
   final month = date.month.toString().padLeft(2, '0');
   return '${date.year}-$month';
+}
+
+DateTime _monthStartFromKey(String monthKey) {
+  final parts = monthKey.split('-');
+  if (parts.length != 2) {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month);
+  }
+  final year = int.tryParse(parts[0]) ?? DateTime.now().year;
+  final month = int.tryParse(parts[1]) ?? DateTime.now().month;
+  return DateTime(year, month);
+}
+
+DateTime _monthEndFromKey(String monthKey) {
+  final start = _monthStartFromKey(monthKey);
+  return DateTime(start.year, start.month + 1);
 }
 
 DateTime? _dateFromFirestore(dynamic value) {
@@ -517,3 +656,5 @@ int _parseServingCount(String quantity) {
 
   return int.parse(matches.first.group(0)!);
 }
+
+

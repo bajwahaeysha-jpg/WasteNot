@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:wastenot/features/ngo/presentation/screens/home/accepted/accepted_donation_detail_screen.dart';
+import 'package:wastenot/models/app_user_model.dart';
 import 'package:wastenot/services/donation_services.dart';
 import 'package:wastenot/services/session_service.dart';
 
@@ -15,7 +16,6 @@ class AcceptedDonationsScreen extends StatefulWidget {
 class _AcceptedDonationsScreenState extends State<AcceptedDonationsScreen> {
   final DonationService _donationService = DonationService();
   final TextEditingController controller = TextEditingController();
-  DonationStatus? _selectedStatus;
   bool isSearching = false;
   String _query = '';
 
@@ -23,21 +23,6 @@ class _AcceptedDonationsScreenState extends State<AcceptedDonationsScreen> {
   void dispose() {
     controller.dispose();
     super.dispose();
-  }
-
-  Future<List<DonationModel>> _loadDonations() {
-    final ngo = SessionService.user;
-    debugPrint(
-      '[NgoAcceptedDonationsScreen] current ngo uid=${ngo?.uid} role=${ngo?.role} filter=${_selectedStatus?.value ?? 'all'}',
-    );
-    if (ngo == null) {
-      return Future<List<DonationModel>>.value(const <DonationModel>[]);
-    }
-
-    return _donationService.getNgoAcceptedDonations(
-      ngoId: ngo.uid,
-      status: _selectedStatus,
-    );
   }
 
   void _clear() {
@@ -85,143 +70,159 @@ class _AcceptedDonationsScreenState extends State<AcceptedDonationsScreen> {
             ),
         ],
       ),
-      body: FutureBuilder<List<DonationModel>>(
-        future: _loadDonations(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: ValueListenableBuilder<AppUserModel?>(
+        valueListenable: SessionService.currentUser,
+        builder: (context, user, _) {
+          final uid = user?.uid;
+          final stream = uid == null
+              ? Stream<List<DonationModel>>.value(const <DonationModel>[])
+              : _donationService.streamDonationsByStatus(
+                  ngoId: uid,
+                  orderByCreatedAt: false,
+                );
 
-          if (snapshot.hasError) {
-            debugPrint(
-              '[NgoAcceptedDonationsScreen] load error for uid=${SessionService.user?.uid}: ${snapshot.error}',
-            );
-            return Center(
-              child: Text('Unable to load donations.\n${snapshot.error}'),
-            );
-          }
+          return StreamBuilder<List<DonationModel>>(
+            stream: stream,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-          final filtered = (snapshot.data ?? const <DonationModel>[])
-              .where((d) {
-                if (_query.isEmpty) {
-                  return true;
-                }
-                final query = _query.toLowerCase();
-                return d.donorName.toLowerCase().contains(query) ||
-                    d.foodItems.join(', ').toLowerCase().contains(query);
-              })
-              .toList()
-            ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+              if (snapshot.hasError) {
+                debugPrint(
+                  '[NgoAcceptedDonationsScreen] load error for uid=${user?.uid}: ${snapshot.error}',
+                );
+                return Center(
+                  child: Text('Unable to load donations.\n${snapshot.error}'),
+                );
+              }
 
-          final Map<String, List<DonationModel>> grouped = {};
-          for (final donation in filtered) {
-            grouped.putIfAbsent(_groupLabel(donation.createdAt), () => []).add(donation);
-          }
+              final filtered = (snapshot.data ?? const <DonationModel>[])
+                  .where((d) {
+                    if (_query.isEmpty) {
+                      return true;
+                    }
+                    final query = _query.toLowerCase();
+                    return d.donorName.toLowerCase().contains(query) ||
+                        d.foodItems.join(', ').toLowerCase().contains(query);
+                  })
+                  .toList()
+                ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
-          if (filtered.isEmpty) {
-            return const Center(child: Text('No accepted donations found.'));
-          }
+              final Map<String, List<DonationModel>> grouped = {};
+              for (final donation in filtered) {
+                grouped
+                    .putIfAbsent(_groupLabel(donation.createdAt), () => [])
+                    .add(donation);
+              }
 
-          return ListView(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            children: grouped.entries.map((group) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    child: Text(
-                      group.key,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ),
-                  ...group.value.map(
-                    (d) => InkWell(
-                      onTap: () async {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                AcceptedDonationDetailScreen(donation: d),
-                          ),
-                        );
-                        if (mounted) {
-                          setState(() {});
-                        }
-                      },
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(
+              if (filtered.isEmpty) {
+                return const Center(child: Text('No accepted donations found.'));
+              }
+
+              return ListView(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                children: grouped.entries.map((group) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
                           horizontal: 16,
-                          vertical: 6,
+                          vertical: 8,
                         ),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(18),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.06),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 55,
-                              height: 55,
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade200,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: const Icon(Icons.fastfood),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    d.foodItems.join(', '),
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 15,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    d.donorName,
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      color: Colors.black54,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Text(
-                              _timeOnly(d.acceptedAt ?? d.createdAt),
-                              style: const TextStyle(
-                                color: Color(0xFF0F4C45),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
+                        child: Text(
+                          group.key,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                            color: Colors.black87,
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                ],
+                      ...group.value.map(
+                        (d) => InkWell(
+                          onTap: () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    AcceptedDonationDetailScreen(donation: d),
+                              ),
+                            );
+                            if (mounted) {
+                              setState(() {});
+                            }
+                          },
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 6,
+                            ),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(18),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.06),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 55,
+                                  height: 55,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade200,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: const Icon(Icons.fastfood),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        d.foodItems.join(', '),
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 15,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        d.donorName,
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.black54,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Text(
+                                  _timeOnly(d.acceptedAt ?? d.createdAt),
+                                  style: const TextStyle(
+                                    color: Color(0xFF0F4C45),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                }).toList(),
               );
-            }).toList(),
+            },
           );
         },
       ),
