@@ -1,7 +1,5 @@
 import 'dart:developer' as developer;
 import 'dart:io';
-import 'dart:async';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:wastenot/features/admin/shared/services/admin_user_notification_service.dart';
@@ -150,82 +148,67 @@ class ConcernService {
   }
 
   Stream<List<ConcernModel>> getActiveConcerns() {
-    return _concerns
-        .where('isActive', isEqualTo: true)
-        .snapshots()
-        .transform(
-          StreamTransformer<QuerySnapshot<Map<String, dynamic>>,
-              List<ConcernModel>>.fromHandlers(
-            handleData: (snapshot, sink) {
-              try {
-                final now = DateTime.now();
-                final concerns = snapshot.docs
-                    .map(ConcernModel.fromFirestore)
-                    .where(
-                      (concern) =>
-                          concern.isActive && concern.expiryTime.isAfter(now),
-                    )
-                    .toList()
-                  ..sort((a, b) => a.expiryTime.compareTo(b.expiryTime));
-                sink.add(concerns);
-              } catch (error, stackTrace) {
-                developer.log(
-                  'Failed to map active concerns snapshot.',
-                  name: 'ConcernService',
-                  error: error,
-                  stackTrace: stackTrace,
-                );
-                sink.add(const <ConcernModel>[]);
-              }
-            },
-            handleError: (error, stackTrace, sink) {
-              developer.log(
-                'Failed to fetch active concerns from Firestore.',
-                name: 'ConcernService',
-                error: error,
-                stackTrace: stackTrace,
-              );
-              sink.add(const <ConcernModel>[]);
-            },
-          ),
+    return _concerns.where('isActive', isEqualTo: true).snapshots().map((
+      snapshot,
+    ) {
+      try {
+        final now = DateTime.now();
+        final concerns = snapshot.docs
+            .map(ConcernModel.fromFirestore)
+            .where(
+              (concern) => concern.isActive && concern.expiryTime.isAfter(now),
+            )
+            .toList()
+          ..sort((a, b) => a.expiryTime.compareTo(b.expiryTime));
+        return concerns;
+      } catch (error, stackTrace) {
+        developer.log(
+          'Failed to map active concerns snapshot.',
+          name: 'ConcernService',
+          error: error,
+          stackTrace: stackTrace,
         );
+        Error.throwWithStackTrace(error, stackTrace);
+      }
+    });
+  }
+
+  Stream<List<ConcernModel>> getAllConcerns() {
+    return _concerns.snapshots().map((snapshot) {
+      try {
+        final concerns = snapshot.docs.map(ConcernModel.fromFirestore).toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        return concerns;
+      } catch (error, stackTrace) {
+        developer.log(
+          'Failed to map all concerns snapshot.',
+          name: 'ConcernService',
+          error: error,
+          stackTrace: stackTrace,
+        );
+        Error.throwWithStackTrace(error, stackTrace);
+      }
+    });
   }
 
   Stream<List<ConcernModel>> getNgoConcerns(String ngoId) {
-    return _concerns
-        .where('ngoId', isEqualTo: ngoId)
-        .snapshots()
-        .transform(
-          StreamTransformer<QuerySnapshot<Map<String, dynamic>>,
-              List<ConcernModel>>.fromHandlers(
-            handleData: (snapshot, sink) {
-              try {
-                final concerns = snapshot.docs
-                    .map(ConcernModel.fromFirestore)
-                    .toList()
-                  ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-                sink.add(concerns);
-              } catch (error, stackTrace) {
-                developer.log(
-                  'Failed to map NGO concerns snapshot.',
-                  name: 'ConcernService',
-                  error: error,
-                  stackTrace: stackTrace,
-                );
-                sink.add(const <ConcernModel>[]);
-              }
-            },
-            handleError: (error, stackTrace, sink) {
-              developer.log(
-                'Failed to fetch NGO concerns from Firestore.',
-                name: 'ConcernService',
-                error: error,
-                stackTrace: stackTrace,
-              );
-              sink.add(const <ConcernModel>[]);
-            },
-          ),
+    return _concerns.where('ngoId', isEqualTo: ngoId).snapshots().map((
+      snapshot,
+    ) {
+      try {
+        final concerns = snapshot.docs.map(ConcernModel.fromFirestore).toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        return concerns;
+      } catch (error, stackTrace) {
+        developer.log(
+          'Failed to map NGO concerns snapshot.',
+          name: 'ConcernService',
+          error: error,
+          stackTrace: stackTrace,
         );
+        Error.throwWithStackTrace(error, stackTrace);
+      }
+    });
   }
 
   Future<void> deleteConcern(
@@ -258,7 +241,7 @@ class ConcernService {
     }
 
     final removalReason = (reason ?? '').trim().isEmpty
-        ? 'policy review'
+        ? 'Removed by admin review'
         : reason!.trim();
 
     await _adminUserNotificationService.sendNotificationToNgoAndLog(
@@ -266,7 +249,7 @@ class ConcernService {
       ngoName: concern.ngoName.trim().isEmpty ? 'NGO' : concern.ngoName,
       email: concern.ngoEmail,
       title: 'Concern Removed',
-      message: 'Your concern was removed by admin due to $removalReason',
+      message: 'Your concern was removed by admin. Reason: $removalReason',
     );
   }
 }
