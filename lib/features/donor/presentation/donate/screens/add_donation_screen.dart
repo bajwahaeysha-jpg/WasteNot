@@ -57,13 +57,9 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
   }
 
   Future<void> _submitDonation() async {
-    if (_isSubmitting) {
-      return;
-    }
+    if (_isSubmitting) return;
 
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
     final donor = SessionService.user;
     if (donor == null || !donor.isDonor) {
@@ -73,6 +69,7 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
 
     final description = descriptionController.text.trim();
     final precaution = precautionController.text.trim();
+
     final mergedDescription = [
       if (description.isNotEmpty) description,
       if (precaution.isNotEmpty) 'Precaution: $precaution',
@@ -107,9 +104,7 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
         ),
       );
 
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       await showDialog<void>(
         context: context,
@@ -128,9 +123,7 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
         ),
       );
 
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       Navigator.of(context).pop(true);
     } on DonationException catch (error) {
@@ -147,14 +140,14 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: true, // ✅ IMPORTANT
       backgroundColor: const Color(0xFFF5F7F6),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0E5E53),
@@ -166,8 +159,13 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
       ),
       body: Form(
         key: _formKey,
-        child: Padding(
-          padding: const EdgeInsets.all(14),
+        child: SingleChildScrollView( // ✅ FIX
+          padding: EdgeInsets.fromLTRB(
+            14,
+            14,
+            14,
+            MediaQuery.of(context).viewInsets.bottom + 20,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -180,6 +178,7 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
                 'Together, we can turn your generosity into a meal that truly matters.',
               ),
               const SizedBox(height: 12),
+
               const Text('Food', style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 6),
               _textField(
@@ -192,7 +191,9 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
                   return null;
                 },
               ),
+
               const SizedBox(height: 10),
+
               Row(
                 children: [
                   Expanded(
@@ -268,22 +269,30 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
                   ),
                 ],
               ),
+
               const SizedBox(height: 10),
+
               const Text(
                 'Details',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 6),
               _servingDropdown(),
+
               const SizedBox(height: 10),
+
               const Text('Description'),
               const SizedBox(height: 4),
               _textArea(descriptionController, minLines: 2),
+
               const SizedBox(height: 8),
+
               const Text('Precaution'),
               const SizedBox(height: 4),
               _textArea(precautionController, minLines: 1),
-              const Spacer(),
+
+              const SizedBox(height: 20), // ✅ Spacer removed
+              
               SizedBox(
                 width: double.infinity,
                 height: 48,
