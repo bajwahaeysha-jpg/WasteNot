@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:wastenot/models/app_user_model.dart';
+import 'package:wastenot/services/notification_service.dart';
 import 'package:wastenot/services/session_service.dart';
 
 enum DonorStatusFilter { all, active, suspended }
@@ -75,6 +76,7 @@ class AdminDonorManagementService {
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _firestore;
+  final NotificationService _notificationService = NotificationService();
 
   CollectionReference<Map<String, dynamic>> get _users =>
       _firestore.collection('users');
@@ -238,7 +240,6 @@ class AdminDonorManagementService {
     final admin = SessionService.user;
     final batch = _firestore.batch();
     final userRef = _users.doc(donorId);
-    final notificationRef = _notifications.doc();
     final logRef = _adminActivityLogs.doc();
     final trimmedReason = reason.trim();
     final trimmedDetails = details?.trim();
@@ -256,16 +257,25 @@ class AdminDonorManagementService {
       'suspendedByName': admin?.displayName ?? 'System Admin',
     }, SetOptions(merge: true));
 
-    batch.set(notificationRef, {
-      'uid': donorId,
-      'donorId': donorId,
-      'title': 'Account Suspended',
-      'message': message,
-      'type': 'donor_suspension',
-      'sentByAdmin': true,
-      'read': false,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
+    final canNotify = await _notificationService.isNotificationEnabled(donorId);
+    if (canNotify) {
+      final notificationRef = _notifications.doc();
+      batch.set(notificationRef, {
+        'notificationId': notificationRef.id,
+        'receiverId': donorId,
+        'uid': donorId,
+        'donorId': donorId,
+        'title': 'Account Suspended',
+        'body': message,
+        'message': message,
+        'type': 'donor_suspension',
+        'sentByAdmin': true,
+        'read': false,
+        'isRead': false,
+        'createdAt': FieldValue.serverTimestamp(),
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+    }
 
     batch.set(logRef, {
       'actionType': 'admin_suspended_donor',
@@ -288,7 +298,6 @@ class AdminDonorManagementService {
     final admin = SessionService.user;
     final batch = _firestore.batch();
     final userRef = _users.doc(donorId);
-    final notificationRef = _notifications.doc();
     final logRef = _adminActivityLogs.doc();
 
     batch.set(userRef, {
@@ -303,16 +312,25 @@ class AdminDonorManagementService {
       'unsuspendedBy': admin?.uid ?? 'admin',
     }, SetOptions(merge: true));
 
-    batch.set(notificationRef, {
-      'uid': donorId,
-      'donorId': donorId,
-      'title': 'Account Re-enabled',
-      'message': 'Your donor account has been re-enabled. You can donate again.',
-      'type': 'donor_unsuspension',
-      'sentByAdmin': true,
-      'read': false,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
+    final canNotify = await _notificationService.isNotificationEnabled(donorId);
+    if (canNotify) {
+      final notificationRef = _notifications.doc();
+      batch.set(notificationRef, {
+        'notificationId': notificationRef.id,
+        'receiverId': donorId,
+        'uid': donorId,
+        'donorId': donorId,
+        'title': 'Account Re-enabled',
+        'body': 'Your donor account has been re-enabled. You can donate again.',
+        'message': 'Your donor account has been re-enabled. You can donate again.',
+        'type': 'donor_unsuspension',
+        'sentByAdmin': true,
+        'read': false,
+        'isRead': false,
+        'createdAt': FieldValue.serverTimestamp(),
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+    }
 
     batch.set(logRef, {
       'actionType': 'admin_unsuspended_donor',
@@ -336,19 +354,27 @@ class AdminDonorManagementService {
   }) async {
     final admin = SessionService.user;
     final batch = _firestore.batch();
-    final notificationRef = _notifications.doc();
     final logRef = _adminActivityLogs.doc();
 
-    batch.set(notificationRef, {
-      'uid': donorId,
-      'donorId': donorId,
-      'title': title.trim(),
-      'message': message.trim(),
-      'type': 'admin_donor_notification',
-      'sentByAdmin': true,
-      'read': false,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
+    final canNotify = await _notificationService.isNotificationEnabled(donorId);
+    if (canNotify) {
+      final notificationRef = _notifications.doc();
+      batch.set(notificationRef, {
+        'notificationId': notificationRef.id,
+        'receiverId': donorId,
+        'uid': donorId,
+        'donorId': donorId,
+        'title': title.trim(),
+        'body': message.trim(),
+        'message': message.trim(),
+        'type': 'admin_donor_notification',
+        'sentByAdmin': true,
+        'read': false,
+        'isRead': false,
+        'createdAt': FieldValue.serverTimestamp(),
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+    }
 
     batch.set(logRef, {
       'actionType': 'admin_sent_notification',

@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:wastenot/features/messaging/models/chat_models.dart';
 // ignore: unused_import
 import 'package:wastenot/models/app_user_model.dart';
+import 'package:wastenot/services/chat_privacy_service.dart';
 import 'package:wastenot/services/concern_services.dart';
 import 'package:wastenot/services/firestore_service.dart';
 import 'package:wastenot/services/session_service.dart';
@@ -25,6 +26,7 @@ class EmergencyDetailScreen extends StatefulWidget {
 
 class _EmergencyDetailScreenState extends State<EmergencyDetailScreen> {
   final FirestoreService _firestoreService = FirestoreService();
+  final ChatPrivacyService _privacyService = ChatPrivacyService();
   bool _isOpeningChat = false;
 
   Future<void> _openConcernChat() async {
@@ -52,6 +54,17 @@ class _EmergencyDetailScreenState extends State<EmergencyDetailScreen> {
       if (ngoUser == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('NGO could not be found.')),
+        );
+        return;
+      }
+
+      final allowed = await _privacyService.canSendMessage(ngoUser.uid);
+      if (!allowed) {
+        if (!mounted) {
+          return;
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('This user has disabled direct messages')),
         );
         return;
       }

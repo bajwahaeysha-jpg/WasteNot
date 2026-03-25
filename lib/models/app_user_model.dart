@@ -9,10 +9,13 @@ class AppUserModel {
     this.name,
     this.phone,
     this.address,
+    this.about,
     this.profileImageUrl,
     this.organizationName,
     this.registrationNumber,
     this.organizationDescription,
+    this.allowMessages = true,
+    this.notificationsEnabled = true,
     this.approvedByAdmin = false,
     this.status,
     this.isSuspended = false,
@@ -28,10 +31,13 @@ class AppUserModel {
   final String? name;
   final String? phone;
   final String? address;
+  final String? about;
   final String? profileImageUrl;
   final String? organizationName;
   final String? registrationNumber;
   final String? organizationDescription;
+  final bool allowMessages;
+  final bool notificationsEnabled;
   final bool approvedByAdmin;
   final String? status;
   final bool isSuspended;
@@ -53,10 +59,13 @@ class AppUserModel {
     String? name,
     String? phone,
     String? address,
+    String? about,
     String? profileImageUrl,
     String? organizationName,
     String? registrationNumber,
     String? organizationDescription,
+    bool? allowMessages,
+    bool? notificationsEnabled,
     bool? approvedByAdmin,
     String? status,
     bool? isSuspended,
@@ -72,11 +81,14 @@ class AppUserModel {
       name: name ?? this.name,
       phone: phone ?? this.phone,
       address: address ?? this.address,
+      about: about ?? this.about,
       profileImageUrl: profileImageUrl ?? this.profileImageUrl,
       organizationName: organizationName ?? this.organizationName,
       registrationNumber: registrationNumber ?? this.registrationNumber,
       organizationDescription:
           organizationDescription ?? this.organizationDescription,
+      allowMessages: allowMessages ?? this.allowMessages,
+      notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       approvedByAdmin: approvedByAdmin ?? this.approvedByAdmin,
       status: status ?? this.status,
       isSuspended: isSuspended ?? this.isSuspended,
@@ -93,10 +105,13 @@ class AppUserModel {
       'email': email,
       'phone': phone,
       'address': address,
+      'about': about,
       'profileImageUrl': profileImageUrl,
       'organizationName': organizationName,
       'registrationNumber': registrationNumber,
       'organizationDescription': organizationDescription,
+      'allowMessages': allowMessages,
+      'notificationsEnabled': notificationsEnabled,
       'role': role,
       'approvedByAdmin': approvedByAdmin,
       'status': status,
@@ -119,6 +134,7 @@ class AppUserModel {
       'profileImageUrl': profileImageUrl,
       'status': status,
       'isSuspended': isSuspended,
+      'notificationsEnabled': notificationsEnabled,
     };
   }
 
@@ -137,10 +153,13 @@ class AppUserModel {
       email: (data['email'] as String?) ?? '',
       phone: data['phone'] as String?,
       address: data['address'] as String?,
+      about: data['about'] as String?,
       profileImageUrl: data['profileImageUrl'] as String?,
       organizationName: data['organizationName'] as String?,
       registrationNumber: data['registrationNumber'] as String?,
       organizationDescription: data['organizationDescription'] as String?,
+      allowMessages: (data['allowMessages'] as bool?) ?? true,
+      notificationsEnabled: (data['notificationsEnabled'] as bool?) ?? true,
       role: (data['role'] as String?) ?? 'donor',
       approvedByAdmin: (data['approvedByAdmin'] as bool?) ?? false,
       status: data['status'] as String?,

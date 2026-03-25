@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:wastenot/features/admin/shared/services/admin_user_notification_service.dart';
 import 'package:wastenot/models/app_user_model.dart';
+import 'package:wastenot/services/notification_service.dart';
 import 'package:wastenot/services/session_service.dart';
 
 enum NgoStatusFilter { all, active, suspended }
@@ -47,6 +48,7 @@ class AdminNgoManagementService {
 
   final FirebaseFirestore _firestore;
   final AdminUserNotificationService _notificationService;
+  final NotificationService _notificationGate = NotificationService();
 
   CollectionReference<Map<String, dynamic>> get _users =>
       _firestore.collection('users');
@@ -190,15 +192,18 @@ class AdminNgoManagementService {
       'suspendedByName': admin?.displayName ?? 'System Admin',
     }, SetOptions(merge: true));
 
-    _notificationService.addUserNotificationToBatch(
-      batch: batch,
-      userId: ngoId,
-      userRole: 'ngo',
-      title: 'Account Suspended',
-      message: message,
-      type: 'ngo_suspension',
-      source: 'admin_ngo_management',
-    );
+    final canNotify = await _notificationGate.isNotificationEnabled(ngoId);
+    if (canNotify) {
+      _notificationService.addUserNotificationToBatch(
+        batch: batch,
+        userId: ngoId,
+        userRole: 'ngo',
+        title: 'Account Suspended',
+        message: message,
+        type: 'ngo_suspension',
+        source: 'admin_ngo_management',
+      );
+    }
 
     batch.set(logRef, <String, dynamic>{
       'activityId': logRef.id,
@@ -240,15 +245,19 @@ class AdminNgoManagementService {
       'unsuspendedBy': admin?.uid ?? 'admin',
     }, SetOptions(merge: true));
 
-    _notificationService.addUserNotificationToBatch(
-      batch: batch,
-      userId: ngoId,
-      userRole: 'ngo',
-      title: 'Account Re-enabled',
-      message: 'Your NGO account has been re-enabled. You can use the app again.',
-      type: 'ngo_unsuspension',
-      source: 'admin_ngo_management',
-    );
+    final canNotify = await _notificationGate.isNotificationEnabled(ngoId);
+    if (canNotify) {
+      _notificationService.addUserNotificationToBatch(
+        batch: batch,
+        userId: ngoId,
+        userRole: 'ngo',
+        title: 'Account Re-enabled',
+        message:
+            'Your NGO account has been re-enabled. You can use the app again.',
+        type: 'ngo_unsuspension',
+        source: 'admin_ngo_management',
+      );
+    }
 
     batch.set(logRef, <String, dynamic>{
       'activityId': logRef.id,

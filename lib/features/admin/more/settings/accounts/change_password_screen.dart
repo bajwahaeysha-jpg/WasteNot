@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:wastenot/core/state/local_password.dart';
+import 'package:wastenot/services/account_service.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -13,45 +13,68 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   final currentController = TextEditingController();
   final newController = TextEditingController();
   final confirmController = TextEditingController();
+  final AccountService _accountService = AccountService();
 
   bool allowEditNew = false;
   String error = "";
   bool updated = false;
+  bool _isSubmitting = false;
 
-  void _checkCurrent(String value) async {
-    final saved = await LocalPassword.getPassword();
-
-    if (value == saved) {
-      setState(() {
-        allowEditNew = true;
+  void _checkCurrent(String value) {
+    setState(() {
+      allowEditNew = value.trim().isNotEmpty;
+      if (error.isNotEmpty) {
         error = "";
-      });
-    } else {
-      setState(() {
-        allowEditNew = false;
-        error = "Incorrect current password";
-      });
-    }
+      }
+    });
   }
 
-  void _updatePassword() async {
+  Future<void> _updatePassword() async {
+    final currentPassword = currentController.text.trim();
+    final newPassword = newController.text.trim();
+    final confirmPassword = confirmController.text.trim();
 
-    if (!allowEditNew) {
-      setState(() => error = "Enter correct current password first");
+    if (currentPassword.isEmpty ||
+        newPassword.isEmpty ||
+        confirmPassword.isEmpty) {
+      setState(() => error = "Please fill in all fields");
+      _showSnackBar(error, isError: true);
       return;
     }
 
-    if (newController.text != confirmController.text) {
+    if (newPassword != confirmPassword) {
       setState(() => error = "Passwords do not match");
+      _showSnackBar(error, isError: true);
       return;
     }
-
-    await LocalPassword.setPassword(newController.text);
 
     setState(() {
       error = "";
-      updated = true;
+      updated = false;
+      _isSubmitting = true;
     });
+
+    try {
+      await _accountService.changePassword(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() => updated = true);
+      _showSnackBar("Password updated successfully");
+    } on AccountFailure catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => this.error = error.message);
+      _showSnackBar(error.message, isError: true);
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
   }
 
   /// 🔹 MODERN INPUT FIELD
@@ -186,7 +209,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               height: 52,
 
               child: ElevatedButton(
-                onPressed: _updatePassword,
+                onPressed: _isSubmitting ? null : _updatePassword,
 
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF0F4C45),
@@ -207,6 +230,15 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showSnackBar(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : Colors.green,
       ),
     );
   }

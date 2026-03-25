@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:wastenot/services/firestore_service.dart';
+import 'package:wastenot/services/session_service.dart';
 
 class DonorNotificationsScreen extends StatefulWidget {
   const DonorNotificationsScreen({super.key});
@@ -12,6 +14,52 @@ class _DonorNotificationsScreenState extends State<DonorNotificationsScreen> {
 
   bool notifications = true;
   bool reminders = false;
+  bool _isSaving = false;
+  final FirestoreService _firestoreService = FirestoreService();
+
+  @override
+  void initState() {
+    super.initState();
+    notifications = SessionService.user?.notificationsEnabled ?? true;
+  }
+
+  Future<void> _toggleNotifications(bool value) async {
+    if (_isSaving) {
+      return;
+    }
+
+    final user = SessionService.user;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to update notification settings.')),
+      );
+      return;
+    }
+
+    setState(() {
+      notifications = value;
+      _isSaving = true;
+    });
+
+    try {
+      await _firestoreService.updateUserDocument(
+        uid: user.uid,
+        data: {'notificationsEnabled': value},
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => notifications = !value);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to update notification settings.')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,11 +113,7 @@ class _DonorNotificationsScreenState extends State<DonorNotificationsScreen> {
                   value: notifications,
                   inactiveThumbColor: Colors.white,
                   activeTrackColor: Colors.deepPurple,
-                  onChanged: (value) {
-                    setState(() {
-                      notifications = value;
-                    });
-                  },
+                  onChanged: _toggleNotifications,
                 ),
               ),
             ),

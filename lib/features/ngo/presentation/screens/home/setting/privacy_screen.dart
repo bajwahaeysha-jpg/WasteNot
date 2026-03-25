@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:wastenot/services/firestore_service.dart';
+import 'package:wastenot/services/session_service.dart';
 
 class PrivacyScreen extends StatefulWidget {
   const PrivacyScreen({super.key});
@@ -9,6 +11,52 @@ class PrivacyScreen extends StatefulWidget {
 
 class _PrivacyScreenState extends State<PrivacyScreen> {
   bool allowDirectMessages = true;
+  bool _isSaving = false;
+  final FirestoreService _firestoreService = FirestoreService();
+
+  @override
+  void initState() {
+    super.initState();
+    allowDirectMessages = SessionService.user?.allowMessages ?? true;
+  }
+
+  Future<void> _toggleAllowMessages(bool value) async {
+    if (_isSaving) {
+      return;
+    }
+
+    final user = SessionService.user;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to update privacy settings.')),
+      );
+      return;
+    }
+
+    setState(() {
+      allowDirectMessages = value;
+      _isSaving = true;
+    });
+
+    try {
+      await _firestoreService.updateUserDocument(
+        uid: user.uid,
+        data: {'allowMessages': value},
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => allowDirectMessages = !value);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to update privacy settings.')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -60,11 +108,7 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
                   ),
                   Switch(
                     value: allowDirectMessages,
-                    onChanged: (value) {
-                      setState(() {
-                        allowDirectMessages = value;
-                      });
-                    },
+                    onChanged: _toggleAllowMessages,
                   ),
                 ],
               ),

@@ -1,28 +1,18 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:wastenot/services/contact_service.dart';
 
 class ContactScreen extends StatelessWidget {
   const ContactScreen({super.key});
 
   static const Color primary = Color(0xFF0F4C45);
-
-  void _openEmail() async {
-    final Uri emailUri = Uri(
-      scheme: 'mailto',
-      path: 'wastenotapplication@gmail.com',
-      query: Uri.encodeFull(
-        'subject=WasteNot Support&body=Please describe your issue here.',
-      ),
-    );
-
-    await launchUrl(emailUri);
-  }
+  static const Color background = Color(0xFFF5F7F6);
 
   @override
   Widget build(BuildContext context) {
+    final contactService = ContactService();
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7F6),
-
+      backgroundColor: background,
       appBar: AppBar(
         backgroundColor: primary,
         iconTheme: const IconThemeData(color: Colors.white),
@@ -32,65 +22,92 @@ class ContactScreen extends StatelessWidget {
         ),
         elevation: 0,
       ),
+      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+        stream: contactService.streamMessages(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
+          if (snapshot.hasError) {
+            return const Center(child: Text('Unable to load messages.'));
+          }
 
-            const SizedBox(height: 20),
+          final docs = snapshot.data?.docs ?? const [];
+          if (docs.isEmpty) {
+            return const Center(child: Text('No contact messages.'));
+          }
 
-            const Icon(
-              Icons.support_agent,
-              size: 90, // slightly bigger
-              color: primary,
-            ),
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: docs.length,
+            itemBuilder: (context, index) {
+              final doc = docs[index];
+              final data = doc.data();
+              final name = (data['name'] as String?) ?? 'Unknown';
+              final email = (data['email'] as String?) ?? 'Unknown';
+              final role = (data['role'] as String?) ?? 'unknown';
+              final message = (data['message'] as String?) ?? '';
+              final status = (data['status'] as String?) ?? 'pending';
 
-            const SizedBox(height: 30),
-
-            const Text(
-              "Need Help?",
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
-            ),
-
-            const SizedBox(height: 10),
-
-            const Text(
-              "Contact our support team and we'll get back to you shortly.",
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.black54,
-                height: 1.4,
-              ),
-            ),
-
-            const SizedBox(height: 30),
-
-            SizedBox(
-              width: 220,
-              height: 50,
-              child: ElevatedButton.icon(
-                onPressed: _openEmail,
-                icon: const Icon(Icons.email_outlined),
-                label: const Text(
-                  "Contact through Mail",
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30), // more rounded
+              return Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(email),
+                      const SizedBox(height: 4),
+                      Text('Role: $role'),
+                      const SizedBox(height: 8),
+                      Text(message),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Status: $status'),
+                          Row(
+                            children: [
+                              TextButton(
+                                onPressed: status == 'resolved'
+                                    ? null
+                                    : () async {
+                                        await contactService.markResolved(
+                                          doc.id,
+                                        );
+                                      },
+                                child: const Text('Resolve'),
+                              ),
+                              const SizedBox(width: 8),
+                              TextButton(
+                                onPressed: () async {
+                                  await contactService.deleteMessage(doc.id);
+                                },
+                                child: const Text(
+                                  'Delete',
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-              ),
-            ),
-          ],
-        ),
+              );
+            },
+          );
+        },
       ),
     );
   }

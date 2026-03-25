@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:wastenot/services/firestore_service.dart';
+import 'package:wastenot/services/session_service.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -10,6 +12,52 @@ class NotificationsScreen extends StatefulWidget {
 class _NotificationsScreenState extends State<NotificationsScreen> {
   bool notificationsEnabled = true;
   bool remindersEnabled = false;
+  bool _isSaving = false;
+  final FirestoreService _firestoreService = FirestoreService();
+
+  @override
+  void initState() {
+    super.initState();
+    notificationsEnabled = SessionService.user?.notificationsEnabled ?? true;
+  }
+
+  Future<void> _toggleNotifications(bool value) async {
+    if (_isSaving) {
+      return;
+    }
+
+    final user = SessionService.user;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to update notification settings.')),
+      );
+      return;
+    }
+
+    setState(() {
+      notificationsEnabled = value;
+      _isSaving = true;
+    });
+
+    try {
+      await _firestoreService.updateUserDocument(
+        uid: user.uid,
+        data: {'notificationsEnabled': value},
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => notificationsEnabled = !value);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to update notification settings.')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,9 +87,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               title: "Notifications",
               subtitle: "Receive updates about donations and activity",
               value: notificationsEnabled,
-              onChanged: (val) {
-                setState(() => notificationsEnabled = val);
-              },
+              onChanged: _toggleNotifications,
             ),
 
             const SizedBox(height: 16),

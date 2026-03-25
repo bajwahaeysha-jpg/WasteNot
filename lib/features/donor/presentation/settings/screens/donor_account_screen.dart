@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:wastenot/features/donor/presentation/settings/screens/donor_change_password_screen.dart';
 import 'package:wastenot/features/donor/presentation/settings/screens/donor_personal_information_screen.dart';
 import 'package:wastenot/screens/welcome_screen.dart';
-import 'package:wastenot/services/auth_service.dart';
+import 'package:wastenot/services/account_service.dart';
 
 class DonorAccountScreen extends StatelessWidget {
   const DonorAccountScreen({super.key});
@@ -101,7 +101,7 @@ class DonorAccountScreen extends StatelessWidget {
     }
 
     try {
-      await AuthService().deleteCurrentAccount();
+      await AccountService().deleteAccount();
       if (!context.mounted) {
         return;
       }
@@ -111,7 +111,7 @@ class DonorAccountScreen extends StatelessWidget {
         MaterialPageRoute(builder: (_) => const WelcomeScreen()),
         (route) => false,
       );
-    } on AuthFailure catch (error) {
+    } on AccountFailure catch (error) {
       if (!context.mounted) {
         return;
       }

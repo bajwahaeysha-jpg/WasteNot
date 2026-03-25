@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:wastenot/features/ngo/presentation/screens/home/setting/account/change_password_screen.dart';
 import 'package:wastenot/features/ngo/presentation/screens/home/setting/account/personal_information_screen.dart';
 import 'package:wastenot/screens/welcome_screen.dart';
-import 'package:wastenot/services/auth_service.dart';
+import 'package:wastenot/services/account_service.dart';
 
 class AccountScreen extends StatelessWidget {
   const AccountScreen({super.key});
@@ -98,7 +98,7 @@ class AccountScreen extends StatelessWidget {
     }
 
     try {
-      await AuthService().deleteCurrentAccount();
+      await AccountService().deleteAccount();
       if (!context.mounted) {
         return;
       }
@@ -108,7 +108,7 @@ class AccountScreen extends StatelessWidget {
         MaterialPageRoute(builder: (_) => const WelcomeScreen()),
         (route) => false,
       );
-    } on AuthFailure catch (error) {
+    } on AccountFailure catch (error) {
       if (!context.mounted) {
         return;
       }
