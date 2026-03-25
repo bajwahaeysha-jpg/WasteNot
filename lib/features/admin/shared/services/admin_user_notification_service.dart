@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:wastenot/services/notification_service.dart';
 import 'package:wastenot/services/session_service.dart';
 
 class AdminUserNotificationService {
@@ -6,6 +7,7 @@ class AdminUserNotificationService {
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _firestore;
+  final NotificationService _notificationService = NotificationService();
 
   CollectionReference<Map<String, dynamic>> get _notifications =>
       _firestore.collection('notifications');
@@ -68,16 +70,19 @@ class AdminUserNotificationService {
     final admin = SessionService.user;
     final batch = _firestore.batch();
 
-    addUserNotificationToBatch(
-      batch: batch,
-      userId: userId,
-      userRole: userRole,
-      email: email,
-      title: title,
-      message: message,
-      type: type,
-      source: source,
-    );
+    final enabled = await _notificationService.isNotificationEnabled(userId);
+    if (enabled) {
+      addUserNotificationToBatch(
+        batch: batch,
+        userId: userId,
+        userRole: userRole,
+        email: email,
+        title: title,
+        message: message,
+        type: type,
+        source: source,
+      );
+    }
 
     final logRef = _adminActivityLogs.doc();
     batch.set(logRef, <String, dynamic>{

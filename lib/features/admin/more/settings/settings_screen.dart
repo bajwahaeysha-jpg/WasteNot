@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 
 import 'accounts/account_screen.dart';
 import 'notifications/notifications_screen.dart';
-import 'privacy/privacy_screen.dart';
-import 'rate/rate_us_screen.dart';
 import 'contacts/contact_screen.dart';
 import 'about/about_screen.dart';
 import 'FAQ/faq_screen.dart';
@@ -121,20 +119,6 @@ class SettingsScreen extends StatelessWidget {
                 Icons.notifications_none,
                 "Notifications & Reminders",
                 const NotificationsScreen(),
-              ),
-
-              _tile(
-                context,
-                Icons.lock_outline,
-                "Privacy",
-                const PrivacyScreen(),
-              ),
-
-              _tile(
-                context,
-                Icons.star_border,
-                "Rate Us",
-                const RateUsScreen(),
               ),
 
               _tile(

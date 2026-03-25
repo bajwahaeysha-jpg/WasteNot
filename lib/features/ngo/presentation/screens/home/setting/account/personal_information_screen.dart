@@ -24,6 +24,7 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
   late final TextEditingController _addressController;
   late final TextEditingController _registrationNumberController;
   late final TextEditingController _organizationDescriptionController;
+  late final TextEditingController _aboutController;
 
   bool _isEditing = false;
   bool _isSaving = false;
@@ -39,6 +40,7 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
     _addressController = TextEditingController();
     _registrationNumberController = TextEditingController();
     _organizationDescriptionController = TextEditingController();
+    _aboutController = TextEditingController();
     _loadUser(SessionService.user);
   }
 
@@ -50,6 +52,7 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
     _addressController.dispose();
     _registrationNumberController.dispose();
     _organizationDescriptionController.dispose();
+    _aboutController.dispose();
     super.dispose();
   }
 
@@ -75,6 +78,8 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
     _registrationNumberController.text = user.registrationNumber ?? '';
     _organizationDescriptionController.text =
         user.organizationDescription ?? '';
+    _aboutController.text =
+        user.about ?? user.organizationDescription ?? '';
     _selectedImage = null;
   }
 
@@ -86,7 +91,9 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
         _addressController.text != (user.address ?? '') ||
         _registrationNumberController.text != (user.registrationNumber ?? '') ||
         _organizationDescriptionController.text !=
-            (user.organizationDescription ?? '');
+            (user.organizationDescription ?? '') ||
+        _aboutController.text !=
+            (user.about ?? user.organizationDescription ?? '');
   }
 
   Future<void> _toggleEditSave() async {
@@ -158,6 +165,7 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
     String label,
     TextEditingController controller, {
     int maxLines = 1,
+    bool readOnly = false,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -173,6 +181,7 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
         TextField(
           controller: controller,
           enabled: _isEditing && !_isSaving,
+          readOnly: readOnly,
           maxLines: maxLines,
           style: const TextStyle(color: Colors.black),
           decoration: InputDecoration(
@@ -298,6 +307,12 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
                       ),
                       const SizedBox(height: 24),
                       _field('Organization Name', _organizationNameController),
+                      _field(
+                        'About',
+                        _aboutController,
+                        maxLines: 4,
+                        readOnly: true,
+                      ),
                       _field('Email', _emailController),
                       _field('Phone Number', _phoneController),
                       _field('Address', _addressController),

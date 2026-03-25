@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:wastenot/features/donor/presentation/goal/screens/donor_goal_screen.dart';
 import 'package:wastenot/models/app_user_model.dart';
 import 'package:wastenot/services/concern_services.dart';
 import 'package:wastenot/services/donation_services.dart';
@@ -30,10 +32,11 @@ class DonorHomeScreen extends StatefulWidget {
 class _DonorHomeScreenState extends State<DonorHomeScreen> {
   static const int _recentDonationsLimit = 3;
 
-  final DonationService _donationService = DonationService();
   final GoalService _goalService = GoalService();
   final ConcernService _concernService = ConcernService();
-  late Future<List<DonationModel>> _recentDonationsFuture;
+  Stream<List<DonationModel>>? _recentDonorStream;
+  String? _recentDonorUid;
+  List<DonationModel> _recentDonorCache = const <DonationModel>[];
 
   String get donorName {
     final sessionName = SessionService.user?.displayName.trim();
@@ -51,21 +54,45 @@ class _DonorHomeScreenState extends State<DonorHomeScreen> {
   @override
   void initState() {
     super.initState();
-    _recentDonationsFuture = _loadRecentDonations();
   }
 
-  Future<List<DonationModel>> _loadRecentDonations() {
-    return _donationService.getRecentCompletedDonations(
-      limit: _recentDonationsLimit,
-    );
+  Stream<List<DonationModel>> _recentCompletedDonationsStream({
+    required String donorId,
+  }) {
+    return FirebaseFirestore.instance
+        .collection('donations')
+        .where('donorId', isEqualTo: donorId)
+        .where('status', isEqualTo: 'completed')
+        .orderBy('completedAt', descending: true)
+        .limit(_recentDonationsLimit)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map(DonationModel.fromFirestore).toList();
+    });
+  }
+
+  void _ensureRecentDonorStream(String? uid) {
+    if (uid == null || uid.trim().isEmpty) {
+      _recentDonorStream = null;
+      _recentDonorUid = null;
+      return;
+    }
+
+    if (_recentDonorUid == uid && _recentDonorStream != null) {
+      return;
+    }
+
+    _recentDonorUid = uid;
+    _recentDonorStream = _recentCompletedDonationsStream(donorId: uid);
   }
 
   void _refreshRecentDonations() {
-    setState(() => _recentDonationsFuture = _loadRecentDonations());
+    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
+    _ensureRecentDonorStream(SessionService.currentUser.value?.uid);
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9F9),
       body: SingleChildScrollView(
@@ -279,10 +306,33 @@ class _DonorHomeScreenState extends State<DonorHomeScreen> {
             const SizedBox(height: 24),
             const _SectionHeader('Recent Donations'),
             const SizedBox(height: 12),
-            FutureBuilder<List<DonationModel>>(
-              future: _recentDonationsFuture,
+            StreamBuilder<List<DonationModel>>(
+              stream: _recentDonorStream,
+              initialData: _recentDonorCache,
               builder: (context, snapshot) {
+                if (_recentDonorStream == null &&
+                    _recentDonorCache.isEmpty &&
+                    snapshot.connectionState == ConnectionState.none) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
                 if (snapshot.connectionState == ConnectionState.waiting) {
+                  if (_recentDonorCache.isNotEmpty) {
+                    final donations = _recentDonorCache;
+                    return Column(
+                      children: donations
+                          .map(
+                            (donation) => _RecentDonationTile(
+                              donation: donation,
+                              donorName: donorName,
+                              onUpdated: _refreshRecentDonations,
+                            ),
+                          )
+                          .toList(),
+                    );
+                  }
                   return const Padding(
                     padding: EdgeInsets.symmetric(vertical: 12),
                     child: Center(child: CircularProgressIndicator()),
@@ -290,6 +340,20 @@ class _DonorHomeScreenState extends State<DonorHomeScreen> {
                 }
 
                 if (snapshot.hasError) {
+                  if (_recentDonorCache.isNotEmpty) {
+                    final donations = _recentDonorCache;
+                    return Column(
+                      children: donations
+                          .map(
+                            (donation) => _RecentDonationTile(
+                              donation: donation,
+                              donorName: donorName,
+                              onUpdated: _refreshRecentDonations,
+                            ),
+                          )
+                          .toList(),
+                    );
+                  }
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Column(
@@ -309,11 +373,14 @@ class _DonorHomeScreenState extends State<DonorHomeScreen> {
                 }
 
                 final donations = snapshot.data ?? const <DonationModel>[];
+                if (snapshot.hasData) {
+                  _recentDonorCache = donations;
+                }
                 if (donations.isEmpty) {
                   return const Padding(
                     padding: EdgeInsets.symmetric(vertical: 8),
                     child: Text(
-                      'No recent donations yet.',
+                      'No recent donations.',
                       style: TextStyle(color: Colors.grey),
                     ),
                   );
@@ -341,6 +408,7 @@ class _DonorHomeScreenState extends State<DonorHomeScreen> {
                     donationsCount: 0,
                     achievedCount: 0,
                     monthlyTarget: 0,
+                    hasGoal: false,
                     isLoading: false,
                   );
                 }
@@ -355,6 +423,7 @@ class _DonorHomeScreenState extends State<DonorHomeScreen> {
                       donationsCount: data?.donationsCount ?? 0,
                       achievedCount: data?.achievedCount ?? 0,
                       monthlyTarget: data?.monthlyTarget ?? 0,
+                      hasGoal: data?.hasGoal ?? false,
                       isLoading:
                           snapshot.connectionState == ConnectionState.waiting,
                     );
@@ -485,7 +554,7 @@ class _SummaryCard extends StatelessWidget {
       height: 120,
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: .12),
+        color: color.withOpacity(0.12),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -661,12 +730,14 @@ class _ImpactSection extends StatelessWidget {
     required this.donationsCount,
     required this.achievedCount,
     required this.monthlyTarget,
+    required this.hasGoal,
     required this.isLoading,
   });
 
   final int donationsCount;
   final int achievedCount;
   final int monthlyTarget;
+  final bool hasGoal;
   final bool isLoading;
 
   @override
@@ -676,62 +747,86 @@ class _ImpactSection extends StatelessWidget {
         safeTarget == 0 ? 0.0 : achievedCount / safeTarget.toDouble();
     final percent = safeTarget == 0 ? 0 : (progress * 100).round();
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8)],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              Icon(Icons.insights, color: DonorHomeScreen.mainGreen),
-              SizedBox(width: 6),
-              Text(
-                'Your Impact This Month',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ],
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const DonorGoalScreen(), // change if needed
           ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _ImpactItem(
-                title: 'Donations Made',
-                value: donationsCount.toString(),
-              ),
-              _ImpactItem(
-                title: 'People Fed',
-                value: achievedCount.toString(),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          const Text(
-            'Monthly Goal Progress',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 6),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: LinearProgressIndicator(
-              value: progress.clamp(0.0, 1.0),
-              minHeight: 10,
-              backgroundColor: Colors.grey,
-              color: DonorHomeScreen.mainGreen,
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: const [
+            BoxShadow(color: Colors.black12, blurRadius: 8),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.insights, color: DonorHomeScreen.mainGreen),
+                SizedBox(width: 6),
+                Text(
+                  'Your Impact This Month',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            isLoading
-                ? 'Updating goal progress...'
-                : '$percent% completed - Keep it up!',
-          ),
-        ],
+            const SizedBox(height: 12),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _ImpactItem(
+                  title: 'Donations Made',
+                  value: donationsCount.toString(),
+                ),
+                _ImpactItem(
+                  title: 'People Fed',
+                  value: achievedCount.toString(),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 14),
+
+            const Text(
+              'Monthly Goal Progress',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+
+            const SizedBox(height: 6),
+
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: LinearProgressIndicator(
+                value: progress.clamp(0.0, 1.0),
+                minHeight: 10,
+                backgroundColor: Colors.grey,
+                color: DonorHomeScreen.mainGreen,
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            Text(
+              isLoading
+                  ? 'Updating goal progress...'
+                  : hasGoal
+                      ? '$percent% completed - Keep it up!'
+                      : 'Set your goal to start tracking progress',
+            ),
+          ],
+        ),
       ),
     );
   }

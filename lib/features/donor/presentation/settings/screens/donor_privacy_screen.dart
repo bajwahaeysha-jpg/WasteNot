@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:wastenot/services/firestore_service.dart';
+import 'package:wastenot/services/session_service.dart';
 
 class DonorPrivacyScreen extends StatefulWidget {
   const DonorPrivacyScreen({super.key});
@@ -10,6 +12,52 @@ class DonorPrivacyScreen extends StatefulWidget {
 class _DonorPrivacyScreenState extends State<DonorPrivacyScreen> {
 
   bool allowMessages = true;
+  bool _isSaving = false;
+  final FirestoreService _firestoreService = FirestoreService();
+
+  @override
+  void initState() {
+    super.initState();
+    allowMessages = SessionService.user?.allowMessages ?? true;
+  }
+
+  Future<void> _toggleAllowMessages(bool value) async {
+    if (_isSaving) {
+      return;
+    }
+
+    final user = SessionService.user;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to update privacy settings.')),
+      );
+      return;
+    }
+
+    setState(() {
+      allowMessages = value;
+      _isSaving = true;
+    });
+
+    try {
+      await _firestoreService.updateUserDocument(
+        uid: user.uid,
+        data: {'allowMessages': value},
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => allowMessages = !value);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to update privacy settings.')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,11 +113,7 @@ class _DonorPrivacyScreenState extends State<DonorPrivacyScreen> {
               value: allowMessages,
               inactiveThumbColor: Colors.white,
               activeTrackColor: Colors.deepPurple,
-              onChanged: (value) {
-                setState(() {
-                  allowMessages = value;
-                });
-              },
+              onChanged: _toggleAllowMessages,
             ),
           ),
         ),

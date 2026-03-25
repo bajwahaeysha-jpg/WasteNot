@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:wastenot/core/state/local_password.dart';
+import 'package:wastenot/services/account_service.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
 
   @override
-  State<ChangePasswordScreen> createState() => _ChangePasswordScreenState();
+  State<ChangePasswordScreen> createState() =>
+      _ChangePasswordScreenState();
 }
 
 class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
@@ -13,152 +14,97 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   final currentController = TextEditingController();
   final newController = TextEditingController();
   final confirmController = TextEditingController();
+  final AccountService _accountService = AccountService();
 
-  bool allowEditNew = false;
   String error = "";
-  bool updated = false;
+  bool success = false;
+  bool _isSubmitting = false;
 
-  void _checkCurrent(String value) async {
-    final saved = await LocalPassword.getPassword();
+  Future<void> updatePassword() async {
+    final currentPassword = currentController.text.trim();
+    final newPassword = newController.text.trim();
+    final confirmPassword = confirmController.text.trim();
 
-    if (value == saved) {
-      setState(() {
-        allowEditNew = true;
-        error = "";
-      });
-    } else {
-      setState(() {
-        allowEditNew = false;
-        error = "Incorrect current password";
-      });
-    }
-  }
-
-  void _updatePassword() async {
-
-    if (!allowEditNew) {
-      setState(() => error = "Enter correct current password first");
+    if (currentPassword.isEmpty ||
+        newPassword.isEmpty ||
+        confirmPassword.isEmpty) {
+      setState(() => error = "Please fill in all fields");
+      _showSnackBar(error, isError: true);
       return;
     }
 
-    if (newController.text != confirmController.text) {
+    if (newPassword != confirmPassword) {
       setState(() => error = "Passwords do not match");
+      _showSnackBar(error, isError: true);
       return;
     }
-
-    await LocalPassword.setPassword(newController.text);
 
     setState(() {
       error = "";
-      updated = true;
+      success = false;
+      _isSubmitting = true;
     });
-  }
 
-  Widget _field(
-    String label,
-    TextEditingController controller, {
-    bool enabled = true,
-    Function(String)? onChanged,
-    IconData? icon,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-
-        Text(
-          label,
-          style: const TextStyle(
-              fontWeight: FontWeight.w600,
-              color: Colors.black),
-        ),
-
-        const SizedBox(height: 6),
-
-        TextField(
-          controller: controller,
-          obscureText: true,
-          enabled: enabled,
-          onChanged: onChanged,
-
-          decoration: InputDecoration(
-            prefixIcon: Icon(icon, color: const Color(0xFF0F4C45)),
-
-            filled: true,
-            fillColor: Colors.white,
-
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: enabled
-                    ? const Color(0xFF0F4C45)
-                    : Colors.grey.shade300,
-                width: 1.4,
-              ),
-            ),
-
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Color(0xFF0F4C45),
-                width: 2,
-              ),
-            ),
-          ),
-        ),
-
-        const SizedBox(height: 18),
-      ],
-    );
+    try {
+      await _accountService.changePassword(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() => success = true);
+      _showSnackBar("Password updated successfully");
+    } on AccountFailure catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => this.error = error.message);
+      _showSnackBar(error.message, isError: true);
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
-
       resizeToAvoidBottomInset: true,
-
       backgroundColor: const Color(0xFFF5F7F6),
 
       appBar: AppBar(
         backgroundColor: const Color(0xFF0F4C45),
         iconTheme: const IconThemeData(color: Colors.white),
-
         title: const Text(
           "Change Password",
           style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold),
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
       ),
 
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
-
         child: Column(
           children: [
-
             _field(
               "Current Password",
               currentController,
               icon: Icons.lock_outline,
-              onChanged: _checkCurrent,
             ),
-
             _field(
               "New Password",
               newController,
-              enabled: allowEditNew,
               icon: Icons.lock_open_outlined,
             ),
-
             _field(
               "Confirm Password",
               confirmController,
-              enabled: allowEditNew,
               icon: Icons.verified_user_outlined,
             ),
-
             if (error.isNotEmpty)
               Align(
                 alignment: Alignment.centerLeft,
@@ -167,8 +113,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   style: const TextStyle(color: Colors.red),
                 ),
               ),
-
-            if (updated)
+            if (success)
               const Padding(
                 padding: EdgeInsets.only(top: 6),
                 child: Text(
@@ -176,24 +121,18 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   style: TextStyle(color: Colors.green),
                 ),
               ),
-
             const SizedBox(height: 28),
-
-            /// Button
             SizedBox(
               width: 200,
               height: 48,
               child: ElevatedButton(
-
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF0F4C45),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-
-                onPressed: _updatePassword,
-
+                onPressed: _isSubmitting ? null : updatePassword,
                 child: const Text(
                   "Update Password",
                   style: TextStyle(
@@ -205,6 +144,64 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _field(
+    String label,
+    TextEditingController controller, {
+    IconData? icon,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+
+        Text(
+          label,
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            color: Colors.black,
+          ),
+        ),
+
+        const SizedBox(height: 6),
+
+        TextField(
+          controller: controller,
+          obscureText: true,
+          decoration: InputDecoration(
+            prefixIcon: Icon(icon, color: const Color(0xFF0F4C45)),
+            filled: true,
+            fillColor: Colors.white,
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: Color(0xFF0F4C45),
+                width: 1.4,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: Color(0xFF0F4C45),
+                width: 2,
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 18),
+
+      ],
+    );
+  }
+
+  void _showSnackBar(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : Colors.green,
       ),
     );
   }

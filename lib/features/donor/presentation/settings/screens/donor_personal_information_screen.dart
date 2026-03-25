@@ -17,6 +17,7 @@ class _DonorPersonalInformationScreenState
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
+  final _aboutController = TextEditingController();
   final _authService = AuthService();
 
   bool _isEditing = false;
@@ -38,6 +39,7 @@ class _DonorPersonalInformationScreenState
     _emailController.dispose();
     _phoneController.dispose();
     _addressController.dispose();
+    _aboutController.dispose();
     super.dispose();
   }
 
@@ -52,6 +54,7 @@ class _DonorPersonalInformationScreenState
     _emailController.text = user?.email ?? '';
     _phoneController.text = user?.phone ?? '';
     _addressController.text = user?.address ?? '';
+    _aboutController.text = user?.about ?? '';
   }
 
   Future<void> _toggleEditSave() async {
@@ -63,11 +66,12 @@ class _DonorPersonalInformationScreenState
     setState(() => _saving = true);
     try {
       await _authService.updateCurrentUserProfile(
-  email: _emailController.text,
-  name: _nameController.text,
-  phone: _phoneController.text,
-  address: _addressController.text,
-);
+        email: _emailController.text,
+        name: _nameController.text,
+        phone: _phoneController.text,
+        address: _addressController.text,
+        about: _aboutController.text,
+      );
 
       if (!mounted) {
         return;
@@ -95,7 +99,11 @@ class _DonorPersonalInformationScreenState
     );
   }
 
-  Widget _field(String label, TextEditingController controller) {
+  Widget _field(
+    String label,
+    TextEditingController controller, {
+    int maxLines = 1,
+  }) {
     final editable = _isEditing && label != 'Email';
 
     return Column(
@@ -109,6 +117,7 @@ class _DonorPersonalInformationScreenState
         TextField(
           controller: controller,
           enabled: editable,
+          maxLines: maxLines,
           decoration: InputDecoration(
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -156,6 +165,7 @@ class _DonorPersonalInformationScreenState
             _field('Email', _emailController),
             _field('Phone', _phoneController),
             _field('Address', _addressController),
+            _field('About', _aboutController, maxLines: 4),
           ],
         ),
       ),

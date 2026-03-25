@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:wastenot/features/messaging/models/chat_models.dart';
 import 'package:wastenot/features/messaging/services/messaging_service.dart';
 import 'package:wastenot/models/app_user_model.dart';
+import 'package:wastenot/services/chat_privacy_service.dart';
 import 'package:wastenot/services/session_service.dart';
 
 import 'chat_screen.dart';
@@ -18,6 +19,7 @@ class MessagesScreen extends StatefulWidget {
 class _MessagesScreenState extends State<MessagesScreen> {
 
   final MessagingService _messagingService = MessagingService();
+  final ChatPrivacyService _privacyService = ChatPrivacyService();
   final TextEditingController _searchController = TextEditingController();
 
   final List<Color> _softColors = const [
@@ -183,12 +185,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
                                     ),
                                   ),
                                   onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => ChatScreen(ngoUser: item.user),
-                                      ),
-                                    );
+                                    _openChat(item.user);
                                   },
                                 ),
                               );
@@ -200,6 +197,29 @@ class _MessagesScreenState extends State<MessagesScreen> {
             },
           );
         },
+      ),
+    );
+  }
+
+  Future<void> _openChat(AppUserModel peerUser) async {
+    final allowed = await _privacyService.canSendMessage(peerUser.uid);
+    if (!allowed) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This user has disabled direct messages')),
+      );
+      return;
+    }
+
+    if (!mounted) {
+      return;
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChatScreen(ngoUser: peerUser),
       ),
     );
   }

@@ -8,6 +8,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:wastenot/features/admin/more/feedback/feedback_model.dart';
 import 'package:wastenot/models/app_user_model.dart';
 import 'package:wastenot/models/ngo_request_model.dart';
+import 'package:wastenot/services/notification_service.dart';
 
 class FirestoreService {
   FirestoreService({
@@ -95,6 +96,8 @@ class FirestoreService {
       'phone': phone,
       'address': address,
       'about': about,
+      'allowMessages': true,
+      'notificationsEnabled': true,
       'profileImageUrl': profileImageUrl,
       'role': 'donor',
       'approvedByAdmin': true,
@@ -321,6 +324,8 @@ class FirestoreService {
         'address': request.address,
         'registrationNumber': request.registrationNumber,
         'organizationDescription': request.description,
+        'allowMessages': true,
+        'notificationsEnabled': true,
         'profileImageUrl': request.profileImageUrl,
         'role': 'ngo',
         'approvedByAdmin': true,
@@ -468,12 +473,40 @@ class FirestoreService {
     required String message,
     String? uid,
   }) {
-    return _notifications.add({
+    return _createNotificationGuarded(
+      email: email,
+      title: title,
+      message: message,
+      uid: uid,
+    );
+  }
+
+  Future<void> _createNotificationGuarded({
+    required String email,
+    required String title,
+    required String message,
+    String? uid,
+  }) async {
+    final trimmedUid = uid?.trim() ?? '';
+    if (trimmedUid.isNotEmpty) {
+      final enabled =
+          await NotificationService(firestore: _firestore).isNotificationEnabled(
+        trimmedUid,
+      );
+      if (!enabled) {
+        return;
+      }
+    }
+
+    await _notifications.add({
       'email': email,
       'uid': uid,
+      'receiverId': trimmedUid.isEmpty ? null : trimmedUid,
       'title': title,
+      'body': message,
       'message': message,
       'createdAt': FieldValue.serverTimestamp(),
+      'timestamp': FieldValue.serverTimestamp(),
     });
   }
 }

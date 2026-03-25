@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:wastenot/features/messaging/models/chat_models.dart';
 import 'package:wastenot/features/messaging/services/messaging_service.dart';
 import 'package:wastenot/models/app_user_model.dart';
+import 'package:wastenot/services/chat_privacy_service.dart';
 import 'package:wastenot/services/session_service.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -21,6 +22,7 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final MessagingService _messagingService = MessagingService();
+  final ChatPrivacyService _privacyService = ChatPrivacyService();
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final Set<String> _selectedIds = <String>{};
@@ -53,6 +55,11 @@ class _ChatScreenState extends State<ChatScreen> {
   }) async {
     final text = _controller.text.trim();
     if (text.isEmpty || _isSending) {
+      return;
+    }
+
+    final allowed = await _ensureMessagingAllowed(peerUser);
+    if (!allowed) {
       return;
     }
 
@@ -279,6 +286,16 @@ class _ChatScreenState extends State<ChatScreen> {
         currentUserId: currentUserId,
       );
     });
+  }
+
+  Future<bool> _ensureMessagingAllowed(AppUserModel peerUser) async {
+    final allowed = await _privacyService.canSendMessage(peerUser.uid);
+    if (!allowed && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This user has disabled direct messages')),
+      );
+    }
+    return allowed;
   }
 
   @override

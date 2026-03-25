@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:wastenot/core/constants/app_colors.dart';
 import 'package:wastenot/features/ngo/presentation/screens/active/active_donations_screen.dart';
 import 'package:wastenot/features/ngo/presentation/screens/global_search_screen.dart';
 import 'package:wastenot/features/ngo/presentation/screens/home/accepted/accepted_donations_screen.dart';
 import 'package:wastenot/features/ngo/presentation/screens/home/all_donations/all_donations_screen.dart';
+import 'package:wastenot/features/ngo/presentation/screens/home/all_donations/donation_details_screen.dart';
 import 'package:wastenot/features/ngo/presentation/screens/home/concern/raise_concern_screen.dart';
 import 'package:wastenot/features/ngo/presentation/screens/home/goal/ngo_goal_screen.dart';
 import 'package:wastenot/features/ngo/presentation/screens/home/impact/impact_screen.dart';
@@ -15,6 +17,7 @@ import 'package:wastenot/features/ngo/presentation/screens/ngo_feedback_screen.d
 import 'package:wastenot/models/app_user_model.dart';
 import 'package:wastenot/screens/login_screen.dart';
 import 'package:wastenot/services/concern_services.dart';
+import 'package:wastenot/services/donation_services.dart';
 import 'package:wastenot/services/goal_services.dart';
 import 'package:wastenot/services/notification_badge_service.dart';
 import 'package:wastenot/services/session_service.dart';
@@ -35,6 +38,39 @@ class _NgoHomeScreenState extends State<NgoHomeScreen> {
   int _index = 0;
   final GoalService _goalService = GoalService();
   final ConcernService _concernService = ConcernService();
+  Stream<List<DonationModel>>? _recentNgoStream;
+  String? _recentNgoUid;
+  List<DonationModel> _recentNgoCache = const <DonationModel>[];
+
+  Stream<List<DonationModel>> _recentCompletedNgoDonationsStream({
+    required String ngoId,
+  }) {
+    return FirebaseFirestore.instance
+        .collection('donations')
+        .where('acceptedByNgoId', isEqualTo: ngoId)
+        .where('status', isEqualTo: 'completed')
+        .orderBy('completedAt', descending: true)
+        .limit(5)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map(DonationModel.fromFirestore).toList();
+    });
+  }
+
+  void _ensureRecentNgoStream(String? uid) {
+    if (uid == null || uid.trim().isEmpty) {
+      _recentNgoStream = null;
+      _recentNgoUid = null;
+      return;
+    }
+
+    if (_recentNgoUid == uid && _recentNgoStream != null) {
+      return;
+    }
+
+    _recentNgoUid = uid;
+    _recentNgoStream = _recentCompletedNgoDonationsStream(ngoId: uid);
+  }
 
   Widget _getBody() {
     if (_index == 0) {
@@ -132,9 +168,16 @@ class _NgoHomeScreenState extends State<NgoHomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      height: 160,
-                      decoration: BoxDecoration(
+                    GestureDetector(
+  onTap: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const NgoGoalScreen()),
+    );
+  },
+  child: Container(
+    height: 160,
+    decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(18),
                         image: const DecorationImage(
                           image: AssetImage('assets/images/home1.png'),
@@ -164,6 +207,7 @@ class _NgoHomeScreenState extends State<NgoHomeScreen> {
                                 final progress = snapshot.data;
                                 final achieved = progress?.achievedCount ?? 0;
                                 final target = progress?.monthlyTarget ?? 0;
+                                final hasGoal = progress?.hasGoal ?? false;
                                 final ratio =
                                     target <= 0 ? 0.0 : achieved / target;
                                 final percent =
@@ -173,25 +217,33 @@ class _NgoHomeScreenState extends State<NgoHomeScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        const Text(
-                                          'Monthly Donation Goal',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                        Text(
-                                          '$achieved / $target  •  $percent%',
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+  children: [
+    const Expanded(
+      child: Text(
+        'Monthly Donation Goal',
+        style: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    ),
+    const SizedBox(width: 8),
+    Expanded(
+      child: Text(
+        hasGoal
+            ? '$achieved / $target  •  $percent%'
+            : 'Set your goal to start tracking progress',
+        textAlign: TextAlign.end,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    ),
+  ],
+),
                                     const SizedBox(height: 8),
                                     ClipRRect(
                                       borderRadius: BorderRadius.circular(10),
@@ -213,6 +265,7 @@ class _NgoHomeScreenState extends State<NgoHomeScreen> {
                           ),
                         ],
                       ),
+                    ),
                     ),
                     const SizedBox(height: 24),
                     Container(
@@ -303,15 +356,130 @@ class _NgoHomeScreenState extends State<NgoHomeScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    _donationTile(
-                      title: '60 bread packets',
-                      location: 'Wedding Hall - Sector 11',
-                      time: 'Pickup within 45 min',
-                    ),
-                    _donationTile(
-                      title: '100 cooked meals',
-                      location: 'Cafe Aroma - Block C',
-                      time: 'Pickup in 1 hour',
+                    StreamBuilder<List<DonationModel>>(
+                      stream: _recentNgoStream,
+                      initialData: _recentNgoCache,
+                      builder: (context, snapshot) {
+                        if (_recentNgoStream == null &&
+                            _recentNgoCache.isEmpty &&
+                            snapshot.connectionState == ConnectionState.none) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            child: Center(child: CircularProgressIndicator()),
+                          );
+                        }
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          if (_recentNgoCache.isNotEmpty) {
+                            final recent = _recentNgoCache;
+                            return Column(
+                              children: recent.map((donation) {
+                                final location =
+                                    donation.location?.trim().isNotEmpty == true
+                                        ? donation.location!.trim()
+                                        : 'Location not provided';
+                                final time =
+                                    _recentDonationTime(donation.completedAt ??
+                                        donation.createdAt);
+                                return _donationTile(
+                                  title: donation.foodItems.join(', '),
+                                  location: location,
+                                  time: time,
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => DonationDetailsScreen(
+                                          donation: donation,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                );
+                              }).toList(),
+                            );
+                          }
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            child: Center(child: CircularProgressIndicator()),
+                          );
+                        }
+
+                        if (snapshot.hasError) {
+                          if (_recentNgoCache.isNotEmpty) {
+                            final recent = _recentNgoCache;
+                            return Column(
+                              children: recent.map((donation) {
+                                final location =
+                                    donation.location?.trim().isNotEmpty == true
+                                        ? donation.location!.trim()
+                                        : 'Location not provided';
+                                final time =
+                                    _recentDonationTime(donation.completedAt ??
+                                        donation.createdAt);
+                                return _donationTile(
+                                  title: donation.foodItems.join(', '),
+                                  location: location,
+                                  time: time,
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => DonationDetailsScreen(
+                                          donation: donation,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                );
+                              }).toList(),
+                            );
+                          }
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 8),
+                            child: Text('Unable to load recent donations.'),
+                          );
+                        }
+
+                        final recent =
+                            snapshot.data ?? const <DonationModel>[];
+                        if (snapshot.hasData) {
+                          _recentNgoCache = recent;
+                        }
+                        if (recent.isEmpty) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 8),
+                            child: Text('No recent donations.'),
+                          );
+                        }
+
+                        return Column(
+                          children: recent.map((donation) {
+                            final location =
+                                donation.location?.trim().isNotEmpty == true
+                                    ? donation.location!.trim()
+                                    : 'Location not provided';
+                            final time =
+                                _recentDonationTime(donation.completedAt ??
+                                    donation.createdAt);
+                            return _donationTile(
+                              title: donation.foodItems.join(', '),
+                              location: location,
+                              time: time,
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => DonationDetailsScreen(
+                                      donation: donation,
+                                    ),
+                                  ),
+                                );
+                              },
+                            );
+                          }).toList(),
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -329,6 +497,7 @@ class _NgoHomeScreenState extends State<NgoHomeScreen> {
       valueListenable: SessionService.currentUser,
       builder: (context, user, _) {
         final profileImageUrl = user?.profileImageUrl;
+        _ensureRecentNgoStream(user?.uid);
 
         return PopScope(
           canPop: false,
@@ -454,7 +623,7 @@ class _NgoHomeScreenState extends State<NgoHomeScreen> {
                 backgroundColor: Colors.white,
                 elevation: 0,
                 selectedItemColor: AppColors.primary,
-                unselectedItemColor: AppColors.primary.withValues(alpha: .35),
+                unselectedItemColor: AppColors.primary.withOpacity(0.35),
                 showUnselectedLabels: true,
                 type: BottomNavigationBarType.fixed,
                 items: const [
@@ -561,12 +730,14 @@ class _NgoHomeScreenState extends State<NgoHomeScreen> {
     required String title,
     required String location,
     required String time,
+    VoidCallback? onTap,
   }) {
     return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const AllDonationsScreen()),
-      ),
+      onTap: onTap ??
+          () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AllDonationsScreen()),
+              ),
       child: Container(
         margin: const EdgeInsets.only(bottom: 14),
         padding: const EdgeInsets.all(14),
@@ -604,6 +775,24 @@ class _NgoHomeScreenState extends State<NgoHomeScreen> {
       ),
     );
   }
+}
+
+String _recentDonationTime(DateTime value) {
+  final now = DateTime.now();
+  final difference = now.difference(value);
+  if (difference.isNegative || difference.inMinutes < 1) {
+    return 'Just now';
+  }
+  if (difference.inMinutes < 60) {
+    return '${difference.inMinutes} mins ago';
+  }
+  if (difference.inHours < 24) {
+    return '${difference.inHours} hours ago';
+  }
+  if (difference.inDays == 1) {
+    return 'Yesterday';
+  }
+  return '${difference.inDays} days ago';
 }
 
 class _ConcernSummaryCard extends StatelessWidget {
@@ -834,3 +1023,4 @@ double _concernProgress(ConcernModel concern) {
   final remaining = concern.expiryTime.difference(DateTime.now()).inSeconds;
   return (remaining / total).clamp(0.0, 1.0);
 }
+

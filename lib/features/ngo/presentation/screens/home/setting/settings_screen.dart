@@ -6,7 +6,6 @@ import 'package:wastenot/features/ngo/presentation/screens/home/setting/faq_scre
 import 'package:wastenot/features/ngo/presentation/screens/home/setting/notifications_screen.dart';
 import 'package:wastenot/features/ngo/presentation/screens/home/setting/privacy_policy_screen.dart';
 import 'package:wastenot/features/ngo/presentation/screens/home/setting/privacy_screen.dart';
-import 'package:wastenot/features/ngo/presentation/screens/home/setting/rate_us_screen.dart';
 import 'package:wastenot/screens/welcome_screen.dart';
 import 'package:wastenot/models/app_user_model.dart';
 import 'package:wastenot/services/auth_service.dart';
@@ -85,7 +84,6 @@ class SettingsScreen extends StatelessWidget {
                   const NotificationsScreen(),
                 ),
                 _tile(context, Icons.lock_outline, 'Privacy', const PrivacyScreen()),
-                _tile(context, Icons.star_outline, 'Rate Us', const RateUsScreen()),
                 _tile(context, Icons.mail_outline, 'Contact Us', const ContactScreen()),
                 _tile(context, Icons.info_outline, 'About App', const AboutScreen()),
                 _tile(context, Icons.help_outline, 'FAQ', const FaqScreen()),
