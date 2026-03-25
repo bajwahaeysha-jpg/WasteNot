@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:wastenot/features/messaging/models/chat_models.dart';
-import 'package:wastenot/models/app_user_model.dart';
 import 'package:wastenot/services/concern_services.dart';
 import 'package:wastenot/services/firestore_service.dart';
 import 'package:wastenot/services/session_service.dart';
