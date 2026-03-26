@@ -6,7 +6,6 @@ import 'package:wastenot/features/donor/presentation/settings/screens/donor_faq_
 import 'package:wastenot/features/donor/presentation/settings/screens/donor_notifications_screen.dart';
 import 'package:wastenot/features/donor/presentation/settings/screens/donor_privacy_policy_screen.dart';
 import 'package:wastenot/features/donor/presentation/settings/screens/donor_privacy_screen.dart';
-import 'package:wastenot/features/donor/presentation/settings/screens/donor_rate_screen.dart';
 import 'package:wastenot/screens/welcome_screen.dart';
 import 'package:wastenot/services/auth_service.dart';
 import 'package:wastenot/services/session_service.dart';
@@ -66,7 +65,6 @@ class DonorSettingsScreen extends StatelessWidget {
             _tile(context, Icons.person_outline, 'Account', const DonorAccountScreen()),
             _tile(context, Icons.notifications_none, 'Notifications & Reminders', const DonorNotificationsScreen()),
             _tile(context, Icons.lock_outline, 'Privacy', const DonorPrivacyScreen()),
-            _tile(context, Icons.star_outline, 'Feedback', const DonorRateScreen()),
             _tile(context, Icons.mail_outline, 'Contact Us', const DonorContactScreen()),
             _tile(context, Icons.info_outline, 'About App', const DonorAboutScreen()),
             _tile(context, Icons.help_outline, 'FAQ', const DonorFaqScreen()),

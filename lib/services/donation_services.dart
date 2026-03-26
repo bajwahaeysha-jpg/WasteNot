@@ -26,6 +26,7 @@ class DonationCreateRequest {
     required this.foodItems,
     required this.quantity,
     this.description,
+    this.precaution,
     this.location,
     this.imageUrls = const <String>[],
     this.expiryAt,
@@ -34,6 +35,7 @@ class DonationCreateRequest {
   final List<String> foodItems;
   final String quantity;
   final String? description;
+  final String? precaution;
   final String? location;
   final List<String> imageUrls;
   final DateTime? expiryAt;
@@ -44,6 +46,7 @@ class DonationCreateRequest {
       'quantity': quantity.trim(),
       'servings': quantity.trim(),
       'description': _normalizeNullable(description),
+      'precaution': _normalizeNullable(precaution),
       'location': _normalizeNullable(location),
       'imageUrls': imageUrls
           .map((url) => url.trim())
@@ -68,6 +71,7 @@ class DonationModel {
     this.donorAddress,
     this.donorProfileImageUrl,
     this.description,
+    this.precaution,
     this.location,
     this.imageUrls = const <String>[],
     this.acceptedByNgoId,
@@ -91,6 +95,7 @@ class DonationModel {
   final List<String> foodItems;
   final String quantity;
   final String? description;
+  final String? precaution;
   final String? location;
   final List<String> imageUrls;
   final String status;
@@ -124,6 +129,7 @@ class DonationModel {
       'quantity': quantity,
       'servings': quantity,
       'description': description,
+      'precaution': precaution,
       'location': location,
       'imageUrls': imageUrls,
       'status': status,
@@ -178,6 +184,7 @@ class DonationModel {
       foodItems: normalizedFoodItems,
       quantity: _resolveQuantity(data),
       description: _normalizeNullable(data['description'] as String?),
+      precaution: _normalizeNullable(data['precaution'] as String?),
       location: _normalizeNullable(data['location'] as String?),
       imageUrls: normalizedImageUrls,
       status: (data['status'] as String?)?.trim() ?? DonationStatus.active.value,

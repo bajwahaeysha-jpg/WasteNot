@@ -61,6 +61,12 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
 
     if (!_formKey.currentState!.validate()) return;
 
+    // ✅ IMAGE VALIDATION (NEW)
+    if (pickedImage == null) {
+      _showError('Please add an image for the donation.');
+      return;
+    }
+
     final donor = SessionService.user;
     if (donor == null || !donor.isDonor) {
       _showError('Please log in as a donor to create a donation.');
@@ -70,20 +76,16 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
     final description = descriptionController.text.trim();
     final precaution = precautionController.text.trim();
 
-    final mergedDescription = [
-      if (description.isNotEmpty) description,
-      if (precaution.isNotEmpty) 'Precaution: $precaution',
-    ].join('\n\n');
-
     setState(() => _isSubmitting = true);
 
     try {
-      final donationId =
-          _donationService.createDraftDonationId();
-      final uploadedImageUrl = await _firestoreService.uploadDonationImage(
+      final donationId = _donationService.createDraftDonationId();
+
+      final uploadedImageUrl =
+          await _firestoreService.uploadDonationImage(
         donorId: donor.uid,
         donationId: donationId,
-        imageFile: pickedImage == null ? null : File(pickedImage!.path),
+        imageFile: File(pickedImage!.path),
       );
 
       await _donationService.createDonation(
@@ -96,7 +98,9 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
               .where((item) => item.isNotEmpty)
               .toList(),
           quantity: selectedServing!,
-          description: mergedDescription.isEmpty ? null : mergedDescription,
+          description: description.isEmpty ? null : description,
+          // 🔥 FIX: NO MERGE — clean separation
+          precaution: precaution.isEmpty ? null : precaution,
           location: locationController.text.trim(),
           imageUrls: uploadedImageUrl == null
               ? const <String>[]
@@ -147,7 +151,7 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: true, // ✅ IMPORTANT
+      resizeToAvoidBottomInset: true,
       backgroundColor: const Color(0xFFF5F7F6),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0E5E53),
@@ -159,7 +163,7 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
       ),
       body: Form(
         key: _formKey,
-        child: SingleChildScrollView( // ✅ FIX
+        child: SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(
             14,
             14,
@@ -188,6 +192,12 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
                   if (value == null || value.trim().isEmpty) {
                     return 'Enter at least one food item.';
                   }
+                  if (value
+                      .split(',')
+                      .where((e) => e.trim().isNotEmpty)
+                      .isEmpty) {
+                    return 'Enter valid food items.';
+                  }
                   return null;
                 },
               ),
@@ -214,6 +224,9 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
                               validator: (value) {
                                 if (value == null || value.trim().isEmpty) {
                                   return 'Location is required.';
+                                }
+                                if (value.trim().length < 3) {
+                                  return 'Enter valid location.';
                                 }
                                 return null;
                               },
@@ -291,8 +304,8 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
               const SizedBox(height: 4),
               _textArea(precautionController, minLines: 1),
 
-              const SizedBox(height: 20), // ✅ Spacer removed
-              
+              const SizedBox(height: 20),
+
               SizedBox(
                 width: double.infinity,
                 height: 48,

@@ -26,7 +26,7 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
 
   String get _displayName {
     final user = SessionService.user;
-    final name = user?.displayName?.trim() ?? '';
+    final name = user?.displayName.trim() ?? '';
     if (name.isNotEmpty) {
       return name;
     }
@@ -35,7 +35,7 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
 
   String get _email {
     final user = SessionService.user;
-    final email = user?.email?.trim() ?? '';
+    final email = user?.email.trim() ?? '';
     return email;
   }
 

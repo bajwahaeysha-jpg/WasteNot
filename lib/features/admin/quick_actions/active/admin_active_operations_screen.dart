@@ -1,34 +1,18 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:wastenot/services/donation_services.dart';
+import 'package:wastenot/services/session_service.dart';
 
 class ActiveScreen extends StatelessWidget {
   const ActiveScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final operations = [
-      {
-        "donor": "Allah Malik Restaurant",
-        "ngo": "Khair Foundation",
-        "meals": "20 Persons",
-        "location": "Allama Iqbal Chowk, Sialkot",
-        "images": [
-          "assets/images/allah_malak.png",
-          "assets/images/chicken sajji.jpg",
-          "assets/images/daal.jpg"
-        ],
-      },
-      {
-        "donor": "Cafe Aroma",
-        "ngo": "Edhi Foundation",
-        "meals": "35 Persons",
-        "location": "Gulberg Lahore",
-        "images": [
-          "assets/images/food.jpg",
-          "assets/images/Chicken.jpg",
-          "assets/images/cooked rice.png"
-        ],
-      },
-    ];
+    final donationService = DonationService();
+    final currentUser = SessionService.user;
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    final donorId = currentUser?.isDonor == true ? userId : null;
+    final ngoId = currentUser?.isNgo == true ? userId : null;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F6),
@@ -40,30 +24,47 @@ class ActiveScreen extends StatelessWidget {
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: operations.length,
-        itemBuilder: (context, index) {
-          final item = operations[index];
-          return _operationCard(context, item);
+      body: StreamBuilder<List<DonationModel>>(
+        stream: donationService.streamDonationsByStatus(
+          status: DonationStatus.active,
+          donorId: donorId,
+          ngoId: ngoId,
+        ),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return const Center(child: Text('No active donations'));
+          }
+
+          final operations = snapshot.data ?? <DonationModel>[];
+          if (operations.isEmpty) {
+            return const Center(child: Text('No active donations'));
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: operations.length,
+            itemBuilder: (context, index) {
+              final item = operations[index];
+              return _operationCard(context, item);
+            },
+          );
         },
       ),
     );
   }
 
-  Widget _operationCard(BuildContext context, Map item) {
+  Widget _operationCard(BuildContext context, DonationModel item) {
+    final imageUrl = item.imageUrls.isNotEmpty ? item.imageUrls.first : null;
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => DonationDetailsScreen(
-              donorName: item["donor"],
-              ngoName: item["ngo"],
-              images: List<String>.from(item["images"]),
-              location: item["location"],
-              meals: item["meals"],
-            ),
+            builder: (_) => DonationDetailsScreen(donation: item),
           ),
         );
       },
@@ -81,12 +82,25 @@ class ActiveScreen extends StatelessWidget {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(14),
-              child: Image.asset(
-                item["images"][0], // first image as thumbnail
-                width: 70,
-                height: 70,
-                fit: BoxFit.cover,
-              ),
+              child: imageUrl == null
+                  ? Container(
+                      width: 70,
+                      height: 70,
+                      color: Colors.grey.shade300,
+                      child: const Icon(Icons.image_not_supported),
+                    )
+                  : Image.network(
+                      imageUrl,
+                      width: 70,
+                      height: 70,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        width: 70,
+                        height: 70,
+                        color: Colors.grey.shade300,
+                        child: const Icon(Icons.broken_image),
+                      ),
+                    ),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -94,16 +108,16 @@ class ActiveScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    item["donor"],
+                    item.donorName,
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
                   ),
                   const SizedBox(height: 6),
-                  const Text(
-                    "Waiting for pickup",
-                    style: TextStyle(color: Colors.grey),
+                  Text(
+                    item.isAccepted ? 'Pickup in progress' : 'Waiting for pickup',
+                    style: const TextStyle(color: Colors.grey),
                   ),
                 ],
               ),
@@ -122,23 +136,25 @@ class ActiveScreen extends StatelessWidget {
 ////////////////////////////////////////////////////////
 
 class DonationDetailsScreen extends StatelessWidget {
-  final String donorName;
-  final String ngoName;
-  final List<String> images; // now a list of images
-  final String location;
-  final String meals;
+  final DonationModel donation;
 
   const DonationDetailsScreen({
     super.key,
-    required this.donorName,
-    required this.ngoName,
-    required this.images,
-    required this.location,
-    required this.meals,
+    required this.donation,
   });
 
   @override
   Widget build(BuildContext context) {
+    final images = donation.imageUrls;
+    final ngoName = (donation.acceptedByNgoName?.trim().isNotEmpty ?? false)
+        ? donation.acceptedByNgoName!.trim()
+        : 'Not assigned';
+    final location = (donation.location?.trim().isNotEmpty ?? false)
+        ? donation.location!.trim()
+        : '';
+    final description = donation.description?.trim() ?? '';
+    final precaution = donation.precaution?.trim() ?? '';
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6F7),
       appBar: AppBar(
@@ -164,16 +180,33 @@ class DonationDetailsScreen extends StatelessWidget {
               height: 100,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
-                itemCount: images.length,
+                itemCount: images.isEmpty ? 1 : images.length,
                 separatorBuilder: (_, _) => const SizedBox(width: 10),
                 itemBuilder: (context, index) {
+                  if (images.isEmpty) {
+                    return ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+                      child: Container(
+                        width: 90,
+                        height: 90,
+                        color: Colors.grey.shade300,
+                        child: const Icon(Icons.image_not_supported),
+                      ),
+                    );
+                  }
                   return ClipRRect(
                     borderRadius: BorderRadius.circular(14),
-                    child: Image.asset(
+                    child: Image.network(
                       images[index],
                       width: 90,
                       height: 90,
                       fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        width: 90,
+                        height: 90,
+                        color: Colors.grey.shade300,
+                        child: const Icon(Icons.broken_image),
+                      ),
                     ),
                   );
                 },
@@ -211,11 +244,12 @@ class DonationDetailsScreen extends StatelessWidget {
             ),
             const Divider(height: 30),
 
-            _infoRow("Donor", donorName),
+            _infoRow("Donor", donation.donorName),
             _infoRow("NGO", ngoName),
-            _infoRow("Servings", meals),
-            _infoRow("Precaution", "Refrigeration Needed"),
-            _infoRow("Description", "Beef biryani with raita & salad"),
+            _infoRow("Servings", donation.quantity),
+            _infoRow("Location", location),
+            _infoRow("Precaution", precaution),
+            _infoRow("Description", description),
             const SizedBox(height: 16),
           ],
         ),
