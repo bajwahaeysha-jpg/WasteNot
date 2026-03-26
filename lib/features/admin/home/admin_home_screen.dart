@@ -69,8 +69,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                           .toString()
                           .toUpperCase(),
                       style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
 
@@ -82,7 +82,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 12),
 
                     /// 📊 ALERT + STATS
                     const StatsSection(),

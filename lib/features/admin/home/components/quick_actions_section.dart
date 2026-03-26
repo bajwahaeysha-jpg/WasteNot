@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../quick_actions/concerns/concerns_screen.dart';
-import '../../quick_actions/coverage/coverage_screen.dart';
 import '../../quick_actions/active/admin_active_operations_screen.dart';
 import '../../quick_actions/requests/requests_screen.dart';
+import '../../more/feedback/admin_feedback_screen.dart';
 
 class QuickActionsSection extends StatelessWidget {
   const QuickActionsSection({super.key});
@@ -71,8 +71,8 @@ class QuickActionsSection extends StatelessWidget {
               ),
 
               _QuickAction(
-                icon: Icons.trending_up,
-                label: "Coverage",
+                icon: Icons.feedback_outlined,
+                label: "Feedback",
                 color: const Color(0xFFFBC02D),
                 iconSize: iconSize,
                 circleSize: circleSize,
@@ -81,7 +81,7 @@ class QuickActionsSection extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const CoverageScreen(),
+                      builder: (_) => const AdminFeedbackScreen(),
                     ),
                   );
                 },

@@ -1,5 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/material.dart';
+import 'package:wastenot/models/app_user_model.dart';
+import 'package:wastenot/services/impact_services.dart';
 import 'package:wastenot/services/session_service.dart';
 
 class ImpactScreen extends StatelessWidget {
@@ -13,312 +15,381 @@ class ImpactScreen extends StatelessWidget {
       backgroundColor: const Color(0xFFF5F7F6),
       appBar: AppBar(
         backgroundColor: primary,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text("Impact", style: TextStyle(color: Colors.white)),
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: const Text('Impact', style: TextStyle(color: Colors.white)),
       ),
+      body: ValueListenableBuilder<AppUserModel?>(
+        valueListenable: SessionService.currentUser,
+        builder: (context, user, _) {
+          final ngoId = user?.uid;
 
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          if (ngoId == null || ngoId.trim().isEmpty) {
+            return const Center(child: Text('Unable to load impact data.'));
+          }
 
-          const Text("Keep doing the Good work,here is your impact on community", style: TextStyle(color: Colors.black)),
-          const SizedBox(height: 4),
+          return StreamBuilder<NgoImpactData>(
+            stream: ImpactServices().streamNgoImpact(ngoId),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-          Text(
-            SessionService.user?.displayName ?? "NGO",
-            style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.black),
-          ),
+              final impact = snapshot.data ??
+                  const NgoImpactData(
+                    totalAcceptedDonations: 0,
+                    totalMeals: 0,
+                    totalPeopleServed: 0,
+                    weeklyActivity: [],
+                  );
 
-          const SizedBox(height: 18),
-
-          const Text("Summary",
-              style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black)),
-
-          const SizedBox(height: 12),
-
-          GridView.count(
-            shrinkWrap: true,
-            crossAxisCount: 2,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            physics: const NeverScrollableScrollPhysics(),
-            childAspectRatio: 1.9,
-            children: const [
-              _SummaryCard("Accepted", "96", Icons.check_circle, Color(0xFFE6F4EA)),
-              _SummaryCard("Meals", "164", Icons.restaurant, Color(0xFFEAF1FB)),
-              _SummaryCard("People", "1420", Icons.people, Color(0xFFFFF1E6)),
-              _SummaryCard("Locations", "42", Icons.location_on, Color(0xFFEFE9FB)),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          /// INFO CARD
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: const [
-                BoxShadow(
-                    color: Color(0x14000000),
-                    blurRadius: 12,
-                    offset: Offset(0, 6))
-              ],
-            ),
-            child: Row(children: const [
-              Icon(Icons.store, color: primary),
-              SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  "You helped 21 restaurants prevent food waste this month.",
-                  style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black),
-                ),
-              ),
-            ]),
-          ),
-
-          const SizedBox(height: 22),
-
-          /// ACTIVITY CARD
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              boxShadow: const [
-                BoxShadow(
-                    color: Color(0x14000000),
-                    blurRadius: 14,
-                    offset: Offset(0, 6))
-              ],
-            ),
-            child: Column(children: [
-              Row(children: const [
-                CircleAvatar(
-                    backgroundColor: primary,
-                    child: Icon(Icons.directions_run, color: Colors.white)),
-                SizedBox(width: 10),
-                Text("Activity",
-                    style:
-                        TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
-                Spacer(),
-                Icon(Icons.arrow_forward_ios, size: 16),
-              ]),
-              const SizedBox(height: 8),
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text("Accepted donations — last 5 months",
-                    style: TextStyle(color: Colors.black)),
-              ),
-              const SizedBox(height: 14),
-              SizedBox(height: 160, child: _ActivityGraph()),
-              const SizedBox(height: 8),
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text("Average: 9 donations per month",
-                    style: TextStyle(color: Colors.black)),
-              ),
-            ]),
-          ),
-
-          const SizedBox(height: 26),
-
-          const Text("Beneficiaries",
-              style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black)),
-
-          const SizedBox(height: 6),
-
-          const Text(
-            "People who you benefited through your work",
-            style: TextStyle(color: Colors.black),
-          ),
-
-          const SizedBox(height: 16),
-
-          /// PIE CHART CARD
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: const [
-                BoxShadow(
-                    color: Color(0x14000000),
-                    blurRadius: 14,
-                    offset: Offset(0, 6))
-              ],
-            ),
-            child: Column(children: [
-
-              SizedBox(
-                height: 220,
-                child: Stack(
-                  alignment: Alignment.center,
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    PieChart(
-                      PieChartData(
-                        startDegreeOffset: -90,
-                        centerSpaceRadius: 60,
-                        sectionsSpace: 3,
-                        sections: [
-                          PieChartSectionData(
-                              value: 80,
-                              color: Colors.blue,
-                              radius: 28), // thicker donut
-                          PieChartSectionData(
-                              value: 10,
-                              color: Colors.red,
-                              radius: 28),
-                          PieChartSectionData(
-                              value: 10,
-                              color: Colors.orange,
-                              radius: 28),
-                        ],
+
+                    /// PERFORMANCE
+                    const Text(
+                      "Performance",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: primary,
                       ),
                     ),
 
+                    const SizedBox(height: 12),
+
+                    Row(
+                      children: List.generate(impact.metrics.length, (index) {
+                        return Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: _MetricCard(
+                              metric: impact.metrics[index],
+                              index: index,
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    /// ACTIVITY
                     const Text(
-                      "100%",
+                      "Activity",
                       style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black),
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: primary,
+                      ),
+                    ),
+
+                    const SizedBox(height: 4),
+
+                    const Text(
+                      "Your activity of last seven days",
+                      style: TextStyle(fontSize: 13, color: Color(0xFF7A8783)),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(18),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x14000000),
+                            blurRadius: 14,
+                            offset: Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: SizedBox(
+                        height: 220,
+                        child: _WeeklyChart(points: impact.weeklyActivity),
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    /// GLOBAL IMPACT
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(18),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x14000000),
+                            blurRadius: 14,
+                            offset: Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+
+                          const Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Text(
+                              "Together, we can end hunger",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: primary,
+                              ),
+                            ),
+                          ),
+
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.asset(
+                              'assets/images/Orphanages.jpg',
+                              height: 180,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+
+                          const SizedBox(height: 12),
+
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          "Total meals saved",
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            color: Color(0xFF7A8783),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          "${impact.totalMeals}",
+                                          style: const TextStyle(
+                                            fontSize: 22,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const Text(
+                                      "+ Today",
+                                      style: TextStyle(
+                                        color: Colors.green,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+
+                                const SizedBox(height: 16),
+
+                                const Text(
+                                  "Due to these donations, many orphans and needy people have been served. Your contribution is making a real difference.",
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    height: 1.4,
+                                    color: Color(0xFF4E5D59),
+                                  ),
+                                ),
+
+                                const SizedBox(height: 16),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
-              ),
-
-              const SizedBox(height: 12),
-
-              const _LegendRow(Colors.blue, "Orphans — 80%"),
-              const _LegendRow(Colors.red, "Homeless — 10%"),
-              const _LegendRow(Colors.orange, "Others — 10%"),
-            ]),
-          ),
-
-          const SizedBox(height: 20),
-        ]),
+              );
+            },
+          );
+        },
       ),
     );
   }
 }
 
-class _LegendRow extends StatelessWidget {
-  final Color color;
-  final String text;
-  const _LegendRow(this.color, this.text);
+/// METRIC CARD
+class _MetricCard extends StatelessWidget {
+  const _MetricCard({
+    required this.metric,
+    required this.index,
+  });
 
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(children: [
-        Container(
-            width: 12,
-            height: 12,
-            decoration:
-                BoxDecoration(color: color, shape: BoxShape.circle)),
-        const SizedBox(width: 8),
-        Text(text, style: const TextStyle(color: Colors.black)),
-      ]),
-    );
+  final NgoImpactMetric metric;
+  final int index;
+
+  IconData _getIcon(String label) {
+    if (label.toLowerCase().contains("meal")) return Icons.restaurant;
+    if (label.toLowerCase().contains("donation")) return Icons.volunteer_activism;
+    return Icons.people;
   }
-}
 
-class _SummaryCard extends StatelessWidget {
-  final String title;
-  final String value;
-  final IconData icon;
-  final Color color;
+  static const bgColors = [
+    Color(0xFFFFF6F8),
+    Color(0xFFF7F5FF),
+    Color(0xFFFFFBF0),
+  ];
 
-  const _SummaryCard(this.title, this.value, this.icon, this.color);
+  static const iconColors = [
+    Color(0xFFE57373),
+    Color(0xFF9575CD),
+    Color(0xFFFFCA28),
+  ];
 
   @override
   Widget build(BuildContext context) {
+    final bg = bgColors[index % 3];
+    final iconColor = iconColors[index % 3];
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      height: 100,
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(
-              color: Color(0x14000000),
-              blurRadius: 10,
-              offset: Offset(0, 4))
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                metric.value.toString(),
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: ImpactScreen.primary,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: bg,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  _getIcon(metric.label),
+                  size: 18,
+                  color: iconColor,
+                ),
+              ),
+            ],
+          ),
+
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              metric.label,
+              style: const TextStyle(fontSize: 11),
+            ),
+          ),
         ],
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        CircleAvatar(
-            radius: 14,
-            backgroundColor: color,
-            child: Icon(icon, size: 14, color: Colors.black)),
-        const SizedBox(height: 10),
-        Row(children: [
-          Expanded(
-              child: Text(title,
-                  style: const TextStyle(
-                      color: Colors.black, fontSize: 14))),
-          Text(value,
-              style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black)),
-        ]),
-      ]),
     );
   }
 }
 
-class _ActivityGraph extends StatelessWidget {
+/// GRAPH
+class _WeeklyChart extends StatelessWidget {
+  const _WeeklyChart({required this.points});
+
+  final List<NgoWeeklyImpactPoint> points;
+
   @override
   Widget build(BuildContext context) {
+    final data = points.isEmpty ? _emptyWeek : points;
+
+    final maxCount = data.fold<int>(
+      0,
+      (max, p) => p.count > max ? p.count : max,
+    );
+
+    final maxY = (maxCount == 0 ? 5 : maxCount + 1).toDouble();
+
     return BarChart(
       BarChartData(
+        minY: 0,
+        maxY: maxY,
+        gridData: FlGridData(show: true),
         borderData: FlBorderData(show: false),
+
         titlesData: FlTitlesData(
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(showTitles: true, getTitlesWidget: (v, _) {
-              const m = ["Jan", "Feb", "Mar", "Apr", "May"];
-              return Text(m[v.toInt()],
-                  style: const TextStyle(color: Colors.black));
-            }),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              interval: 1,
+              getTitlesWidget: (value, _) {
+                return Text(value.toInt().toString(),
+                    style: const TextStyle(fontSize: 11));
+              },
+            ),
           ),
-          leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              getTitlesWidget: (value, _) {
+                final i = value.toInt();
+                if (i < 0 || i >= data.length) return const SizedBox();
+                return Text(data[i].label);
+              },
+            ),
+          ),
+          topTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false)),
+          rightTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false)),
         ),
-        barGroups: [
-          _bar(0, 4),
-          _bar(1, 7),
-          _bar(2, 5),
-          _bar(3, 9),
-          _bar(4, 12),
-        ],
+
+        barGroups: List.generate(
+          data.length,
+          (i) => BarChartGroupData(
+            x: i,
+            barRods: [
+              BarChartRodData(
+                toY: data[i].count.toDouble(),
+                width: 18,
+                borderRadius: BorderRadius.circular(6),
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xFFA5D6A7),
+                    Color(0xFF81C784),
+                  ],
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  BarChartGroupData _bar(int x, double y) {
-    return BarChartGroupData(x: x, barRods: [
-      BarChartRodData(
-          toY: y,
-          width: 16,
-          color: ImpactScreen.primary,
-          borderRadius: BorderRadius.circular(6)),
-    ]);
-  }
+  static final _emptyWeek = List.generate(
+    7,
+    (i) => NgoWeeklyImpactPoint(
+      date: DateTime.now(),
+      label: '',
+      count: 0,
+    ),
+  );
 }

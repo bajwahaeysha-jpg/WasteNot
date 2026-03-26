@@ -46,3 +46,6 @@ app.*.map.json
 
 .env
 functions/.env
+
+node_modules/
+package-lock.json

@@ -1,5 +1,7 @@
 {
   "projects": {
     "default": "wastenot-20ade"
-  }
+  },
+  "targets": {},
+  "etags": {}
 }

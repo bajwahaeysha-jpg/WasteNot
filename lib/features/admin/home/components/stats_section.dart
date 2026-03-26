@@ -1,30 +1,25 @@
+import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import '../../donors/all_donors_screen.dart';
-import '../../donations/all_donations_screen.dart';
-import '../../alerts/alert_screen.dart';
+
 import '../../../../widgets/dashboard_stat_card.dart';
 import '../../../../widgets/pressable_scale.dart';
-import '../../ngos/all_ngos_screen.dart';
+import '../../alerts/alert_screen.dart';
+import '../../donations/all_donations_screen.dart';
 import '../../meals/all_meals_screen.dart';
+import '../../ngos/all_ngos_screen.dart';
+import '../../quick_actions/requests/requests_screen.dart';
 
 class StatsSection extends StatelessWidget {
   const StatsSection({super.key});
 
   @override
   Widget build(BuildContext context) {
-
-    final screenWidth = MediaQuery.of(context).size.width;
-
-    /// responsive padding
-    final cardPadding = screenWidth * 0.04;
-    final alertIconSize = screenWidth * 0.045;
-    final textSize = screenWidth * 0.035;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
 
-        /// 🔔 ALERT CARD
+        /// 🔔 ALERT BOX (gap reduce)
         GestureDetector(
           onTap: () {
             Navigator.push(
@@ -32,148 +27,94 @@ class StatsSection extends StatelessWidget {
               MaterialPageRoute(builder: (_) => const AlertScreen()),
             );
           },
-
           child: Container(
-            padding: EdgeInsets.fromLTRB(
-                cardPadding, cardPadding, cardPadding, cardPadding),
-            margin: const EdgeInsets.only(top: 2, bottom: 6),
-
+            padding: const EdgeInsets.all(12),
+            margin: const EdgeInsets.only(bottom: 6), // 🔥 FIXED (10 → 6)
             decoration: BoxDecoration(
               color: const Color(0xFFFFF6D5),
-              borderRadius: BorderRadius.circular(16),
-
-              boxShadow: const [
-                BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 8,
-                  offset: Offset(0, 3),
-                ),
-              ],
-
-              border: Border.all(
-                color: const Color(0xFFF1E0A6),
-              ),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFF1E0A6)),
             ),
-
             child: Column(
-              children: [
-                _AlertRow(
-                  text: "2 urgent requests need approval",
-                  iconSize: alertIconSize,
-                  textSize: textSize,
-                ),
-                _AlertRow(
-                  text: "Pickup scheduled in 30 minutes",
-                  iconSize: alertIconSize,
-                  textSize: textSize,
-                ),
-                _AlertRow(
-                  text: "Weekly impact report is ready",
-                  iconSize: alertIconSize,
-                  textSize: textSize,
-                ),
+              children: const [
+                _AlertRow(text: "2 urgent requests need approval"),
+                _AlertRow(text: "Pickup scheduled in 30 minutes"),
+                _AlertRow(text: "Weekly impact report is ready"),
               ],
             ),
           ),
         ),
 
         /// 📊 STATS GRID
-        LayoutBuilder(
-          builder: (context, constraints) {
-
-            /// tablet support
-            int crossAxisCount = constraints.maxWidth > 600 ? 3 : 2;
+        StreamBuilder<_AdminHomeStats>(
+          stream: _AdminHomeStatsService().streamStats(),
+          builder: (context, snapshot) {
+            final stats = snapshot.data ?? const _AdminHomeStats();
 
             return GridView.count(
-              crossAxisCount: crossAxisCount,
+              crossAxisCount: 2,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
 
-              childAspectRatio: 1.18,
-              crossAxisSpacing: screenWidth * 0.035,
-              mainAxisSpacing: screenWidth * 0.035,
+              /// 🔥 HEIGHT FIX (ye bhi gap cause karta hai)
+              childAspectRatio: 1.75,
+
+              /// 🔥 TIGHT GRID
+              crossAxisSpacing: 6,
+              mainAxisSpacing: 6,
 
               children: [
-                _buildCard(context, "donors"),
-                _buildCard(context, "ngos"),
-                _buildCard(context, "donations"),
-                _buildCard(context, "meals"),
+                _buildCard(
+                  context,
+                  screen: const AllDonationsScreen(),
+                  title: "Donations",
+                  value: _formatCompactNumber(stats.totalDonations),
+                  icon: Icons.volunteer_activism,
+                  iconColor: Colors.green,
+                ),
+                _buildCard(
+                  context,
+                  screen: const AllMealsScreen(),
+                  title: "Meals",
+                  value: _formatCompactNumber(stats.totalMeals),
+                  icon: Icons.restaurant,
+                  iconColor: Colors.teal,
+                ),
+                _buildCard(
+                  context,
+                  screen: const AllNGOsScreen(),
+                  title: "NGOs",
+                  value: _formatCompactNumber(stats.totalNgos),
+                  icon: Icons.groups,
+                  iconColor: Colors.blue,
+                ),
+                _buildCard(
+                  context,
+                  screen: RequestsScreen(),
+                  title: "Requests",
+                  value: _formatCompactNumber(stats.totalRequests),
+                  icon: Icons.pending_actions,
+                  iconColor: Colors.orange,
+                ),
               ],
             );
           },
         ),
 
-        const SizedBox(height: 24),
+        /// 🔥 REMOVE EXTRA SPACE COMPLETELY
+        const SizedBox(height: 6),
       ],
     );
   }
 
-  Widget _buildCard(BuildContext context, String type) {
-
-    switch (type) {
-
-      case "donors":
-        return _cardWrapper(
-          context,
-          const AllDonorsScreen(),
-          const DashboardStatCard(
-            title: "All donors",
-            value: "2,531",
-            change: "+2.5%",
-            isUp: true,
-            icon: Icons.group,
-            iconColor: Colors.green,
-          ),
-        );
-
-      case "ngos":
-        return _cardWrapper(
-          context,
-          const AllNGOsScreen(),
-          const DashboardStatCard(
-            title: "All NGOs",
-            value: "25,351",
-            change: "-0.15%",
-            isUp: false,
-            icon: Icons.favorite,
-            iconColor: Colors.red,
-          ),
-        );
-
-      case "donations":
-        return _cardWrapper(
-          context,
-          const AllDonationsScreen(),
-          const DashboardStatCard(
-            title: "All donations",
-            value: "351.12k",
-            change: "+24.5%",
-            isUp: true,
-            icon: Icons.monetization_on,
-            iconColor: Colors.orange,
-          ),
-        );
-
-      case "meals":
-        return _cardWrapper(
-          context,
-          const AllMealsScreen(),
-          const DashboardStatCard(
-            title: "Meals Saved",
-            value: "1,351",
-            change: "-0.5%",
-            isUp: false,
-            icon: Icons.restaurant,
-            iconColor: Colors.blue,
-          ),
-        );
-
-      default:
-        return const SizedBox();
-    }
-  }
-
-  Widget _cardWrapper(BuildContext context, Widget screen, Widget card) {
+  Widget _buildCard(
+    BuildContext context, {
+    required Widget screen,
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color iconColor,
+  }) {
     return PressableScale(
       onTap: () {
         Navigator.push(
@@ -181,52 +122,99 @@ class StatsSection extends StatelessWidget {
           MaterialPageRoute(builder: (_) => screen),
         );
       },
-      child: card,
+      child: DashboardStatCard(
+        title: title,
+        value: value,
+        icon: icon,
+        iconColor: iconColor,
+      ),
     );
   }
 }
 
-/// 🔸 ALERT ROW
 class _AlertRow extends StatelessWidget {
-
   final String text;
-  final double iconSize;
-  final double textSize;
 
-  const _AlertRow({
-    required this.text,
-    required this.iconSize,
-    required this.textSize,
-  });
+  const _AlertRow({required this.text});
 
   @override
   Widget build(BuildContext context) {
-
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-
+      padding: const EdgeInsets.symmetric(vertical: 3), // 🔥 tighter
       child: Row(
         children: [
-
-          Icon(
+          const Icon(
             Icons.warning_amber_rounded,
-            color: const Color(0xFFF39C12),
-            size: iconSize,
+            color: Color(0xFFF39C12),
+            size: 16,
           ),
-
-          const SizedBox(width: 10),
-
+          const SizedBox(width: 6),
           Expanded(
             child: Text(
               text,
-              style: TextStyle(
-                fontSize: textSize,
-                height: 1.3,
-              ),
+              style: const TextStyle(fontSize: 12),
             ),
           ),
         ],
       ),
     );
   }
+}
+
+class _AdminHomeStats {
+  const _AdminHomeStats({
+    this.totalDonations = 0,
+    this.totalMeals = 0,
+    this.totalNgos = 0,
+    this.totalRequests = 0,
+  });
+
+  final int totalDonations;
+  final int totalMeals;
+  final int totalNgos;
+  final int totalRequests;
+}
+
+class _AdminHomeStatsService {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  Stream<_AdminHomeStats> streamStats() {
+    return _firestore.collection('donations').snapshots().asyncMap((donationsSnap) async {
+      final ngosSnap = await _firestore
+          .collection('users')
+          .where('role', isEqualTo: 'ngo')
+          .get();
+
+      final requestsSnap =
+          await _firestore.collection('requests').get();
+
+      int totalMeals = 0;
+
+      for (var doc in donationsSnap.docs) {
+        final data = doc.data();
+        final meals = data['meals'] ?? data['mealCount'] ?? data['totalMeals'];
+        if (meals is int) {
+          totalMeals += meals;
+        }
+      }
+
+      return _AdminHomeStats(
+        totalDonations: donationsSnap.size,
+        totalMeals: totalMeals,
+        totalNgos: ngosSnap.size,
+        totalRequests: requestsSnap.size,
+      );
+    });
+  }
+}
+
+String _formatCompactNumber(int value) {
+  if (value >= 1000000) {
+    final v = value / 1000000;
+    return "${v.toStringAsFixed(1)}M";
+  } else if (value >= 1000) {
+    final v = value / 1000;
+    return "${v.toStringAsFixed(1)}k";
+  }
+  return value.toString();
 }

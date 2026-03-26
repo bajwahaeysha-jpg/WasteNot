@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 class DashboardStatCard extends StatelessWidget {
   final String title;
   final String value;
-  final String change;
-  final bool isUp;
+  final String? change;
+  final bool? isUp;
   final IconData icon;
   final Color iconColor;
 
@@ -12,77 +12,93 @@ class DashboardStatCard extends StatelessWidget {
     super.key,
     required this.title,
     required this.value,
-    required this.change,
-    required this.isUp,
+    this.change,
+    this.isUp,
     required this.icon,
     required this.iconColor,
   });
 
   @override
   Widget build(BuildContext context) {
+    final hasChange =
+        change != null && change!.trim().isNotEmpty && isUp != null;
+
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+      padding: const EdgeInsets.all(14), // 🔥 thora bigger
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
+
       child: Column(
-        mainAxisSize: MainAxisSize.min, // 🧠 prevents overflow
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
 
-          /// Title + Icon
+          /// 🔝 TOP ROW (ICON LEFT + VALUE RIGHT)
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(fontSize: 13, color: Colors.grey),
-                  overflow: TextOverflow.ellipsis,
+
+              /// ICON (LEFT)
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: iconColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, size: 18, color: iconColor),
+              ),
+
+              /// VALUE (RIGHT)
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 20, // 🔥 bigger number
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-              CircleAvatar(
-                radius: 14,
-                backgroundColor: iconColor.withValues(alpha:.15),
-                child: Icon(icon, size: 16, color: iconColor),
-              )
             ],
           ),
 
-          const SizedBox(height: 6),
+          const SizedBox(height: 10),
 
-          /// Value
+          /// 🔽 TITLE (BOTTOM)
           Text(
-            value,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            title,
+            style: const TextStyle(
+              fontSize: 13, // 🔥 bigger text
+              color: Colors.grey,
+            ),
           ),
 
-          const SizedBox(height: 4),
-
-          /// Change Indicator
-          Row(
-            children: [
-              Icon(
-                isUp ? Icons.arrow_upward : Icons.arrow_downward,
-                size: 14,
-                color: isUp ? Colors.green : Colors.red,
-              ),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  "$change vs last 7 days",
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isUp ? Colors.green : Colors.red,
-                  ),
-                  overflow: TextOverflow.ellipsis,
+          /// 📈 CHANGE (optional)
+          if (hasChange) ...[
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Icon(
+                  isUp! ? Icons.arrow_upward : Icons.arrow_downward,
+                  size: 13,
+                  color: isUp! ? Colors.green : Colors.red,
                 ),
-              ),
-            ],
-          ),
+                const SizedBox(width: 4),
+                Text(
+                  change!,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isUp! ? Colors.green : Colors.red,
+                  ),
+                ),
+              ],
+            ),
+          ]
         ],
       ),
     );
