@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:wastenot/features/goal/services/goal_service.dart';
 import 'package:wastenot/models/app_user_model.dart';
 
 enum DonationStatus {
@@ -576,6 +577,8 @@ class DonationService {
           'completedAt': Timestamp.fromDate(DateTime.now()),
         });
       });
+
+      GoalService.refreshNotifier.value++;
 
       return getDonationById(donationId);
     } on DonationException {

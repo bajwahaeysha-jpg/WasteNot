@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:wastenot/features/donor/presentation/goal/screens/donor_goal_screen.dart';
 import 'package:wastenot/features/donor/presentation/settings/screens/donor_about_screen.dart';
 import 'package:wastenot/features/donor/presentation/settings/screens/donor_account_screen.dart';
 import 'package:wastenot/features/donor/presentation/settings/screens/donor_contact_screen.dart';
@@ -69,6 +70,7 @@ class DonorSettingsScreen extends StatelessWidget {
             _tile(context, Icons.info_outline, 'About App', const DonorAboutScreen()),
             _tile(context, Icons.help_outline, 'FAQ', const DonorFaqScreen()),
             _tile(context, Icons.privacy_tip_outlined, 'Privacy Policy', const DonorPrivacyPolicyScreen()),
+            _tile(context, Icons.flag_outlined, 'Set Monthly Goal', const DonorGoalScreen()),
             const SizedBox(height: 16),
             ListTile(
               contentPadding: EdgeInsets.zero,

@@ -4,7 +4,6 @@ import 'donate/screens/donate_screen.dart';
 import 'messages/screens/messages_screen.dart';
 import 'profile/screens/donor_profile_screen.dart';
 import 'settings/screens/donor_settings_screen.dart';
-import 'goal/screens/donor_goal_screen.dart';
 import 'auth/screens/donor_logout_screen.dart';
 import 'package:wastenot/features/donor/presentation/notifications/screens/notification_screen.dart';
 import 'package:wastenot/features/donor/presentation/feedback/screens/feedback_screen.dart';
@@ -260,21 +259,6 @@ class _DonorNavigationScreenState extends State<DonorNavigationScreen> {
                   context,
                   MaterialPageRoute(
                     builder: (_) => const DonorSettingsScreen(),
-                  ),
-                );
-              },
-            ),
-
-            ListTile(
-              leading: const Icon(Icons.flag),
-              title: const Text("Monthly Goal"),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const DonorGoalScreen(),
                   ),
                 );
               },

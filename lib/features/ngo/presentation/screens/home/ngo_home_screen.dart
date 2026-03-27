@@ -1,13 +1,18 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 import 'package:wastenot/core/constants/app_colors.dart';
+import 'package:wastenot/features/goal/models/goal_model.dart';
+import 'package:wastenot/features/goal/services/goal_service.dart';
+import 'package:wastenot/features/goal/widgets/goal_widget.dart';
 import 'package:wastenot/features/ngo/presentation/screens/active/active_donations_screen.dart';
 import 'package:wastenot/features/ngo/presentation/screens/global_search_screen.dart';
 import 'package:wastenot/features/ngo/presentation/screens/home/accepted/accepted_donations_screen.dart';
 import 'package:wastenot/features/ngo/presentation/screens/home/all_donations/all_donations_screen.dart';
 import 'package:wastenot/features/ngo/presentation/screens/home/all_donations/donation_details_screen.dart';
 import 'package:wastenot/features/ngo/presentation/screens/home/concern/raise_concern_screen.dart';
-import 'package:wastenot/features/ngo/presentation/screens/home/goal/ngo_goal_screen.dart';
 import 'package:wastenot/features/ngo/presentation/screens/home/impact/impact_screen.dart';
 import 'package:wastenot/features/ngo/presentation/screens/home/notification/notifications_screen.dart';
 import 'package:wastenot/features/ngo/presentation/screens/home/setting/account/personal_information_screen.dart';
@@ -18,7 +23,6 @@ import 'package:wastenot/models/app_user_model.dart';
 import 'package:wastenot/screens/login_screen.dart';
 import 'package:wastenot/services/concern_services.dart';
 import 'package:wastenot/services/donation_services.dart';
-import 'package:wastenot/services/goal_services.dart';
 import 'package:wastenot/services/notification_badge_service.dart';
 import 'package:wastenot/services/session_service.dart';
 
@@ -34,13 +38,103 @@ class NgoHomeScreen extends StatefulWidget {
   State<NgoHomeScreen> createState() => _NgoHomeScreenState();
 }
 
-class _NgoHomeScreenState extends State<NgoHomeScreen> {
+class _NgoHomeScreenState extends State<NgoHomeScreen>
+    with WidgetsBindingObserver {
   int _index = 0;
   final GoalService _goalService = GoalService();
   final ConcernService _concernService = ConcernService();
+  GoalProgress? _goalData;
+  bool _isLoadingGoal = true;
+  Timer? _goalMonthTimer;
   Stream<List<DonationModel>>? _recentNgoStream;
   String? _recentNgoUid;
   List<DonationModel> _recentNgoCache = const <DonationModel>[];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    GoalService.refreshNotifier.addListener(_handleGoalRefresh);
+    _loadGoal();
+    _goalMonthTimer = Timer.periodic(
+      const Duration(minutes: 1),
+      (_) => _refreshGoalForNewMonth(),
+    );
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    GoalService.refreshNotifier.removeListener(_handleGoalRefresh);
+    _goalMonthTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshGoalForNewMonth();
+    }
+  }
+
+  Future<void> _loadGoal() async {
+    final user = SessionService.currentUser.value;
+    if (user == null) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _goalData = GoalProgress.empty(_goalService.currentMonthKey());
+        _isLoadingGoal = false;
+      });
+      return;
+    }
+
+    if (mounted) {
+      setState(() => _isLoadingGoal = true);
+    }
+
+    try {
+      final progress = await _goalService.fetchCurrentMonthProgress(
+        user: user,
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _goalData = progress;
+        _isLoadingGoal = false;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _goalData ??= GoalProgress.empty(_goalService.currentMonthKey());
+        _isLoadingGoal = false;
+      });
+    }
+  }
+
+  void _handleGoalRefresh() {
+    _loadGoal();
+  }
+
+  Future<void> _refreshGoalForNewMonth() async {
+    final currentMonth = _goalService.currentMonthKey();
+    if ((_goalData?.month ?? currentMonth) == currentMonth) {
+      return;
+    }
+
+    if (mounted) {
+      setState(() {
+        _goalData = GoalProgress.empty(currentMonth);
+        _isLoadingGoal = true;
+      });
+    }
+
+    await _loadGoal();
+  }
 
   Stream<List<DonationModel>> _recentCompletedNgoDonationsStream({
     required String ngoId,
@@ -168,105 +262,13 @@ class _NgoHomeScreenState extends State<NgoHomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    GestureDetector(
-  onTap: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const NgoGoalScreen()),
-    );
-  },
-  child: Container(
-    height: 160,
-    decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(18),
-                        image: const DecorationImage(
-                          image: AssetImage('assets/images/home1.png'),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                      child: Stack(
-                        children: [
-                          Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(18),
-                              color: const Color(0x26FFFFFF),
-                            ),
-                          ),
-                          Positioned(
-                            left: 16,
-                            right: 16,
-                            top: 32,
-                            child: StreamBuilder<GoalProgress>(
-                              stream: user == null
-                                  ? null
-                                  : _goalService
-                                      .streamCurrentUserMonthlyGoalProgress(
-                                        user: user,
-                                      ),
-                              builder: (context, snapshot) {
-                                final progress = snapshot.data;
-                                final achieved = progress?.achievedCount ?? 0;
-                                final target = progress?.monthlyTarget ?? 0;
-                                final hasGoal = progress?.hasGoal ?? false;
-                                final ratio =
-                                    target <= 0 ? 0.0 : achieved / target;
-                                final percent =
-                                    target <= 0 ? 0 : (ratio * 100).round();
-
-                                return Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-  children: [
-    const Expanded(
-      child: Text(
-        'Monthly Donation Goal',
-        style: TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    ),
-    const SizedBox(width: 8),
-    Expanded(
-      child: Text(
-        hasGoal
-            ? '$achieved / $target  •  $percent%'
-            : 'Set your goal to start tracking progress',
-        textAlign: TextAlign.end,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    ),
-  ],
+                    GoalWidget(
+  achievedCount: _goalData?.achievedCount ?? 0,
+  target: _goalData?.target ?? 0,
+  isLoading: _isLoadingGoal,
+  title: 'Your Goal This Month',
+  unitLabel: 'meals',
 ),
-                                    const SizedBox(height: 8),
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(10),
-                                      child: LinearProgressIndicator(
-                                        value: ratio.clamp(0.0, 1.0),
-                                        minHeight: 6,
-                                        backgroundColor:
-                                            const Color(0x26FFFFFF),
-                                        valueColor:
-                                            const AlwaysStoppedAnimation<Color>(
-                                          Color(0xFFFFD54F),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    ),
                     const SizedBox(height: 24),
                     Container(
                       padding: const EdgeInsets.all(14),
@@ -696,13 +698,6 @@ class _NgoHomeScreenState extends State<NgoHomeScreen> {
                   builder: (_) => const RaiseConcernScreen(),
                 ),
               ).then((_) => setState(() {}));
-            }),
-            _moreItem(Icons.flag, 'Set Monthly Goal', () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const NgoGoalScreen()),
-              );
             }),
             _moreItem(Icons.feedback, 'Feedback', () {
               Navigator.pop(context);

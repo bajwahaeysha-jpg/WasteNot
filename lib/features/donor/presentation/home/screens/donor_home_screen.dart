@@ -1,10 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:wastenot/features/donor/presentation/goal/screens/donor_goal_screen.dart';
-import 'package:wastenot/models/app_user_model.dart';
+import 'package:wastenot/features/goal/models/goal_model.dart';
+import 'package:wastenot/features/goal/services/goal_service.dart';
+import 'package:wastenot/features/goal/widgets/goal_widget.dart';
 import 'package:wastenot/services/concern_services.dart';
 import 'package:wastenot/services/donation_services.dart';
-import 'package:wastenot/services/goal_services.dart';
 import 'package:wastenot/services/session_service.dart';
 
 import '../../donate/screens/add_donation_screen.dart';
@@ -29,11 +31,59 @@ class DonorHomeScreen extends StatefulWidget {
   State<DonorHomeScreen> createState() => _DonorHomeScreenState();
 }
 
-class _DonorHomeScreenState extends State<DonorHomeScreen> {
+class _DonorHomeScreenState extends State<DonorHomeScreen>
+    with WidgetsBindingObserver {
+  GoalProgress? _goalData;
+  bool _isLoadingGoal = true;
   static const int _recentDonationsLimit = 3;
 
   final GoalService _goalService = GoalService();
   final ConcernService _concernService = ConcernService();
+  Timer? _goalMonthTimer;
+
+  Future<void> _loadGoal() async {
+    final user = SessionService.currentUser.value;
+    if (user == null) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _goalData = GoalProgress.empty(_goalService.currentMonthKey());
+        _isLoadingGoal = false;
+      });
+      return;
+    }
+
+    if (mounted) {
+      setState(() => _isLoadingGoal = true);
+    }
+
+    try {
+      final data = await _goalService.fetchCurrentMonthProgress(
+        user: user,
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _goalData = data;
+        _isLoadingGoal = false;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _goalData ??= GoalProgress.empty(_goalService.currentMonthKey());
+        _isLoadingGoal = false;
+      });
+    }
+  }
+
+  void _handleGoalRefresh() {
+    _loadGoal();
+  }
+
   Stream<List<DonationModel>>? _recentDonorStream;
   String? _recentDonorUid;
   List<DonationModel> _recentDonorCache = const <DonationModel>[];
@@ -54,6 +104,44 @@ class _DonorHomeScreenState extends State<DonorHomeScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    GoalService.refreshNotifier.addListener(_handleGoalRefresh);
+    _loadGoal();
+    _goalMonthTimer = Timer.periodic(
+      const Duration(minutes: 1),
+      (_) => _refreshGoalForNewMonth(),
+    );
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    GoalService.refreshNotifier.removeListener(_handleGoalRefresh);
+    _goalMonthTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshGoalForNewMonth();
+    }
+  }
+
+  Future<void> _refreshGoalForNewMonth() async {
+    final currentMonth = _goalService.currentMonthKey();
+    if ((_goalData?.month ?? currentMonth) == currentMonth) {
+      return;
+    }
+
+    if (mounted) {
+      setState(() {
+        _goalData = GoalProgress.empty(currentMonth);
+        _isLoadingGoal = true;
+      });
+    }
+
+    await _loadGoal();
   }
 
   Stream<List<DonationModel>> _recentCompletedDonationsStream({
@@ -400,36 +488,12 @@ class _DonorHomeScreenState extends State<DonorHomeScreen> {
               },
             ),
             const SizedBox(height: 16),
-            ValueListenableBuilder<AppUserModel?>(
-              valueListenable: SessionService.currentUser,
-              builder: (context, user, _) {
-                if (user == null) {
-                  return const _ImpactSection(
-                    donationsCount: 0,
-                    achievedCount: 0,
-                    monthlyTarget: 0,
-                    hasGoal: false,
-                    isLoading: false,
-                  );
-                }
-
-                return StreamBuilder<GoalProgress>(
-                  stream: _goalService.streamCurrentUserMonthlyGoalProgress(
-                    user: user,
-                  ),
-                  builder: (context, snapshot) {
-                    final data = snapshot.data;
-                    return _ImpactSection(
-                      donationsCount: data?.donationsCount ?? 0,
-                      achievedCount: data?.achievedCount ?? 0,
-                      monthlyTarget: data?.monthlyTarget ?? 0,
-                      hasGoal: data?.hasGoal ?? false,
-                      isLoading:
-                          snapshot.connectionState == ConnectionState.waiting,
-                    );
-                  },
-                );
-              },
+            GoalWidget(
+              achievedCount: _goalData?.achievedCount ?? 0,
+              target: _goalData?.target ?? 0,
+              isLoading: _isLoadingGoal,
+              title: 'Your Goal This Month',
+              unitLabel: 'donations',
             ),
           ],
         ),
@@ -721,138 +785,6 @@ class _MakeDifferenceCard extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _ImpactSection extends StatelessWidget {
-  const _ImpactSection({
-    required this.donationsCount,
-    required this.achievedCount,
-    required this.monthlyTarget,
-    required this.hasGoal,
-    required this.isLoading,
-  });
-
-  final int donationsCount;
-  final int achievedCount;
-  final int monthlyTarget;
-  final bool hasGoal;
-  final bool isLoading;
-
-  @override
-  Widget build(BuildContext context) {
-    final safeTarget = monthlyTarget <= 0 ? 0 : monthlyTarget;
-    final progress =
-        safeTarget == 0 ? 0.0 : achievedCount / safeTarget.toDouble();
-    final percent = safeTarget == 0 ? 0 : (progress * 100).round();
-
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const DonorGoalScreen(), // change if needed
-          ),
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: const [
-            BoxShadow(color: Colors.black12, blurRadius: 8),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Row(
-              children: [
-                Icon(Icons.insights, color: DonorHomeScreen.mainGreen),
-                SizedBox(width: 6),
-                Text(
-                  'Your Impact This Month',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _ImpactItem(
-                  title: 'Donations Made',
-                  value: donationsCount.toString(),
-                ),
-                _ImpactItem(
-                  title: 'People Fed',
-                  value: achievedCount.toString(),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 14),
-
-            const Text(
-              'Monthly Goal Progress',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-
-            const SizedBox(height: 6),
-
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: LinearProgressIndicator(
-                value: progress.clamp(0.0, 1.0),
-                minHeight: 10,
-                backgroundColor: Colors.grey,
-                color: DonorHomeScreen.mainGreen,
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            Text(
-              isLoading
-                  ? 'Updating goal progress...'
-                  : hasGoal
-                      ? '$percent% completed - Keep it up!'
-                      : 'Set your goal to start tracking progress',
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ImpactItem extends StatelessWidget {
-  final String title;
-  final String value;
-
-  const _ImpactItem({required this.title, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: DonorHomeScreen.mainGreen,
-          ),
-        ),
-        Text(title, style: const TextStyle(color: Colors.grey)),
-      ],
     );
   }
 }
