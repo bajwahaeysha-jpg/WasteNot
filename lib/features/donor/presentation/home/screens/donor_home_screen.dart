@@ -5,8 +5,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:wastenot/features/goal/models/goal_model.dart';
 import 'package:wastenot/features/goal/services/goal_service.dart';
 import 'package:wastenot/features/goal/widgets/goal_widget.dart';
+import 'package:wastenot/models/ngo_model.dart';
 import 'package:wastenot/services/concern_services.dart';
 import 'package:wastenot/services/donation_services.dart';
+import 'package:wastenot/services/firestore_service.dart';
+import 'package:wastenot/services/local_opportunities_service.dart';
 import 'package:wastenot/services/session_service.dart';
 
 import '../../donate/screens/add_donation_screen.dart';
@@ -39,7 +42,11 @@ class _DonorHomeScreenState extends State<DonorHomeScreen>
 
   final GoalService _goalService = GoalService();
   final ConcernService _concernService = ConcernService();
+  final LocalOpportunitiesService _localOpportunitiesService =
+      LocalOpportunitiesService();
+  final FirestoreService _firestoreService = FirestoreService();
   Timer? _goalMonthTimer;
+  late final Future<List<NgoModel>> _localOpportunitiesFuture;
 
   Future<void> _loadGoal() async {
     final user = SessionService.currentUser.value;
@@ -107,6 +114,8 @@ class _DonorHomeScreenState extends State<DonorHomeScreen>
     WidgetsBinding.instance.addObserver(this);
     GoalService.refreshNotifier.addListener(_handleGoalRefresh);
     _loadGoal();
+    _localOpportunitiesFuture =
+        _localOpportunitiesService.getLocalOpportunities();
     _goalMonthTimer = Timer.periodic(
       const Duration(minutes: 1),
       (_) => _refreshGoalForNewMonth(),
@@ -176,6 +185,48 @@ class _DonorHomeScreenState extends State<DonorHomeScreen>
 
   void _refreshRecentDonations() {
     setState(() {});
+  }
+
+  Future<void> _openNgoChat(NgoModel ngo) async {
+    final currentUser = SessionService.user;
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Donor session not available.')),
+      );
+      return;
+    }
+
+    try {
+      final ngoUser = await _firestoreService.getUserByUid(ngo.id);
+      if (!mounted) {
+        return;
+      }
+
+      if (ngoUser == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('NGO could not be found.')),
+        );
+        return;
+      }
+
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ChatScreen(
+            donorName: donorName,
+            ngoName: ngoUser.displayName.isEmpty ? ngo.name : ngoUser.displayName,
+            ngoUser: ngoUser,
+          ),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Chat could not be opened.')),
+      );
+    }
   }
 
   @override
@@ -350,46 +401,55 @@ class _DonorHomeScreenState extends State<DonorHomeScreen>
               'Assist local charities and help those in the Sialkot community.',
             ),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _DonationCard(
-                    'SOS Village',
-                    'Help provide meals to orphaned children.',
-                    'assets/images/sos.png',
-                    () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ChatScreen(
-                            donorName: donorName,
-                            ngoName: 'SOS Village',
-                          ),
+            FutureBuilder<List<NgoModel>>(
+              future: _localOpportunitiesFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const SizedBox(
+                    height: 230,
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+
+                if (snapshot.hasError) {
+                  return const Text(
+                    'No NGOs available',
+                    style: TextStyle(color: Colors.grey),
+                  );
+                }
+
+                final ngos = snapshot.data ?? const <NgoModel>[];
+                if (ngos.isEmpty) {
+                  return const Text(
+                    'No NGOs available',
+                    style: TextStyle(color: Colors.grey),
+                  );
+                }
+
+                final cardWidth =
+                    (MediaQuery.of(context).size.width - 32 - 12) / 2;
+
+                return SizedBox(
+                  height: 230,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: ngos.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 12),
+                    itemBuilder: (context, index) {
+                      final ngo = ngos[index];
+                      return SizedBox(
+                        width: cardWidth,
+                        child: _DonationCard(
+                          ngo.name,
+                          ngo.about,
+                          ngo.imageUrl,
+                          () => _openNgoChat(ngo),
                         ),
                       );
                     },
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _DonationCard(
-                    'Sialkot Shelter',
-                    'Support a local shelter with essential supplies.',
-                    'assets/images/sialkot.png',
-                    () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ChatScreen(
-                            donorName: donorName,
-                            ngoName: 'Sialkot Shelter',
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
+                );
+              },
             ),
             const SizedBox(height: 24),
             const _SectionHeader('Recent Donations'),
@@ -640,14 +700,18 @@ class _SummaryCard extends StatelessWidget {
 class _DonationCard extends StatelessWidget {
   final String title;
   final String subtitle;
-  final String image;
+  final String? imageUrl;
   final VoidCallback onDonate;
 
-  const _DonationCard(this.title, this.subtitle, this.image, this.onDonate);
+  const _DonationCard(this.title, this.subtitle, this.imageUrl, this.onDonate);
 
   @override
   Widget build(BuildContext context) {
+    final trimmedImageUrl = imageUrl?.trim() ?? '';
+    final initial = title.trim().isEmpty ? 'N' : title.trim()[0].toUpperCase();
+
     return Container(
+      height: 230,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
@@ -656,23 +720,31 @@ class _DonationCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: Image.asset(
-              image,
-              height: 90,
-              width: double.infinity,
-              fit: BoxFit.cover,
-            ),
-          ),
+          if (trimmedImageUrl.isNotEmpty)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                trimmedImageUrl,
+                height: 90,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _NgoImageFallback(initial: initial),
+              ),
+            )
+          else
+            _NgoImageFallback(initial: initial),
           const SizedBox(height: 8),
           Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: const TextStyle(color: Colors.grey, fontSize: 12),
+          Expanded(
+            child: Text(
+              subtitle,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
+            ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
@@ -687,6 +759,33 @@ class _DonationCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _NgoImageFallback extends StatelessWidget {
+  const _NgoImageFallback({required this.initial});
+
+  final String initial;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 90,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.green.shade50,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        initial,
+        style: const TextStyle(
+          fontSize: 28,
+          fontWeight: FontWeight.bold,
+          color: Colors.green,
+        ),
       ),
     );
   }

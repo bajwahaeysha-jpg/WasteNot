@@ -46,9 +46,6 @@ class _NgoHomeScreenState extends State<NgoHomeScreen>
   GoalProgress? _goalData;
   bool _isLoadingGoal = true;
   Timer? _goalMonthTimer;
-  Stream<List<DonationModel>>? _recentNgoStream;
-  String? _recentNgoUid;
-  List<DonationModel> _recentNgoCache = const <DonationModel>[];
 
   @override
   void initState() {
@@ -136,34 +133,26 @@ class _NgoHomeScreenState extends State<NgoHomeScreen>
     await _loadGoal();
   }
 
-  Stream<List<DonationModel>> _recentCompletedNgoDonationsStream({
-    required String ngoId,
-  }) {
+  Stream<List<DonationModel>> _availableDonationsStream(String? ngoId) {
     return FirebaseFirestore.instance
         .collection('donations')
-        .where('acceptedByNgoId', isEqualTo: ngoId)
-        .where('status', isEqualTo: 'completed')
-        .orderBy('completedAt', descending: true)
-        .limit(5)
+        .where('status', isEqualTo: 'active')
+        .where('acceptedByNgoId', isNull: true)
+        .orderBy('createdAt', descending: true)
+        .limit(3)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map(DonationModel.fromFirestore).toList();
+      final donations =
+          snapshot.docs.map(DonationModel.fromFirestore).toList();
+      final trimmedNgoId = ngoId?.trim();
+      if (trimmedNgoId == null || trimmedNgoId.isEmpty) {
+        return donations;
+      }
+      return donations
+          .where((donation) =>
+              !donation.rejectedByNgoIds.contains(trimmedNgoId))
+          .toList();
     });
-  }
-
-  void _ensureRecentNgoStream(String? uid) {
-    if (uid == null || uid.trim().isEmpty) {
-      _recentNgoStream = null;
-      _recentNgoUid = null;
-      return;
-    }
-
-    if (_recentNgoUid == uid && _recentNgoStream != null) {
-      return;
-    }
-
-    _recentNgoUid = uid;
-    _recentNgoStream = _recentCompletedNgoDonationsStream(ngoId: uid);
   }
 
   Widget _getBody() {
@@ -359,48 +348,10 @@ class _NgoHomeScreenState extends State<NgoHomeScreen>
                     ),
                     const SizedBox(height: 12),
                     StreamBuilder<List<DonationModel>>(
-                      stream: _recentNgoStream,
-                      initialData: _recentNgoCache,
+                      stream: _availableDonationsStream(user?.uid),
                       builder: (context, snapshot) {
-                        if (_recentNgoStream == null &&
-                            _recentNgoCache.isEmpty &&
-                            snapshot.connectionState == ConnectionState.none) {
-                          return const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 12),
-                            child: Center(child: CircularProgressIndicator()),
-                          );
-                        }
                         if (snapshot.connectionState ==
                             ConnectionState.waiting) {
-                          if (_recentNgoCache.isNotEmpty) {
-                            final recent = _recentNgoCache;
-                            return Column(
-                              children: recent.map((donation) {
-                                final location =
-                                    donation.location?.trim().isNotEmpty == true
-                                        ? donation.location!.trim()
-                                        : 'Location not provided';
-                                final time =
-                                    _recentDonationTime(donation.completedAt ??
-                                        donation.createdAt);
-                                return _donationTile(
-                                  title: donation.foodItems.join(', '),
-                                  location: location,
-                                  time: time,
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => DonationDetailsScreen(
-                                          donation: donation,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                );
-                              }).toList(),
-                            );
-                          }
                           return const Padding(
                             padding: EdgeInsets.symmetric(vertical: 12),
                             child: Center(child: CircularProgressIndicator()),
@@ -408,66 +359,39 @@ class _NgoHomeScreenState extends State<NgoHomeScreen>
                         }
 
                         if (snapshot.hasError) {
-                          if (_recentNgoCache.isNotEmpty) {
-                            final recent = _recentNgoCache;
-                            return Column(
-                              children: recent.map((donation) {
-                                final location =
-                                    donation.location?.trim().isNotEmpty == true
-                                        ? donation.location!.trim()
-                                        : 'Location not provided';
-                                final time =
-                                    _recentDonationTime(donation.completedAt ??
-                                        donation.createdAt);
-                                return _donationTile(
-                                  title: donation.foodItems.join(', '),
-                                  location: location,
-                                  time: time,
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => DonationDetailsScreen(
-                                          donation: donation,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                );
-                              }).toList(),
-                            );
-                          }
                           return const Padding(
                             padding: EdgeInsets.symmetric(vertical: 8),
-                            child: Text('Unable to load recent donations.'),
+                            child: Text('No available donations'),
                           );
                         }
 
-                        final recent =
+                        final available =
                             snapshot.data ?? const <DonationModel>[];
-                        if (snapshot.hasData) {
-                          _recentNgoCache = recent;
-                        }
-                        if (recent.isEmpty) {
+                        if (available.isEmpty) {
                           return const Padding(
                             padding: EdgeInsets.symmetric(vertical: 8),
-                            child: Text('No recent donations.'),
+                            child: Text('No available donations'),
                           );
                         }
 
                         return Column(
-                          children: recent.map((donation) {
+                          children: available.map((donation) {
                             final location =
                                 donation.location?.trim().isNotEmpty == true
                                     ? donation.location!.trim()
                                     : 'Location not provided';
                             final time =
-                                _recentDonationTime(donation.completedAt ??
-                                    donation.createdAt);
+                                _recentDonationTime(donation.createdAt);
+                            final title = donation.foodItems.isNotEmpty
+                                ? donation.foodItems.join(', ')
+                                : 'Donation';
                             return _donationTile(
-                              title: donation.foodItems.join(', '),
+                              title: title,
                               location: location,
                               time: time,
+                              imageUrl: donation.imageUrls.isNotEmpty
+                                  ? donation.imageUrls.first
+                                  : null,
                               onTap: () {
                                 Navigator.push(
                                   context,
@@ -499,7 +423,6 @@ class _NgoHomeScreenState extends State<NgoHomeScreen>
       valueListenable: SessionService.currentUser,
       builder: (context, user, _) {
         final profileImageUrl = user?.profileImageUrl;
-        _ensureRecentNgoStream(user?.uid);
 
         return PopScope(
           canPop: false,
@@ -725,8 +648,10 @@ class _NgoHomeScreenState extends State<NgoHomeScreen>
     required String title,
     required String location,
     required String time,
+    String? imageUrl,
     VoidCallback? onTap,
   }) {
+    final trimmedImageUrl = imageUrl?.trim() ?? '';
     return GestureDetector(
       onTap: onTap ??
           () => Navigator.push(
@@ -744,12 +669,28 @@ class _NgoHomeScreenState extends State<NgoHomeScreen>
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
-              child: Image.asset(
-                'assets/images/food.jpg',
-                width: 60,
-                height: 60,
-                fit: BoxFit.cover,
-              ),
+              child: trimmedImageUrl.isEmpty
+                  ? Container(
+                      width: 60,
+                      height: 60,
+                      color: Colors.grey.shade200,
+                      alignment: Alignment.center,
+                      child: const Icon(Icons.fastfood, color: Colors.grey),
+                    )
+                  : Image.network(
+                      trimmedImageUrl,
+                      width: 60,
+                      height: 60,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        width: 60,
+                        height: 60,
+                        color: Colors.grey.shade200,
+                        alignment: Alignment.center,
+                        child:
+                            const Icon(Icons.fastfood, color: Colors.grey),
+                      ),
+                    ),
             ),
             const SizedBox(width: 12),
             Expanded(

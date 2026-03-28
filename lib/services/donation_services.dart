@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:wastenot/features/goal/services/goal_service.dart';
 import 'package:wastenot/models/app_user_model.dart';
+import 'package:wastenot/services/notification_service.dart';
 
 enum DonationStatus {
   active('active'),
@@ -68,6 +69,7 @@ class DonationModel {
     required this.foodItems,
     required this.quantity,
     required this.status,
+    this.rejectedByNgoIds = const <String>[],
     this.donorPhone,
     this.donorAddress,
     this.donorProfileImageUrl,
@@ -95,6 +97,7 @@ class DonationModel {
   final String? donorProfileImageUrl;
   final List<String> foodItems;
   final String quantity;
+  final List<String> rejectedByNgoIds;
   final String? description;
   final String? precaution;
   final String? location;
@@ -133,6 +136,7 @@ class DonationModel {
       'precaution': precaution,
       'location': location,
       'imageUrls': imageUrls,
+      'rejectedByNgoIds': rejectedByNgoIds,
       'status': status,
       'acceptedByNgoId': acceptedByNgoId,
       'acceptedByNgoName': acceptedByNgoName,
@@ -169,6 +173,13 @@ class DonationModel {
             .where((item) => item.isNotEmpty)
             .toList()
         : <String>[];
+    final rawRejectedBy = data['rejectedByNgoIds'];
+    final normalizedRejectedBy = rawRejectedBy is List
+        ? rawRejectedBy
+            .map((item) => item?.toString().trim() ?? '')
+            .where((item) => item.isNotEmpty)
+            .toList()
+        : <String>[];
     final donorId = (data['donorId'] as String?)?.trim();
 
     return DonationModel(
@@ -184,6 +195,7 @@ class DonationModel {
           _normalizeNullable(data['donorProfileImageUrl'] as String?),
       foodItems: normalizedFoodItems,
       quantity: _resolveQuantity(data),
+      rejectedByNgoIds: normalizedRejectedBy,
       description: _normalizeNullable(data['description'] as String?),
       precaution: _normalizeNullable(data['precaution'] as String?),
       location: _normalizeNullable(data['location'] as String?),
@@ -362,6 +374,7 @@ class DonationService {
   }
 
   Future<List<DonationModel>> getAvailableDonationsForNgo({
+    String? ngoId,
     DateTime? now,
   }) async {
     try {
@@ -369,12 +382,18 @@ class DonationService {
       final snapshot = await _donations.get();
 
       final referenceTime = now ?? DateTime.now();
+      final trimmedNgoId = ngoId?.trim();
       final donations = snapshot.docs.map(DonationModel.fromFirestore).toList();
       final filtered = donations.where((donation) {
         if (donation.status != DonationStatus.active.value) {
           return false;
         }
         if (donation.isAccepted) {
+          return false;
+        }
+        if (trimmedNgoId != null &&
+            trimmedNgoId.isNotEmpty &&
+            donation.rejectedByNgoIds.contains(trimmedNgoId)) {
           return false;
         }
         final expiryAt = donation.expiryAt;
@@ -532,6 +551,64 @@ class DonationService {
       });
 
       return getDonationById(donationId);
+    } on DonationException {
+      rethrow;
+    } on FirebaseException catch (error) {
+      throw DonationException(_mapFirebaseError(error));
+    }
+  }
+
+  Future<DonationModel> rejectDonation({
+    required String donationId,
+    required AppUserModel ngo,
+  }) async {
+    if (!ngo.isNgo) {
+      throw const DonationException(
+        'Only NGO accounts can reject donations.',
+      );
+    }
+
+    if (donationId.trim().isEmpty) {
+      throw const DonationException('Donation id is required.');
+    }
+
+    final docRef = _donations.doc(donationId.trim());
+
+    try {
+      final snapshot = await docRef.get();
+      if (!snapshot.exists) {
+        throw const DonationException('Donation not found.');
+      }
+
+      final donation = DonationModel.fromFirestore(snapshot);
+      if (!donation.isActive) {
+        throw const DonationException(
+          'Only active donations can be rejected.',
+        );
+      }
+
+      if (donation.isAccepted) {
+        throw const DonationException(
+          'Accepted donations cannot be rejected.',
+        );
+      }
+
+      await docRef.update({
+        'rejectedByNgoIds': FieldValue.arrayUnion([ngo.uid]),
+      });
+
+      final ngoName = ngo.displayName.trim();
+      final message = ngoName.isEmpty
+          ? 'Your donation was rejected by an NGO'
+          : 'Your donation was rejected by $ngoName';
+      await NotificationService(firestore: _firestore).sendNotification(
+        receiverId: donation.donorId,
+        title: 'Donation Rejected',
+        body: message,
+      );
+
+      final updated = await docRef.get();
+      return DonationModel.fromFirestore(updated);
     } on DonationException {
       rethrow;
     } on FirebaseException catch (error) {

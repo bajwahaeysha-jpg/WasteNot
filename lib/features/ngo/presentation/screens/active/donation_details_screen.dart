@@ -58,6 +58,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen> {
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -161,7 +162,9 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen> {
                             borderRadius: BorderRadius.circular(20),
                           ),
                         ),
-                        onPressed: donation.isAccepted || !donation.isActive || _isAccepting
+                        onPressed: donation.isAccepted ||
+                                !donation.isActive ||
+                                _isAccepting
                             ? null
                             : () => _acceptDonation(donation),
                         child: _isAccepting

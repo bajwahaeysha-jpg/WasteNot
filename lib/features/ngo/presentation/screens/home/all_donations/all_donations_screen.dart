@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:wastenot/features/ngo/presentation/screens/home/all_donations/donation_details_screen.dart';
 import 'package:wastenot/services/donation_services.dart';
+import 'package:wastenot/services/session_service.dart';
 
 class AllDonationsScreen extends StatefulWidget {
   const AllDonationsScreen({super.key});
@@ -13,7 +14,9 @@ class _AllDonationsScreenState extends State<AllDonationsScreen> {
   final DonationService _donationService = DonationService();
 
   Future<List<DonationModel>> _loadDonations() {
-    return _donationService.getAvailableDonationsForNgo();
+    return _donationService.getAvailableDonationsForNgo(
+      ngoId: SessionService.user?.uid,
+    );
   }
 
   @override

@@ -58,6 +58,38 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen> {
     }
   }
 
+  Future<void> _reject(DonationModel donation) async {
+    final ngo = SessionService.user;
+    if (ngo == null || !ngo.isNgo) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please log in as an NGO first.')),
+      );
+      return;
+    }
+
+    try {
+      await _donationService.rejectDonation(
+        donationId: donation.donationId,
+        ngo: ngo,
+      );
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Donation rejected successfully.')),
+      );
+      Navigator.pop(context, true);
+    } on DonationException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+    } finally {
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -218,7 +250,9 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: donation.isAccepted || !donation.isActive
+                            ? null
+                            : () => _reject(donation),
                         child: const Text(
                           'Return',
                           style: TextStyle(color: Colors.white),
@@ -250,9 +284,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen> {
                                 ),
                               )
                             : Text(
-                                donation.isAccepted
-                                    ? 'Accepted'
-                                    : 'Accept',
+                                donation.isAccepted ? 'Accepted' : 'Accept',
                                 style: const TextStyle(color: Colors.white),
                               ),
                       ),
