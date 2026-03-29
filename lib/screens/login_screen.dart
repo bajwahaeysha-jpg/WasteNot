@@ -93,8 +93,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       return null;
                     },
                     suffix: IconButton(
-                      icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility),
-                      onPressed: () => setState(() => _obscure = !_obscure),
+                      icon: Icon(_obscure
+                          ? Icons.visibility_off
+                          : Icons.visibility),
+                      onPressed: () =>
+                          setState(() => _obscure = !_obscure),
                     ),
                   ),
 
@@ -139,7 +142,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 8),
 
                   const Text(
-                    'Shared login for donor, NGO, and admin. Name is only used for admin display.',
+                    'Shared login for donor, NGO, and admin.',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 12, color: Colors.black54),
                   ),
@@ -178,6 +181,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  // 🔥 UPDATED LOGIN FUNCTION
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -193,8 +197,16 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
 
       _goToDashboard(user);
+
     } on AuthFailure catch (error) {
-      _showMessage(error.message, isError: true);
+
+      // ✅ EMAIL VERIFICATION HANDLING
+      if (error.message.contains('verify your email')) {
+        _showVerifyDialog();
+      } else {
+        _showMessage(error.message, isError: true);
+      }
+
     } catch (error) {
       _showMessage(error.toString(), isError: true);
     } finally {
@@ -202,6 +214,40 @@ class _LoginScreenState extends State<LoginScreen> {
         setState(() => _loading = false);
       }
     }
+  }
+
+  // 🔥 NEW DIALOG FUNCTION
+  void _showVerifyDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Email Not Verified"),
+        content: const Text(
+          "Please verify your email first. Check your inbox.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+
+              try {
+                await _authService.currentFirebaseUser
+                    ?.sendEmailVerification();
+
+                _showMessage("Verification email sent again");
+              } catch (e) {
+                _showMessage("Failed to resend email", isError: true);
+              }
+            },
+            child: const Text("Resend"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("OK"),
+          ),
+        ],
+      ),
+    );
   }
 
   void _goToDashboard(AppUserModel user) {

@@ -89,6 +89,10 @@ class AuthService {
       if (signedInUser == null) {
         throw AuthFailure('Authentication failed. Please try again.');
       }
+      if (!signedInUser!.emailVerified) {
+  await _auth.signOut();
+  throw AuthFailure('Please verify your email first.');
+}
 
       return _resolveFirebaseSession(signedInUser);
     } on FirebaseAuthException catch (error) {
@@ -161,6 +165,7 @@ class AuthService {
       if (firebaseUser == null) {
         throw AuthFailure('Donor registration failed. Please try again.');
       }
+      await firebaseUser!.sendEmailVerification();
 
       final profileImageUrl = await _firestoreService.uploadProfileImage(
         folder: 'donor',
