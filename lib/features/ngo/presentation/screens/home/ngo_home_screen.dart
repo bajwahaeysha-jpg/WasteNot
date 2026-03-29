@@ -305,18 +305,26 @@ class _NgoHomeScreenState extends State<NgoHomeScreen>
                           ),
                           const SizedBox(width: 12),
                           Expanded(
-                            child: _DashCard(
-                              title: 'Available\nDonations',
-                              icon: Icons.notifications_active,
-                              bg: const Color(0xFFE3F2FD),
-                              border: const Color(0xFF90CAF9),
-                              badge: 2,
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const AllDonationsScreen(),
-                                ),
+                            child: StreamBuilder<List<DonationModel>>(
+                              stream: DonationService().streamDonationsByStatus(
+                                onlyAvailableForNgo: true,
                               ),
+                              builder: (context, snapshot) {
+                                final count = snapshot.data?.length ?? 0;
+                                return _DashCard(
+                                  title: 'Available\nDonations',
+                                  icon: Icons.notifications_active,
+                                  bg: const Color(0xFFE3F2FD),
+                                  border: const Color(0xFF90CAF9),
+                                  badge: count,
+                                  onTap: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const AllDonationsScreen(),
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
                           ),
                         ],

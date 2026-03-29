@@ -150,6 +150,31 @@ exports.expireDonations = onSchedule("every 5 minutes", async () => {
   const db = admin.firestore();
   const nowMillis = Date.now();
   const expiryTimestamp = admin.firestore.Timestamp.fromMillis(nowMillis);
+  const notificationCollection = db.collection("notifications");
+
+  const createNotification = (batch, receiverId, title, message) => {
+    const trimmedId = typeof receiverId === "string" ? receiverId.trim() : "";
+    if (!trimmedId) {
+      return 0;
+    }
+
+    const notificationRef = notificationCollection.doc();
+    batch.set(notificationRef, {
+      notificationId: notificationRef.id,
+      receiverId: trimmedId,
+      uid: trimmedId,
+      userId: trimmedId,
+      title: title.trim(),
+      body: message.trim(),
+      message: message.trim(),
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      isRead: false,
+      read: false,
+    });
+
+    return 1;
+  };
 
   try {
     const snapshot = await db
@@ -161,20 +186,32 @@ exports.expireDonations = onSchedule("every 5 minutes", async () => {
       return;
     }
 
-    const expiredRefs = [];
+    let batch = db.batch();
+    let opCount = 0;
 
-    snapshot.forEach((doc) => {
+    const commitIfNeeded = async () => {
+      if (opCount === 0) {
+        return;
+      }
+      await batch.commit();
+      batch = db.batch();
+      opCount = 0;
+    };
+
+    for (const doc of snapshot.docs) {
       const data = doc.data() || {};
       if (data.status !== "active") {
-        return;
+        continue;
       }
       if (data.expiryAt != null) {
-        return;
+        continue;
       }
       if (data.completedAt != null) {
-        return;
+        continue;
       }
 
+      const donorId =
+        typeof data.donorId === "string" ? data.donorId.trim() : "";
       const acceptedByNgoId =
         typeof data.acceptedByNgoId === "string"
           ? data.acceptedByNgoId.trim()
@@ -183,35 +220,57 @@ exports.expireDonations = onSchedule("every 5 minutes", async () => {
       const createdAtMillis = toMillis(data.createdAt);
       const acceptedAtMillis = toMillis(data.acceptedAt);
 
-      const shouldExpireUnaccepted =
-        !acceptedByNgoId &&
-        createdAtMillis != null &&
-        createdAtMillis + TWO_HOURS_MS < nowMillis;
+      const isAccepted = Boolean(acceptedByNgoId);
 
-      const shouldExpireAccepted =
-        acceptedByNgoId &&
-        acceptedAtMillis != null &&
-        acceptedAtMillis + TWO_HOURS_MS < nowMillis;
+      const expireAtMillis = isAccepted ? acceptedAtMillis : createdAtMillis;
 
-      if (shouldExpireUnaccepted || shouldExpireAccepted) {
-        expiredRefs.push(doc.ref);
+      if (expireAtMillis == null) {
+        continue;
       }
-    });
 
-    if (expiredRefs.length === 0) {
-      return;
-    }
+      const expiredNotificationSent = data.expiredNotificationSent === true;
 
-    for (let i = 0; i < expiredRefs.length; i += 500) {
-      const batch = db.batch();
-      expiredRefs.slice(i, i + 500).forEach((ref) => {
-        batch.update(ref, {
+      const shouldExpire = expireAtMillis + TWO_HOURS_MS <= nowMillis;
+
+      if (shouldExpire) {
+        batch.update(doc.ref, {
           status: "expired",
           expiryAt: expiryTimestamp,
+          expiredNotificationSent: expiredNotificationSent || true,
         });
-      });
-      await batch.commit();
+        opCount += 1;
+
+        if (!expiredNotificationSent) {
+          if (isAccepted) {
+            opCount += createNotification(
+              batch,
+              donorId,
+              "Your donation has been expired",
+              "Your donation has been expired",
+            );
+            opCount += createNotification(
+              batch,
+              acceptedByNgoId,
+              "Your donation has been expired",
+              "Your donation has been expired",
+            );
+          } else {
+            opCount += createNotification(
+              batch,
+              donorId,
+              "Your donation has expired",
+              "Your donation has expired",
+            );
+          }
+        }
+      }
+
+      if (opCount >= 450) {
+        await commitIfNeeded();
+      }
     }
+
+    await commitIfNeeded();
   } catch (error) {
     console.error("Failed to expire donations:", error);
   }
@@ -326,3 +385,4 @@ exports.sendMonthlyGoalSummaryNotifications = onSchedule(
     }
   },
 );
+
