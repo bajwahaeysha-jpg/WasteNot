@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:wastenot/navigation/app_navigation_handler.dart';
+import 'package:wastenot/services/auth_service.dart';
 
 import 'accounts/account_screen.dart';
 import 'notifications/notifications_screen.dart';
@@ -7,7 +9,6 @@ import 'contacts/contact_screen.dart';
 import 'about/about_screen.dart';
 import 'FAQ/faq_screen.dart';
 import 'Privacy_Policy/privacy_policy_screen.dart';
-import '../../../../screens/login_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
 
@@ -19,6 +20,7 @@ class SettingsScreen extends StatelessWidget {
   });
 
   static const Color mainGreen = Color(0xFF0E5E53);
+  static final AuthService _authService = AuthService();
 
   @override
   Widget build(BuildContext context) {
@@ -249,15 +251,12 @@ class SettingsScreen extends StatelessWidget {
                 side: const BorderSide(color: Colors.red),
               ),
 
-              onPressed: () {
-
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const LoginScreen(),
-                  ),
-                  (route) => false,
-                );
+              onPressed: () async {
+                await _authService.logout();
+                if (!context.mounted) {
+                  return;
+                }
+                AppNavigationHandler.goToLogin(context);
               },
 
               child: const Text(

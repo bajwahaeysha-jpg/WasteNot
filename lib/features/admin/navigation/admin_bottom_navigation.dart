@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:wastenot/screens/login_screen.dart';
 
 import '../analytics/analytics_screen.dart';
 import '../home/admin_home_screen.dart';
@@ -50,11 +49,6 @@ class _AdminBottomNavigationState extends State<AdminBottomNavigation> {
           return;
         }
 
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
-          (route) => false,
-        );
       },
 
       child: Scaffold(

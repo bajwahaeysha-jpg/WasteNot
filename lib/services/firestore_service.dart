@@ -173,6 +173,15 @@ class FirestoreService {
     return AppUserModel.fromFirestore(doc);
   }
 
+  Future<Map<String, dynamic>?> getUserDataByUid(String uid) async {
+    final doc = await _users.doc(uid).get();
+    if (!doc.exists) {
+      return null;
+    }
+
+    return doc.data();
+  }
+
   Stream<AppUserModel?> userStream(String uid) {
     return _users.doc(uid).snapshots().map((doc) {
       if (!doc.exists) {

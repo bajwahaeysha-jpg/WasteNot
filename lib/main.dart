@@ -1,6 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:wastenot/screens/welcome_screen.dart';
+import 'package:wastenot/screens/splash_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,7 +21,7 @@ class WasteNotApp extends StatelessWidget {
         scaffoldBackgroundColor: const Color(0xFFF7F9F8),
         useMaterial3: true,
       ),
-      home: const WelcomeScreen(),
+      home: const SplashScreen(),
     );
   }
 }

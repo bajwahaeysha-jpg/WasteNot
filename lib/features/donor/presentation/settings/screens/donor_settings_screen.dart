@@ -7,7 +7,7 @@ import 'package:wastenot/features/donor/presentation/settings/screens/donor_faq_
 import 'package:wastenot/features/donor/presentation/settings/screens/donor_notifications_screen.dart';
 import 'package:wastenot/features/donor/presentation/settings/screens/donor_privacy_policy_screen.dart';
 import 'package:wastenot/features/donor/presentation/settings/screens/donor_privacy_screen.dart';
-import 'package:wastenot/screens/welcome_screen.dart';
+import 'package:wastenot/navigation/app_navigation_handler.dart';
 import 'package:wastenot/services/auth_service.dart';
 import 'package:wastenot/services/session_service.dart';
 
@@ -119,15 +119,11 @@ class DonorSettingsScreen extends StatelessWidget {
       return;
     }
 
-    await AuthService().signOut();
+    await AuthService().logout();
     if (!context.mounted) {
       return;
     }
 
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-      (route) => false,
-    );
+    AppNavigationHandler.goToLogin(context);
   }
 }

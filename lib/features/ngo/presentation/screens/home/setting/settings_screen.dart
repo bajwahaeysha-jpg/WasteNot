@@ -7,8 +7,8 @@ import 'package:wastenot/features/ngo/presentation/screens/home/setting/faq_scre
 import 'package:wastenot/features/ngo/presentation/screens/home/setting/notifications_screen.dart';
 import 'package:wastenot/features/ngo/presentation/screens/home/setting/privacy_policy_screen.dart';
 import 'package:wastenot/features/ngo/presentation/screens/home/setting/privacy_screen.dart';
-import 'package:wastenot/screens/welcome_screen.dart';
 import 'package:wastenot/models/app_user_model.dart';
+import 'package:wastenot/navigation/app_navigation_handler.dart';
 import 'package:wastenot/services/auth_service.dart';
 import 'package:wastenot/services/session_service.dart';
 
@@ -150,15 +150,11 @@ class SettingsScreen extends StatelessWidget {
       return;
     }
 
-    await AuthService().signOut();
+    await AuthService().logout();
     if (!context.mounted) {
       return;
     }
 
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-      (route) => false,
-    );
+    AppNavigationHandler.goToLogin(context);
   }
 }

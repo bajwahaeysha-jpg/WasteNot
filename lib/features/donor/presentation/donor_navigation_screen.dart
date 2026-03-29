@@ -7,7 +7,6 @@ import 'settings/screens/donor_settings_screen.dart';
 import 'auth/screens/donor_logout_screen.dart';
 import 'package:wastenot/features/donor/presentation/notifications/screens/notification_screen.dart';
 import 'package:wastenot/features/donor/presentation/feedback/screens/feedback_screen.dart';
-import 'package:wastenot/screens/login_screen.dart';
 import 'package:wastenot/services/notification_badge_service.dart';
 import 'package:wastenot/services/session_service.dart';
 
@@ -65,11 +64,6 @@ class _DonorNavigationScreenState extends State<DonorNavigationScreen> {
           return;
         }
 
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
-          (route) => false,
-        );
       },
       child: Scaffold(
  

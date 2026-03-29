@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:wastenot/screens/welcome_screen.dart';
+import 'package:wastenot/navigation/app_navigation_handler.dart';
 import 'package:wastenot/services/auth_service.dart';
 
 class DonorLogoutScreen extends StatefulWidget {
@@ -68,14 +68,10 @@ class _DonorLogoutScreenState extends State<DonorLogoutScreen> {
 
   Future<void> _logout() async {
     setState(() => _loading = true);
-    await _authService.signOut();
+    await _authService.logout();
     if (!mounted) {
       return;
     }
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-      (route) => false,
-    );
+    AppNavigationHandler.goToLogin(context);
   }
 }

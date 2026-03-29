@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:wastenot/features/admin/navigation/admin_bottom_navigation.dart';
-import 'package:wastenot/features/donor/presentation/donor_navigation_screen.dart';
-import 'package:wastenot/features/ngo/presentation/screens/home/ngo_home_screen.dart';
 import 'package:wastenot/models/app_user_model.dart';
+import 'package:wastenot/navigation/app_navigation_handler.dart';
 import 'package:wastenot/screens/role_selection_screen.dart';
 import 'package:wastenot/services/auth_service.dart';
 
@@ -186,7 +184,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _loading = true);
 
     try {
-      final user = await _authService.signIn(
+      final user = await _authService.login(
         name: _nameController.text,
         email: _emailController.text,
         password: _passwordController.text,
@@ -207,23 +205,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _goToDashboard(AppUserModel user) {
-    final route = user.isAdmin
-        ? MaterialPageRoute(
-            builder: (_) => AdminBottomNavigation(
-              user: user.toNavigationUser(),
-            ),
-          )
-        : user.isNgo
-            ? MaterialPageRoute(
-                builder: (_) =>
-                    NgoHomeScreen(user: user.toNavigationUser()),
-              )
-            : MaterialPageRoute(
-                builder: (_) =>
-                    DonorNavigationScreen(user: user.toNavigationUser()),
-              );
-
-    Navigator.pushAndRemoveUntil(context, route, (route) => false);
+    AppNavigationHandler.goToHome(context, user);
   }
 
   void _showMessage(String message, {bool isError = false}) {

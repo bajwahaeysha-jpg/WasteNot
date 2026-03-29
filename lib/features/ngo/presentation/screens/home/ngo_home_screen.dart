@@ -20,7 +20,6 @@ import 'package:wastenot/features/ngo/presentation/screens/home/setting/settings
 import 'package:wastenot/features/ngo/presentation/screens/inbox/messages_screen.dart';
 import 'package:wastenot/features/ngo/presentation/screens/ngo_feedback_screen.dart';
 import 'package:wastenot/models/app_user_model.dart';
-import 'package:wastenot/screens/login_screen.dart';
 import 'package:wastenot/services/concern_services.dart';
 import 'package:wastenot/services/donation_services.dart';
 import 'package:wastenot/services/notification_badge_service.dart';
@@ -436,11 +435,6 @@ class _NgoHomeScreenState extends State<NgoHomeScreen>
               return;
             }
 
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (_) => const LoginScreen()),
-              (route) => false,
-            );
           },
           child: Scaffold(
             backgroundColor: const Color(0xFFF5F7F6),

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:wastenot/models/app_user_model.dart';
 import 'package:wastenot/models/ngo_request_model.dart';
-import 'package:wastenot/screens/welcome_screen.dart';
+import 'package:wastenot/navigation/app_navigation_handler.dart';
 import 'package:wastenot/services/auth_service.dart';
 import 'package:wastenot/services/firestore_service.dart';
 
@@ -231,15 +231,12 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
   }
 
   Future<void> _logout() async {
-    await _authService.signOut();
+    await _authService.logout();
     if (!mounted) {
       return;
     }
 
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-      (route) => false,
-    );
+    AppNavigationHandler.goToLogin(context);
   }
 
   void _showMessage(String message, {bool isError = false}) {

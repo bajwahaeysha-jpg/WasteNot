@@ -3,9 +3,10 @@ import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wastenot/models/app_user_model.dart';
-import 'package:wastenot/services/firestore_service.dart';
 import 'package:wastenot/services/admin_registration_notification_service.dart';
+import 'package:wastenot/services/firestore_service.dart';
 import 'package:wastenot/services/session_service.dart';
 
 class AuthService {
@@ -17,6 +18,11 @@ class AuthService {
 
   static const adminEmail = 'wastenotapplication@gmail.com';
   static const adminPassword = 'WasteNot@123';
+  static const _isLoggedInKey = 'auth_is_logged_in';
+  static const _uidKey = 'auth_uid';
+  static const _roleKey = 'auth_role';
+  static const _emailKey = 'auth_email';
+  static const _displayNameKey = 'auth_display_name';
 
   final FirebaseAuth _auth;
   final FirestoreService _firestoreService;
@@ -38,51 +44,25 @@ class AuthService {
   }
 
   Future<AppUserModel?> currentUserProfile() async {
-    final sessionUser = SessionService.user;
-    if (sessionUser?.isAdmin == true) {
-      return sessionUser;
-    }
-
     final user = _auth.currentUser;
     if (user == null) {
       SessionService.clear();
       return null;
     }
 
-    if (user.email?.toLowerCase() == adminEmail) {
-      final admin = _adminUser();
-      SessionService.setUser(admin, syncFromFirestore: false);
-      return admin;
-    }
+    return _resolveFirebaseSession(user);
+  }
 
-    final profile = await _firestoreService.getUserByUid(user.uid);
-    if (profile == null) {
-      await _auth.signOut();
-      final ngoRequest =
-          await _firestoreService.getNgoRequestByEmail(user.email ?? '');
-
-      if (ngoRequest != null) {
-        throw AuthFailure(_messageForNgoRequestStatus(ngoRequest.status));
-      }
-
-      throw AuthFailure(
-        'Your account record no longer exists. Please contact support.',
-      );
-    }
-
-    if (profile.isNgo && !profile.approvedByAdmin) {
-      await _auth.signOut();
-      throw AuthFailure('Your NGO request is still pending admin approval.');
-    }
-
-    if (profile.isSuspended) {
-      await _auth.signOut();
-      SessionService.clear();
-      throw AuthFailure('Your account is suspended. Please contact support.');
-    }
-
-    SessionService.setUser(profile, firestoreService: _firestoreService);
-    return profile;
+  Future<AppUserModel> login({
+    required String email,
+    required String password,
+    String? name,
+  }) {
+    return signIn(
+      email: email,
+      password: password,
+      name: name,
+    );
   }
 
   Future<AppUserModel> signIn({
@@ -96,6 +76,7 @@ class AuthService {
       if (normalizedEmail == adminEmail && password == adminPassword) {
         final admin = _adminUser(name);
         SessionService.setUser(admin, syncFromFirestore: false);
+        await _persistSession(admin);
         return admin;
       }
 
@@ -109,32 +90,7 @@ class AuthService {
         throw AuthFailure('Authentication failed. Please try again.');
       }
 
-      final profile = await _firestoreService.getUserByUid(signedInUser.uid);
-      if (profile == null) {
-        await _auth.signOut();
-        final ngoRequest =
-            await _firestoreService.getNgoRequestByEmail(normalizedEmail);
-
-        if (ngoRequest != null) {
-          throw AuthFailure(_messageForNgoRequestStatus(ngoRequest.status));
-        }
-
-        throw AuthFailure('Your account was deleted or is incomplete.');
-      }
-
-      if (profile.isNgo && !profile.approvedByAdmin) {
-        await _auth.signOut();
-        throw AuthFailure('Your NGO request is still pending admin approval.');
-      }
-
-      if (profile.isSuspended) {
-        await _auth.signOut();
-        SessionService.clear();
-        throw AuthFailure('Your account is suspended. Please contact support.');
-      }
-
-      SessionService.setUser(profile, firestoreService: _firestoreService);
-      return profile;
+      return _resolveFirebaseSession(signedInUser);
     } on FirebaseAuthException catch (error) {
       if (error.code == 'user-not-found' || error.code == 'invalid-credential') {
         final ngoRequest =
@@ -147,6 +103,42 @@ class AuthService {
 
       throw AuthFailure(_mapFirebaseAuthError(error));
     }
+  }
+
+  Future<AppUserModel?> checkUserSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isLoggedIn = prefs.getBool(_isLoggedInKey) ?? false;
+    final storedRole = prefs.getString(_roleKey);
+    final storedDisplayName = prefs.getString(_displayNameKey);
+    final firebaseUser = _auth.currentUser;
+
+    if (!isLoggedIn) {
+      if (firebaseUser != null) {
+        await _auth.signOut();
+      }
+      SessionService.clear();
+      return null;
+    }
+
+    if (firebaseUser != null) {
+      try {
+        return await _resolveFirebaseSession(firebaseUser);
+      } on AuthFailure {
+        await signOut();
+        return null;
+      }
+    }
+
+    if (storedRole == 'admin') {
+      final admin = _adminUser(storedDisplayName);
+      SessionService.setUser(admin, syncFromFirestore: false);
+      await _persistSession(admin);
+      return admin;
+    }
+
+    await _clearPersistedSession();
+    SessionService.clear();
+    return null;
   }
 
   Future<AppUserModel> registerDonor({
@@ -186,7 +178,6 @@ class AuthService {
         profileImageUrl: profileImageUrl,
       );
 
-      // Admin bell notification (separate service; does not touch FirestoreService).
       await AdminRegistrationNotificationService().createDonorRegistered(
         uid: firebaseUser.uid,
         name: name.trim(),
@@ -206,6 +197,7 @@ class AuthService {
 
       unawaited(_auth.signOut());
       SessionService.clear();
+      await _clearPersistedSession();
       return profile;
     } on FirebaseAuthException catch (error) {
       throw AuthFailure(_mapFirebaseAuthError(error));
@@ -256,7 +248,6 @@ class AuthService {
       profileImageUrl: profileImageUrl,
     );
 
-    // Admin bell notification for new NGO registration request (separate service).
     await AdminRegistrationNotificationService().createNgoRegistered(
       email: normalizedEmail,
       organizationName: organizationName.trim(),
@@ -317,12 +308,18 @@ class AuthService {
     );
 
     SessionService.setUser(updatedUser, firestoreService: _firestoreService);
+    await _persistSession(updatedUser);
     return updatedUser;
   }
 
   Future<void> signOut() async {
     await _auth.signOut();
+    await _clearPersistedSession();
     SessionService.clear();
+  }
+
+  Future<void> logout() async {
+    await signOut();
   }
 
   Future<void> deleteCurrentAccount() async {
@@ -336,6 +333,7 @@ class AuthService {
     try {
       await currentUser.delete();
       await _firestoreService.deleteUserDocument(uid);
+      await _clearPersistedSession();
       SessionService.clear();
     } on FirebaseAuthException catch (error) {
       if (error.code == 'requires-recent-login') {
@@ -346,6 +344,69 @@ class AuthService {
 
       throw AuthFailure(_mapFirebaseAuthError(error));
     }
+  }
+
+  Future<AppUserModel> _resolveFirebaseSession(User user) async {
+    final rawData = await _firestoreService.getUserDataByUid(user.uid);
+    if (rawData == null) {
+      await _auth.signOut();
+      final ngoRequest =
+          await _firestoreService.getNgoRequestByEmail(user.email ?? '');
+
+      if (ngoRequest != null) {
+        throw AuthFailure(_messageForNgoRequestStatus(ngoRequest.status));
+      }
+
+      throw AuthFailure(
+        'Your account record no longer exists. Please contact support.',
+      );
+    }
+
+    final role = (rawData['role'] as String?)?.trim().toLowerCase();
+    if (role == null || role.isEmpty) {
+      await _auth.signOut();
+      SessionService.clear();
+      throw AuthFailure('Your account role is missing. Please log in again.');
+    }
+
+    final profile = await _firestoreService.getUserByUid(user.uid);
+    if (profile == null) {
+      await _auth.signOut();
+      throw AuthFailure('Your account was deleted or is incomplete.');
+    }
+
+    if (profile.isNgo && !profile.approvedByAdmin) {
+      await _auth.signOut();
+      throw AuthFailure('Your NGO request is still pending admin approval.');
+    }
+
+    if (profile.isSuspended) {
+      await _auth.signOut();
+      SessionService.clear();
+      throw AuthFailure('Your account is suspended. Please contact support.');
+    }
+
+    SessionService.setUser(profile, firestoreService: _firestoreService);
+    await _persistSession(profile);
+    return profile;
+  }
+
+  Future<void> _persistSession(AppUserModel user) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_isLoggedInKey, true);
+    await prefs.setString(_uidKey, user.uid);
+    await prefs.setString(_roleKey, user.role);
+    await prefs.setString(_emailKey, user.email);
+    await prefs.setString(_displayNameKey, user.displayName);
+  }
+
+  Future<void> _clearPersistedSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_isLoggedInKey);
+    await prefs.remove(_uidKey);
+    await prefs.remove(_roleKey);
+    await prefs.remove(_emailKey);
+    await prefs.remove(_displayNameKey);
   }
 
   String _mapFirebaseAuthError(FirebaseAuthException error) {
