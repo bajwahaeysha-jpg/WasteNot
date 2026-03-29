@@ -17,6 +17,7 @@ class LocalOpportunitiesService {
       // 🔥 Sirf NGOs filter kar rahe hain
       final snapshot = await _users
           .where('role', isEqualTo: 'ngo')
+          .where('approvedByAdmin', isEqualTo: true)
           .get();
 
       debugPrint("NGOs found: ${snapshot.docs.length}");

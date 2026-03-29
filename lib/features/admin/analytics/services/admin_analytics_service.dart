@@ -196,10 +196,13 @@ class AdminAnalyticsService {
 
   bool _isNgo(Map<String, dynamic> data) {
     if (data['isNgo'] == true) {
-      return true;
+      return (data['approvedByAdmin'] as bool?) ?? false;
     }
     final role = (data['role'] as String?)?.trim().toLowerCase();
-    return role == 'ngo';
+    if (role != 'ngo') {
+      return false;
+    }
+    return (data['approvedByAdmin'] as bool?) ?? false;
   }
 
   List<AdminGrowthPoint> _buildWeeklyGrowth(

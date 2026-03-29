@@ -183,6 +183,7 @@ class _AdminHomeStatsService {
       final ngosSnap = await _firestore
           .collection('users')
           .where('role', isEqualTo: 'ngo')
+          .where('approvedByAdmin', isEqualTo: true)
           .get();
 
       final requestsSnap =

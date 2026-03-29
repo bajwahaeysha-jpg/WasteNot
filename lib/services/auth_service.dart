@@ -26,6 +26,8 @@ class AuthService {
 
   final FirebaseAuth _auth;
   final FirestoreService _firestoreService;
+  String? _pendingVerificationEmail;
+  String? _pendingVerificationPassword;
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
   User? get currentFirebaseUser => _auth.currentUser;
@@ -74,6 +76,7 @@ class AuthService {
 
     try {
       if (normalizedEmail == adminEmail && password == adminPassword) {
+        _clearPendingVerificationState();
         final admin = _adminUser(name);
         SessionService.setUser(admin, syncFromFirestore: false);
         await _persistSession(admin);
@@ -89,20 +92,23 @@ class AuthService {
       if (signedInUser == null) {
         throw AuthFailure('Authentication failed. Please try again.');
       }
-      if (!signedInUser!.emailVerified) {
-  await _auth.signOut();
-  throw AuthFailure('Please verify your email first.');
-}
+      await signedInUser.reload();
+      final refreshedUser = _auth.currentUser ?? signedInUser;
 
-      return _resolveFirebaseSession(signedInUser);
+      if (!refreshedUser.emailVerified) {
+        _pendingVerificationEmail = normalizedEmail;
+        _pendingVerificationPassword = password;
+        await _auth.signOut();
+        throw AuthFailure('Please verify your email from your mailbox.');
+      }
+
+      _clearPendingVerificationState();
+      return _resolveFirebaseSession(refreshedUser);
     } on FirebaseAuthException catch (error) {
-      if (error.code == 'user-not-found' || error.code == 'invalid-credential') {
-        final ngoRequest =
-            await _firestoreService.getNgoRequestByEmail(normalizedEmail);
-
-        if (ngoRequest != null) {
-          throw AuthFailure(_messageForNgoRequestStatus(ngoRequest.status));
-        }
+      if (error.code == 'user-not-found') {
+        throw AuthFailure(
+          'Account not found. Please create an account first.',
+        );
       }
 
       throw AuthFailure(_mapFirebaseAuthError(error));
@@ -154,8 +160,9 @@ class AuthService {
     required String about,
     File? profileImage,
   }) async {
+    final normalizedEmail = email.trim().toLowerCase();
+
     try {
-      final normalizedEmail = email.trim().toLowerCase();
       final credential = await _auth.createUserWithEmailAndPassword(
         email: normalizedEmail,
         password: password,
@@ -165,7 +172,7 @@ class AuthService {
       if (firebaseUser == null) {
         throw AuthFailure('Donor registration failed. Please try again.');
       }
-      await firebaseUser!.sendEmailVerification();
+      await _sendVerificationEmailWithRetry(firebaseUser);
 
       final profileImageUrl = await _firestoreService.uploadProfileImage(
         folder: 'donor',
@@ -201,10 +208,17 @@ class AuthService {
       );
 
       unawaited(_auth.signOut());
+      _clearPendingVerificationState();
       SessionService.clear();
       await _clearPersistedSession();
       return profile;
     } on FirebaseAuthException catch (error) {
+      if (error.code == 'email-already-in-use') {
+        await _handleExistingUnverifiedAccount(
+          email: normalizedEmail,
+          password: password,
+        );
+      }
       throw AuthFailure(_mapFirebaseAuthError(error));
     } on FirebaseException catch (error) {
       throw AuthFailure(_mapFirebaseError(error));
@@ -226,6 +240,10 @@ class AuthService {
         await _firestoreService.getNgoRequestByEmail(normalizedEmail);
 
     if (existingRequest != null && existingRequest.status == 'pending') {
+      await _resendVerificationForExistingAccountIfPossible(
+        email: normalizedEmail,
+        password: password,
+      );
       throw AuthFailure(
         'An NGO request with this email is already pending approval.',
       );
@@ -233,6 +251,12 @@ class AuthService {
 
     final existingUser = await _firestoreService.getUserByEmail(normalizedEmail);
     if (existingUser != null || normalizedEmail == adminEmail) {
+      if (normalizedEmail != adminEmail) {
+        await _resendVerificationForExistingAccountIfPossible(
+          email: normalizedEmail,
+          password: password,
+        );
+      }
       throw AuthFailure('This email is already in use.');
     }
 
@@ -242,21 +266,88 @@ class AuthService {
       imageFile: profileImage,
     );
 
-    await _firestoreService.submitNgoRequest(
-      organizationName: organizationName.trim(),
-      email: normalizedEmail,
-      password: password,
-      phone: phone.trim(),
-      address: address.trim(),
-      registrationNumber: registrationNumber.trim(),
-      description: description.trim(),
-      profileImageUrl: profileImageUrl,
-    );
+    try {
+      final credential = await _auth.createUserWithEmailAndPassword(
+        email: normalizedEmail,
+        password: password,
+      );
 
-    await AdminRegistrationNotificationService().createNgoRegistered(
-      email: normalizedEmail,
-      organizationName: organizationName.trim(),
-    );
+      final firebaseUser = credential.user;
+      if (firebaseUser == null) {
+        throw AuthFailure('NGO registration failed. Please try again.');
+      }
+
+      final createdRequest = await _ensureNgoRequestExists(
+        email: normalizedEmail,
+        organizationName: organizationName.trim(),
+        password: password,
+        phone: phone.trim(),
+        address: address.trim(),
+        registrationNumber: registrationNumber.trim(),
+        description: description.trim(),
+        profileImageUrl: profileImageUrl,
+      );
+
+      if (createdRequest) {
+        await AdminRegistrationNotificationService().createNgoRegistered(
+          email: normalizedEmail,
+          organizationName: organizationName.trim(),
+        );
+      }
+
+      await _sendVerificationEmailWithRetry(firebaseUser);
+    } on FirebaseAuthException catch (error) {
+      if (error.code == 'email-already-in-use') {
+        await _handleExistingNgoAuthAccount(
+          email: normalizedEmail,
+          password: password,
+          organizationName: organizationName.trim(),
+          phone: phone.trim(),
+          address: address.trim(),
+          registrationNumber: registrationNumber.trim(),
+          description: description.trim(),
+          profileImageUrl: profileImageUrl,
+        );
+      }
+      throw AuthFailure(_mapFirebaseAuthError(error));
+    } on FirebaseException catch (error) {
+      throw AuthFailure(_mapFirebaseError(error));
+    } catch (_) {
+      rethrow;
+    } finally {
+      await _auth.signOut();
+      _clearPendingVerificationState();
+      SessionService.clear();
+      await _clearPersistedSession();
+    }
+  }
+
+  Future<void> resendPendingVerificationEmail() async {
+    final currentUser = _auth.currentUser;
+    if (currentUser != null) {
+      await _sendVerificationEmailWithRetry(currentUser);
+      return;
+    }
+
+    final email = _pendingVerificationEmail;
+    final password = _pendingVerificationPassword;
+    if (email == null || password == null) {
+      throw AuthFailure('Unable to resend verification email. Please try again.');
+    }
+
+    try {
+      await _auth.signInWithEmailAndPassword(email: email, password: password);
+      final signedInUser = _auth.currentUser;
+      if (signedInUser == null) {
+        throw AuthFailure('Failed to send verification email. Try again.');
+      }
+
+      await _sendVerificationEmailWithRetry(signedInUser);
+    } on FirebaseAuthException catch (error) {
+      throw AuthFailure(_mapFirebaseAuthError(error));
+    } finally {
+      await _auth.signOut();
+    }
   }
 
   Future<AppUserModel> updateCurrentUserProfile({
@@ -319,6 +410,7 @@ class AuthService {
 
   Future<void> signOut() async {
     await _auth.signOut();
+    _clearPendingVerificationState();
     await _clearPersistedSession();
     SessionService.clear();
   }
@@ -352,11 +444,30 @@ class AuthService {
   }
 
   Future<AppUserModel> _resolveFirebaseSession(User user) async {
-    final rawData = await _firestoreService.getUserDataByUid(user.uid);
+    await user.reload();
+    final refreshedUser = _auth.currentUser ?? user;
+    if (!refreshedUser.emailVerified) {
+      await _auth.signOut();
+      throw AuthFailure('Please verify your email from your mailbox.');
+    }
+
+    final rawData = await _firestoreService.getUserDataByUid(refreshedUser.uid);
     if (rawData == null) {
+      final requestCreated = await _ensureNgoRequestExists(
+        email: refreshedUser.email ?? '',
+        organizationName: _organizationNameForAuthUser(refreshedUser),
+      );
+
+      if (requestCreated) {
+        await AdminRegistrationNotificationService().createNgoRegistered(
+          email: refreshedUser.email ?? '',
+          organizationName: _organizationNameForAuthUser(refreshedUser),
+        );
+      }
+
       await _auth.signOut();
       final ngoRequest =
-          await _firestoreService.getNgoRequestByEmail(user.email ?? '');
+          await _firestoreService.getNgoRequestByEmail(refreshedUser.email ?? '');
 
       if (ngoRequest != null) {
         throw AuthFailure(_messageForNgoRequestStatus(ngoRequest.status));
@@ -374,7 +485,7 @@ class AuthService {
       throw AuthFailure('Your account role is missing. Please log in again.');
     }
 
-    final profile = await _firestoreService.getUserByUid(user.uid);
+    final profile = await _firestoreService.getUserByUid(refreshedUser.uid);
     if (profile == null) {
       await _auth.signOut();
       throw AuthFailure('Your account was deleted or is incomplete.');
@@ -382,7 +493,7 @@ class AuthService {
 
     if (profile.isNgo && !profile.approvedByAdmin) {
       await _auth.signOut();
-      throw AuthFailure('Your NGO request is still pending admin approval.');
+      throw AuthFailure('Please wait for approval from admin.');
     }
 
     if (profile.isSuspended) {
@@ -426,7 +537,7 @@ class AuthService {
       case 'weak-password':
         return 'Password is too weak.';
       case 'user-not-found':
-        return 'No account found for this email.';
+        return 'Account not found. Please create an account first.';
       default:
         return error.message ?? 'Authentication failed. Please try again.';
     }
@@ -435,7 +546,7 @@ class AuthService {
   String _messageForNgoRequestStatus(String status) {
     switch (status) {
       case 'pending':
-        return 'Your NGO request is still pending admin approval.';
+        return 'Please wait for approval from admin.';
       case 'rejected':
         return 'Your registration request was rejected by admin.';
       default:
@@ -452,6 +563,221 @@ class AuthService {
       default:
         return error.message ?? 'Something went wrong. Please try again.';
     }
+  }
+
+  Future<void> _sendVerificationEmailWithRetry(User user) async {
+    FirebaseAuthException? lastAuthError;
+    Object? lastError;
+
+    for (var attempt = 0; attempt < 2; attempt++) {
+      try {
+        await user.reload();
+        final refreshedUser = _auth.currentUser ?? user;
+        if (refreshedUser.emailVerified) {
+          return;
+        }
+
+        await refreshedUser.sendEmailVerification();
+        return;
+      } on FirebaseAuthException catch (error) {
+        lastAuthError = error;
+        lastError = error;
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    if (lastAuthError != null) {
+      throw AuthFailure('Failed to send verification email. Try again.');
+    }
+
+    throw AuthFailure('Failed to send verification email. Try again.');
+  }
+
+  Future<void> _handleExistingUnverifiedAccount({
+    required String email,
+    required String password,
+  }) async {
+    final user = await _signInAndReloadForVerification(
+      email: email,
+      password: password,
+    );
+
+    if (user == null) {
+      return;
+    }
+
+    if (user.emailVerified) {
+      await _auth.signOut();
+      return;
+    }
+
+    _pendingVerificationEmail = email;
+    _pendingVerificationPassword = password;
+
+    try {
+      await _sendVerificationEmailWithRetry(user);
+    } finally {
+      await _auth.signOut();
+    }
+
+    throw AuthFailure('Please verify your email from your mailbox.');
+  }
+
+  Future<void> _handleExistingNgoAuthAccount({
+    required String email,
+    required String password,
+    required String organizationName,
+    required String phone,
+    required String address,
+    required String registrationNumber,
+    required String description,
+    String? profileImageUrl,
+  }) async {
+    final user = await _signInAndReloadForVerification(
+      email: email,
+      password: password,
+    );
+
+    if (user == null) {
+      return;
+    }
+
+    if (!user.emailVerified) {
+      _pendingVerificationEmail = email;
+      _pendingVerificationPassword = password;
+
+      try {
+        await _sendVerificationEmailWithRetry(user);
+      } finally {
+        await _auth.signOut();
+      }
+
+      throw AuthFailure('Please verify your email from your mailbox.');
+    }
+
+    final requestCreated = await _ensureNgoRequestExists(
+      email: email,
+      organizationName: organizationName,
+      password: password,
+      phone: phone,
+      address: address,
+      registrationNumber: registrationNumber,
+      description: description,
+      profileImageUrl: profileImageUrl,
+    );
+
+    if (requestCreated) {
+      await AdminRegistrationNotificationService().createNgoRegistered(
+        email: email,
+        organizationName: organizationName,
+      );
+    }
+
+    await _auth.signOut();
+    throw AuthFailure('Please wait for approval from admin.');
+  }
+
+  Future<void> _resendVerificationForExistingAccountIfPossible({
+    required String email,
+    required String password,
+  }) async {
+    final user = await _signInAndReloadForVerification(
+      email: email,
+      password: password,
+    );
+
+    if (user == null) {
+      return;
+    }
+
+    if (!user.emailVerified) {
+      _pendingVerificationEmail = email;
+      _pendingVerificationPassword = password;
+
+      try {
+        await _sendVerificationEmailWithRetry(user);
+      } finally {
+        await _auth.signOut();
+      }
+    } else {
+      await _auth.signOut();
+    }
+  }
+
+  Future<User?> _signInAndReloadForVerification({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final credential = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      final signedInUser = credential.user;
+      if (signedInUser == null) {
+        await _auth.signOut();
+        return null;
+      }
+
+      await signedInUser.reload();
+      return _auth.currentUser ?? signedInUser;
+    } on FirebaseAuthException {
+      await _auth.signOut();
+      return null;
+    }
+  }
+
+  void _clearPendingVerificationState() {
+    _pendingVerificationEmail = null;
+    _pendingVerificationPassword = null;
+  }
+
+  Future<bool> _ensureNgoRequestExists({
+    required String email,
+    required String organizationName,
+    String? password,
+    String? phone,
+    String? address,
+    String? registrationNumber,
+    String? description,
+    String? profileImageUrl,
+  }) async {
+    final normalizedEmail = email.trim().toLowerCase();
+    if (normalizedEmail.isEmpty || normalizedEmail == adminEmail) {
+      return false;
+    }
+
+    final existingUser = await _firestoreService.getUserByEmail(normalizedEmail);
+    if (existingUser != null) {
+      return false;
+    }
+
+    return _firestoreService.ensureNgoRequestExists(
+      email: normalizedEmail,
+      organizationName: organizationName,
+      password: password,
+      phone: phone,
+      address: address,
+      registrationNumber: registrationNumber,
+      description: description,
+      profileImageUrl: profileImageUrl,
+    );
+  }
+
+  String _organizationNameForAuthUser(User user) {
+    final displayName = user.displayName?.trim();
+    if (displayName != null && displayName.isNotEmpty) {
+      return displayName;
+    }
+
+    final email = user.email?.trim().toLowerCase() ?? '';
+    final localPart = email.split('@').first.trim();
+    if (localPart.isNotEmpty) {
+      return localPart;
+    }
+
+    return 'NGO';
   }
 }
 

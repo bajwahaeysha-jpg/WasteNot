@@ -223,7 +223,7 @@ class _LoginScreenState extends State<LoginScreen> {
       builder: (context) => AlertDialog(
         title: const Text("Email Not Verified"),
         content: const Text(
-          "Please verify your email first. Check your inbox.",
+          "Please verify your email from your mailbox.",
         ),
         actions: [
           TextButton(
@@ -231,18 +231,24 @@ class _LoginScreenState extends State<LoginScreen> {
               Navigator.pop(context);
 
               try {
-                await _authService.currentFirebaseUser
-                    ?.sendEmailVerification();
+                await _authService.resendPendingVerificationEmail();
 
                 _showMessage("Verification email sent again");
+                await _authService.signOut();
               } catch (e) {
-                _showMessage("Failed to resend email", isError: true);
+                _showMessage(
+                  "Failed to send verification email. Try again.",
+                  isError: true,
+                );
               }
             },
             child: const Text("Resend"),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () async {
+              Navigator.pop(context);
+              await _authService.signOut();
+            },
             child: const Text("OK"),
           ),
         ],
