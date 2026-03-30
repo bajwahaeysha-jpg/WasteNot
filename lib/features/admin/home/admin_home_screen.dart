@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
+import '../search/admin_global_search_screen.dart';
 import 'components/header.dart';
 import 'components/stats_section.dart';
 import 'components/quick_actions_section.dart';
@@ -44,10 +45,20 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
                     /// 🔍 SEARCH BAR (NOW FIRST)
                     TextField(
-                      onChanged: (_) {},
+                      readOnly: true,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                AdminGlobalSearchScreen(user: widget.user),
+                          ),
+                        );
+                      },
                       decoration: InputDecoration(
-                        hintText: "Search donors, NGOs, donations...",
+                        hintText: "Search across admin panel...",
                         prefixIcon: const Icon(Icons.search),
+                        suffixIcon: const Icon(Icons.tune),
                         filled: true,
                         fillColor: Colors.white,
                         contentPadding: const EdgeInsets.symmetric(

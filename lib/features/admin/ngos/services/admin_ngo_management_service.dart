@@ -60,11 +60,9 @@ class AdminNgoManagementService {
   Stream<List<AdminManagedNgo>> streamNgos({
     NgoStatusFilter filter = NgoStatusFilter.all,
   }) {
-    return _users
-        .where('role', isEqualTo: 'ngo')
-        .where('approvedByAdmin', isEqualTo: true)
-        .snapshots()
-        .asyncExpand((usersSnapshot) {
+    return _users.where('role', isEqualTo: 'ngo').snapshots().asyncExpand((
+      usersSnapshot,
+    ) {
       final ngoDocs = usersSnapshot.docs;
 
       if (ngoDocs.isEmpty) {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:wastenot/features/admin/donations/expire_reason_screen.dart';
+import 'package:wastenot/shared/widgets/location_map_preview.dart';
 import 'package:wastenot/services/donation_services.dart';
 
 class DonationProfileScreen extends StatefulWidget {
@@ -78,7 +79,9 @@ class _DonationProfileScreenState extends State<DonationProfileScreen> {
               _row('Donor email', d.donorEmail),
               _row('Donor phone', d.donorPhone ?? 'Not provided'),
               _row('Donor address', d.donorAddress ?? 'Not provided'),
-              _row('Location', d.location ?? d.donorAddress ?? 'Unknown'),
+              _row('Location', d.locationAddress ?? d.donorAddress ?? 'Unknown'),
+              const SizedBox(height: 12),
+              LocationMapPreview(location: d.location, height: 160),
               const Divider(height: 32),
               _row('Created at', _formatDateTime(d.createdAt)),
               _row(
@@ -188,7 +191,7 @@ class _DonationProfileScreenState extends State<DonationProfileScreen> {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: imageUrls.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        separatorBuilder: (_, _) => const SizedBox(width: 12),
         itemBuilder: (_, index) => ClipRRect(
           borderRadius: BorderRadius.circular(16),
           child: Image.network(
@@ -196,7 +199,7 @@ class _DonationProfileScreenState extends State<DonationProfileScreen> {
             width: 140,
             height: 120,
             fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(
+            errorBuilder: (_, _, _) => Container(
               width: 140,
               height: 120,
               color: Colors.grey.shade200,

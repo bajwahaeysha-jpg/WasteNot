@@ -149,9 +149,7 @@ class DonationDetailsScreen extends StatelessWidget {
     final ngoName = (donation.acceptedByNgoName?.trim().isNotEmpty ?? false)
         ? donation.acceptedByNgoName!.trim()
         : 'Not assigned';
-    final location = (donation.location?.trim().isNotEmpty ?? false)
-        ? donation.location!.trim()
-        : '';
+    final location = donation.locationAddress ?? '';
     final description = donation.description?.trim() ?? '';
     final precaution = donation.precaution?.trim() ?? '';
 
