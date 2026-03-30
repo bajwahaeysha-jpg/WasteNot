@@ -35,6 +35,8 @@ class AppLocation {
     return {
       'lat': latitude,
       'lng': longitude,
+      'latitude': latitude,
+      'longitude': longitude,
       'address': address.trim(),
     };
   }
@@ -88,6 +90,27 @@ Map<String, dynamic>? locationToFirestore(AppLocation? location) {
     return null;
   }
   return location.toFirestore();
+}
+
+Map<String, dynamic> flatLocationFields(
+  AppLocation? location, {
+  String latitudeKey = 'latitude',
+  String longitudeKey = 'longitude',
+  String addressKey = 'address',
+}) {
+  if (location == null) {
+    return <String, dynamic>{
+      latitudeKey: null,
+      longitudeKey: null,
+      addressKey: null,
+    };
+  }
+
+  return <String, dynamic>{
+    latitudeKey: location.latitude,
+    longitudeKey: location.longitude,
+    addressKey: location.address.trim(),
+  };
 }
 
 DateTime? dateTimeFromFirestore(dynamic value) {

@@ -49,5 +49,11 @@
 		<true/>
 		<key>UIViewControllerBasedStatusBarAppearance</key>
 		<false/>
+		<key>NSLocationWhenInUseUsageDescription</key>
+		<string>WasteNot uses your location to pick donation and profile addresses on the map.</string>
+		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+		<string>WasteNot uses your location to pick donation and profile addresses on the map.</string>
+		<key>GoogleMapsApiKey</key>
+		<string>YOUR_GOOGLE_MAPS_API_KEY</string>
 	</dict>
 </plist>

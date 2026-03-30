@@ -27,7 +27,7 @@ class AcceptedDonationDetailScreen extends StatelessWidget {
           children: [
             _info('Donor', donation.donorName),
             _info('Accepted by', donation.acceptedByNgoName ?? 'Not available'),
-            _info('Location', donation.location ?? 'Not provided'),
+            _info('Location', donation.locationAddress ?? 'Location not set'),
             const Divider(height: 30),
             _info('Uploaded at', _formatDateTime(donation.createdAt)),
             _info(

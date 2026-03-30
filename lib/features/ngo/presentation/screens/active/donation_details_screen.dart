@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:wastenot/services/donation_services.dart';
+import 'package:wastenot/services/location_estimate_service.dart';
 import 'package:wastenot/services/session_service.dart';
+import 'package:wastenot/shared/widgets/location_map_preview.dart';
 
 class DonationDetailsScreen extends StatefulWidget {
   const DonationDetailsScreen({super.key, required this.donation});
@@ -13,6 +15,8 @@ class DonationDetailsScreen extends StatefulWidget {
 
 class _DonationDetailsScreenState extends State<DonationDetailsScreen> {
   final DonationService _donationService = DonationService();
+  final LocationEstimateService _locationEstimateService =
+      const LocationEstimateService();
   bool _isAccepting = false;
   late Future<DonationModel> _donationFuture;
 
@@ -95,6 +99,12 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen> {
           }
 
           final donation = snapshot.data!;
+          final ngoLocation =
+              donation.acceptedByNgoLocation ?? SessionService.user?.location;
+          final estimate = _locationEstimateService.estimate(
+            from: ngoLocation,
+            to: donation.location,
+          );
 
           return SingleChildScrollView(
             child: Padding(
@@ -140,13 +150,34 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen> {
                     style: const TextStyle(color: Colors.black87),
                   ),
                   const SizedBox(height: 20),
+                  LocationMapPreview(
+                    location: donation.location,
+                    secondaryLocation: ngoLocation,
+                    height: 180,
+                  ),
+                  const SizedBox(height: 14),
                   const Divider(),
                   _info('Donor', donation.donorName),
                   _info('Email', donation.donorEmail),
                   _info('Phone', donation.donorPhone ?? 'Not provided'),
                   _info('Status', donation.status.toUpperCase()),
                   _info('Servings', donation.quantity),
-                  _info('Pickup Location', donation.location ?? 'Not provided'),
+                  _info(
+                    'Pickup Location',
+                    donation.locationAddress ?? 'Location not set',
+                  ),
+                  _info(
+                    'Distance',
+                    estimate == null
+                        ? 'Distance unavailable'
+                        : '${estimate.distanceKm.toStringAsFixed(1)} km away',
+                  ),
+                  _info(
+                    'Time',
+                    estimate == null
+                        ? 'Distance unavailable'
+                        : 'Approx ${estimate.estimatedMinutes} mins',
+                  ),
                   _info('Uploaded', _formatDateTime(donation.createdAt)),
                   if (donation.expiryAt != null)
                     _info('Expiry', _formatDateTime(donation.expiryAt!)),

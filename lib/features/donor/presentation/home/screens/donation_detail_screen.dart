@@ -115,7 +115,10 @@ class _DonationDetailScreenState extends State<DonationDetailScreen> {
                         'Accepted by',
                         donation.acceptedByNgoName ?? 'Not accepted yet',
                       ),
-                      _info('Location', donation.location ?? 'Not provided'),
+                      _info(
+                        'Location',
+                        donation.locationAddress ?? 'Location not set',
+                      ),
                       const Divider(height: 30),
                       _info('Uploaded at', _formatDateTime(donation.createdAt)),
                       _info(

@@ -91,6 +91,7 @@ class DonationModel {
     this.acceptedAt,
     this.completedAt,
     this.expiryAt,
+    this.rejectedByNgoIds = const <String>[],
   });
 
   final String donationId;
@@ -118,6 +119,7 @@ class DonationModel {
   final DateTime? acceptedAt;
   final DateTime? completedAt;
   final DateTime? expiryAt;
+  final List<String> rejectedByNgoIds;
 
   bool get isActive => status == DonationStatus.active.value;
   bool get isExpired => status == DonationStatus.expired.value;
@@ -154,6 +156,7 @@ class DonationModel {
       'completedAt':
           completedAt == null ? null : Timestamp.fromDate(completedAt!),
       'expiryAt': expiryAt == null ? null : Timestamp.fromDate(expiryAt!),
+      'rejectedByNgoIds': rejectedByNgoIds,
     };
   }
 
@@ -174,6 +177,13 @@ class DonationModel {
     final rawImageUrls = data['imageUrls'];
     final normalizedImageUrls = rawImageUrls is List
         ? rawImageUrls
+            .map((item) => item?.toString().trim() ?? '')
+            .where((item) => item.isNotEmpty)
+            .toList()
+        : <String>[];
+    final rawRejectedNgoIds = data['rejectedByNgoIds'];
+    final normalizedRejectedNgoIds = rawRejectedNgoIds is List
+        ? rawRejectedNgoIds
             .map((item) => item?.toString().trim() ?? '')
             .where((item) => item.isNotEmpty)
             .toList()
@@ -220,6 +230,7 @@ class DonationModel {
       acceptedAt: _dateFromFirestore(data['acceptedAt']),
       completedAt: _dateFromFirestore(data['completedAt']),
       expiryAt: _dateFromFirestore(data['expiryAt']),
+      rejectedByNgoIds: normalizedRejectedNgoIds,
     );
   }
 }
@@ -391,6 +402,7 @@ class DonationService {
   }
 
   Future<List<DonationModel>> getAvailableDonationsForNgo({
+    String? ngoId,
     DateTime? now,
   }) async {
     try {
@@ -408,6 +420,11 @@ class DonationService {
           return false;
         }
         if (donation.isAccepted) {
+          return false;
+        }
+        if (ngoId != null &&
+            ngoId.trim().isNotEmpty &&
+            donation.rejectedByNgoIds.contains(ngoId.trim())) {
           return false;
         }
         final expiryAt = donation.expiryAt;
@@ -570,6 +587,47 @@ class DonationService {
             ngo.profileImageUrl,
           ),
           'acceptedAt': Timestamp.fromDate(now),
+        });
+      });
+
+      return getDonationById(donationId);
+    } on DonationException {
+      rethrow;
+    } on FirebaseException catch (error) {
+      throw DonationException(_mapFirebaseError(error));
+    }
+  }
+
+  Future<DonationModel> rejectDonation({
+    required String donationId,
+    required AppUserModel ngo,
+  }) async {
+    if (!ngo.isNgo) {
+      throw const DonationException('Only NGO accounts can reject donations.');
+    }
+
+    if (donationId.trim().isEmpty) {
+      throw const DonationException('Donation id is required.');
+    }
+
+    final docRef = _donations.doc(donationId.trim());
+
+    try {
+      await _firestore.runTransaction((transaction) async {
+        final snapshot = await transaction.get(docRef);
+        if (!snapshot.exists) {
+          throw const DonationException('Donation not found.');
+        }
+
+        final donation = DonationModel.fromFirestore(snapshot);
+        if (!donation.isActive) {
+          throw const DonationException(
+            'Only active donations can be rejected.',
+          );
+        }
+
+        transaction.update(docRef, {
+          'rejectedByNgoIds': FieldValue.arrayUnion(<String>[ngo.uid]),
         });
       });
 
@@ -797,6 +855,7 @@ class DonationService {
       acceptedAt: donation.acceptedAt,
       completedAt: donation.completedAt,
       expiryAt: donation.expiryAt,
+      rejectedByNgoIds: donation.rejectedByNgoIds,
     );
   }
 }

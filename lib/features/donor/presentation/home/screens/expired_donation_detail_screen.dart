@@ -52,7 +52,7 @@ class ExpiredDonationDetailScreen extends StatelessWidget {
             const SizedBox(height: 10),
             _infoRow('Donor', donation.donorName),
             _infoRow('NGO', donation.acceptedByNgoName ?? 'Not accepted'),
-            _infoRow('Location', donation.location ?? 'Not provided'),
+            _infoRow('Location', donation.locationAddress ?? 'Location not set'),
             const Divider(height: 30),
             _infoRow(
               'Food',

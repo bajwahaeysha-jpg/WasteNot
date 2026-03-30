@@ -163,7 +163,8 @@ class _AllDonationsScreenState extends State<AllDonationsScreen> {
                                         const SizedBox(width: 4),
                                         Expanded(
                                           child: Text(
-                                            donation.location ?? 'No location',
+                                            donation.locationAddress ??
+                                                'Location not set',
                                           ),
                                         ),
                                       ],

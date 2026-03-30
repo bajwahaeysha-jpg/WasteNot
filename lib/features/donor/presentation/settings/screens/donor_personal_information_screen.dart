@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:wastenot/models/app_location.dart';
 import 'package:wastenot/models/app_user_model.dart';
 import 'package:wastenot/services/auth_service.dart';
+import 'package:wastenot/services/location_service.dart';
 import 'package:wastenot/services/session_service.dart';
 
 class DonorPersonalInformationScreen extends StatefulWidget {
@@ -19,9 +21,11 @@ class _DonorPersonalInformationScreenState
   final _addressController = TextEditingController();
   final _aboutController = TextEditingController();
   final _authService = AuthService();
+  final _locationService = const LocationService();
 
   bool _isEditing = false;
   bool _saving = false;
+  AppLocation? _selectedLocation;
 
   static const Color mainGreen = Color(0xFF0E5E53);
 
@@ -53,8 +57,30 @@ class _DonorPersonalInformationScreenState
     _nameController.text = user?.name ?? '';
     _emailController.text = user?.email ?? '';
     _phoneController.text = user?.phone ?? '';
-    _addressController.text = user?.address ?? '';
+    _selectedLocation = user?.location;
+    _addressController.text = user?.location?.address ?? user?.address ?? '';
     _aboutController.text = user?.about ?? '';
+  }
+
+  Future<void> _pickLocation() async {
+    if (!_isEditing) {
+      return;
+    }
+
+    final location = await _locationService.pickLocation(
+      context,
+      initialLocation: _selectedLocation,
+      title: 'Update Profile Location',
+    );
+
+    if (location == null || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _selectedLocation = location;
+      _addressController.text = location.address;
+    });
   }
 
   Future<void> _toggleEditSave() async {
@@ -70,6 +96,7 @@ class _DonorPersonalInformationScreenState
         name: _nameController.text,
         phone: _phoneController.text,
         address: _addressController.text,
+        location: _selectedLocation,
         about: _aboutController.text,
       );
 
@@ -103,6 +130,9 @@ class _DonorPersonalInformationScreenState
     String label,
     TextEditingController controller, {
     int maxLines = 1,
+    bool readOnly = false,
+    VoidCallback? onTap,
+    Widget? suffixIcon,
   }) {
     final editable = _isEditing && label != 'Email';
 
@@ -117,11 +147,14 @@ class _DonorPersonalInformationScreenState
         TextField(
           controller: controller,
           enabled: editable,
+          readOnly: readOnly,
+          onTap: onTap,
           maxLines: maxLines,
           decoration: InputDecoration(
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
             ),
+            suffixIcon: suffixIcon,
           ),
         ),
         const SizedBox(height: 18),
@@ -164,7 +197,13 @@ class _DonorPersonalInformationScreenState
             _field('Name', _nameController),
             _field('Email', _emailController),
             _field('Phone', _phoneController),
-            _field('Address', _addressController),
+            _field(
+              'Address',
+              _addressController,
+              readOnly: true,
+              onTap: _pickLocation,
+              suffixIcon: const Icon(Icons.map_outlined),
+            ),
             _field('About', _aboutController, maxLines: 4),
           ],
         ),

@@ -72,6 +72,15 @@ class _LocationMapPreviewState extends State<LocationMapPreview> {
   }
 
   @override
+  void didUpdateWidget(covariant LocationMapPreview oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.location != widget.location ||
+        oldWidget.secondaryLocation != widget.secondaryLocation) {
+      _fitBounds();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final primaryLocation = widget.location;
     if (primaryLocation == null) {
@@ -131,10 +140,6 @@ class _LocationMapPreviewState extends State<LocationMapPreview> {
                 width: 4,
                 geodesic: true,
                 color: const Color(0xFF4A90E2),
-                patterns: <PatternItem>[
-                  PatternItem.dot,
-                  PatternItem.gap(8),
-                ],
               ),
           },
           zoomControlsEnabled: false,

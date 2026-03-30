@@ -99,6 +99,7 @@ class FirestoreService {
       'phone': phone,
       'address': address,
       'location': location.toFirestore(),
+      ...flatLocationFields(location),
       'about': about,
       'allowMessages': true,
       'notificationsEnabled': true,
@@ -115,6 +116,7 @@ class FirestoreService {
     String? email,
     String? phone,
     String? address,
+    AppLocation? location,
     String? profileImageUrl,
   }) {
     final payload = <String, dynamic>{};
@@ -130,6 +132,10 @@ class FirestoreService {
     }
     if (address != null) {
       payload['address'] = address;
+    }
+    if (location != null) {
+      payload['location'] = locationToFirestore(location);
+      payload.addAll(flatLocationFields(location));
     }
     if (profileImageUrl != null) {
       payload['profileImageUrl'] = profileImageUrl;
@@ -162,6 +168,7 @@ class FirestoreService {
       'phone': phone,
       'address': address,
       'location': locationToFirestore(location),
+      ...flatLocationFields(location),
       'registrationNumber': registrationNumber,
       'description': description,
       'profileImageUrl': profileImageUrl,
@@ -329,6 +336,7 @@ class FirestoreService {
         'phone': request.phone,
         'address': request.address,
         'location': locationToFirestore(request.location),
+        ...flatLocationFields(request.location),
         'registrationNumber': request.registrationNumber,
         'organizationDescription': request.description,
         'allowMessages': true,

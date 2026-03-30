@@ -2,8 +2,10 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:wastenot/models/app_location.dart';
 import 'package:wastenot/models/app_user_model.dart';
 import 'package:wastenot/services/auth_service.dart';
+import 'package:wastenot/services/location_service.dart';
 import 'package:wastenot/services/session_service.dart';
 
 class PersonalInformationScreen extends StatefulWidget {
@@ -17,6 +19,7 @@ class PersonalInformationScreen extends StatefulWidget {
 class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
   final AuthService _authService = AuthService();
   final ImagePicker _picker = ImagePicker();
+  final LocationService _locationService = const LocationService();
 
   late final TextEditingController _organizationNameController;
   late final TextEditingController _emailController;
@@ -30,6 +33,7 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
   bool _isSaving = false;
   File? _selectedImage;
   AppUserModel? _lastLoadedUser;
+  AppLocation? _selectedLocation;
 
   @override
   void initState() {
@@ -74,7 +78,8 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
     _organizationNameController.text = user.organizationName ?? user.displayName;
     _emailController.text = user.email;
     _phoneController.text = user.phone ?? '';
-    _addressController.text = user.address ?? '';
+    _selectedLocation = user.location;
+    _addressController.text = user.location?.address ?? user.address ?? '';
     _registrationNumberController.text = user.registrationNumber ?? '';
     _organizationDescriptionController.text =
         user.organizationDescription ?? '';
@@ -112,6 +117,7 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
         email: _emailController.text,
         phone: _phoneController.text,
         address: _addressController.text,
+        location: _selectedLocation,
         organizationName: _organizationNameController.text,
         registrationNumber: _registrationNumberController.text,
         organizationDescription: _organizationDescriptionController.text,
@@ -152,6 +158,27 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
     });
   }
 
+  Future<void> _pickLocation() async {
+    if (!_isEditing) {
+      return;
+    }
+
+    final location = await _locationService.pickLocation(
+      context,
+      initialLocation: _selectedLocation,
+      title: 'Update NGO Location',
+    );
+
+    if (location == null || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _selectedLocation = location;
+      _addressController.text = location.address;
+    });
+  }
+
   void _showMessage(String message, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -166,6 +193,8 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
     TextEditingController controller, {
     int maxLines = 1,
     bool readOnly = false,
+    VoidCallback? onTap,
+    Widget? suffixIcon,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -182,6 +211,7 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
           controller: controller,
           enabled: _isEditing && !_isSaving,
           readOnly: readOnly,
+          onTap: onTap,
           maxLines: maxLines,
           style: const TextStyle(color: Colors.black),
           decoration: InputDecoration(
@@ -203,6 +233,7 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
                 width: 1.8,
               ),
             ),
+            suffixIcon: suffixIcon,
           ),
         ),
         const SizedBox(height: 18),
@@ -315,7 +346,13 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
                       ),
                       _field('Email', _emailController),
                       _field('Phone Number', _phoneController),
-                      _field('Address', _addressController),
+                      _field(
+                        'Address',
+                        _addressController,
+                        readOnly: true,
+                        onTap: _pickLocation,
+                        suffixIcon: const Icon(Icons.map_outlined),
+                      ),
                       _field(
                         'Registration Number',
                         _registrationNumberController,

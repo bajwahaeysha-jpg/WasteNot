@@ -2,8 +2,10 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:wastenot/models/app_location.dart';
 import 'package:wastenot/screens/login_screen.dart';
 import 'package:wastenot/services/auth_service.dart';
+import 'package:wastenot/services/location_service.dart';
 
 class NgoSignUpScreen extends StatefulWidget {
   const NgoSignUpScreen({super.key});
@@ -22,9 +24,11 @@ class _NgoSignUpScreenState extends State<NgoSignUpScreen> {
   final _registrationController = TextEditingController();
   final _descriptionController = TextEditingController();
   final AuthService _authService = AuthService();
+  final LocationService _locationService = const LocationService();
   final ImagePicker _picker = ImagePicker();
 
   File? _image;
+  AppLocation? _selectedLocation;
   bool _obscurePassword = true;
   bool _loading = false;
 
@@ -114,7 +118,19 @@ class _NgoSignUpScreenState extends State<NgoSignUpScreen> {
                   return null;
                 },
               ),
-              _field('Address', _addressController),
+              _field(
+                'Address',
+                _addressController,
+                readOnly: true,
+                onTap: _pickLocation,
+                suffix: const Icon(Icons.map_outlined),
+                validator: (_) {
+                  if (_selectedLocation == null) {
+                    return 'Please select your location from the map';
+                  }
+                  return null;
+                },
+              ),
               _field('Registration Number', _registrationController),
               TextFormField(
                 controller: _descriptionController,
@@ -161,6 +177,8 @@ class _NgoSignUpScreenState extends State<NgoSignUpScreen> {
     TextEditingController controller, {
     bool obscure = false,
     Widget? suffix,
+    bool readOnly = false,
+    VoidCallback? onTap,
     String? Function(String?)? validator,
   }) {
     return Padding(
@@ -168,6 +186,8 @@ class _NgoSignUpScreenState extends State<NgoSignUpScreen> {
       child: TextFormField(
         controller: controller,
         obscureText: obscure,
+        readOnly: readOnly,
+        onTap: onTap,
         validator: validator ??
             (value) {
               if (value == null || value.trim().isEmpty) {
@@ -192,6 +212,23 @@ class _NgoSignUpScreenState extends State<NgoSignUpScreen> {
     setState(() => _image = File(picked.path));
   }
 
+  Future<void> _pickLocation() async {
+    final location = await _locationService.pickLocation(
+      context,
+      initialLocation: _selectedLocation,
+      title: 'Select NGO Location',
+    );
+
+    if (location == null || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _selectedLocation = location;
+      _addressController.text = location.address;
+    });
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -205,6 +242,7 @@ class _NgoSignUpScreenState extends State<NgoSignUpScreen> {
         password: _passwordController.text,
         phone: _phoneController.text,
         address: _addressController.text,
+        location: _selectedLocation!,
         registrationNumber: _registrationController.text,
         description: _descriptionController.text,
         profileImage: _image,

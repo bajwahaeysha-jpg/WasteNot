@@ -1,8 +1,7 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:intl/intl.dart';
+import 'package:flutter/material.dart';
 import 'package:wastenot/core/constants/app_colors.dart';
 import 'package:wastenot/features/goal/models/goal_model.dart';
 import 'package:wastenot/features/goal/services/goal_service.dart';
@@ -384,9 +383,10 @@ class _NgoHomeScreenState extends State<NgoHomeScreen>
                         return Column(
                           children: available.map((donation) {
                             final location =
-                                donation.location?.trim().isNotEmpty == true
-                                    ? donation.location!.trim()
-                                    : 'Location not provided';
+                                donation.locationAddress?.trim().isNotEmpty ==
+                                        true
+                                    ? donation.locationAddress!.trim()
+                                    : 'Location not set';
                             final time =
                                 _recentDonationTime(donation.createdAt);
                             final title = donation.foodItems.isNotEmpty

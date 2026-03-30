@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:wastenot/services/location_estimate_service.dart';
 import 'package:wastenot/services/donation_services.dart';
 import 'package:wastenot/services/session_service.dart';
+import 'package:wastenot/shared/widgets/location_map_preview.dart';
 
 class DonationDetailsScreen extends StatefulWidget {
   const DonationDetailsScreen({super.key, required this.donation});
@@ -13,6 +15,8 @@ class DonationDetailsScreen extends StatefulWidget {
 
 class _DonationDetailsScreenState extends State<DonationDetailsScreen> {
   final DonationService _donationService = DonationService();
+  final LocationEstimateService _locationEstimateService =
+      const LocationEstimateService();
   bool _isAccepting = false;
   late Future<DonationModel> _donationFuture;
 
@@ -127,6 +131,11 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen> {
           }
 
           final donation = snapshot.data!;
+          final ngoLocation = SessionService.user?.location;
+          final estimate = _locationEstimateService.estimate(
+            from: ngoLocation,
+            to: donation.location,
+          );
 
           return Column(
             children: [
@@ -176,31 +185,40 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen> {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      Container(
-                        height: 80,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.black12),
-                        ),
-                        alignment: Alignment.centerLeft,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.location_on, color: Colors.red),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                donation.location ?? 'No pickup location',
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                      LocationMapPreview(
+                        location: donation.location,
+                        secondaryLocation: ngoLocation,
+                        height: 180,
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          const Icon(Icons.location_on, color: Colors.red),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              donation.locationAddress ?? 'Location not set',
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      _detailRow(
+                        'Distance',
+                        estimate == null
+                            ? 'Distance unavailable'
+                            : '${estimate.distanceKm.toStringAsFixed(1)} km away',
+                      ),
+                      const SizedBox(height: 12),
+                      _detailRow(
+                        'Time',
+                        estimate == null
+                            ? 'Distance unavailable'
+                            : 'Approx ${estimate.estimatedMinutes} mins',
                       ),
                       const SizedBox(height: 22),
                       Padding(

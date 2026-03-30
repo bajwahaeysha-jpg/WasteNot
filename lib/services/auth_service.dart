@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:wastenot/models/app_location.dart';
 import 'package:wastenot/models/app_user_model.dart';
 import 'package:wastenot/services/firestore_service.dart';
@@ -148,6 +147,18 @@ class AuthService {
 
       throw AuthFailure(_mapFirebaseAuthError(error));
     }
+  }
+
+  Future<AppUserModel> login({
+    required String email,
+    required String password,
+    String? name,
+  }) {
+    return signIn(
+      email: email,
+      password: password,
+      name: name,
+    );
   }
 
   Future<AppUserModel> registerDonor({
@@ -310,6 +321,8 @@ class AuthService {
 
     if (location != null) {
       data['location'] = locationToFirestore(location);
+      data.addAll(flatLocationFields(location));
+      data['address'] = location.address.trim();
     }
 
     if (sessionUser.isDonor) {
@@ -335,6 +348,19 @@ class AuthService {
   Future<void> signOut() async {
     await _auth.signOut();
     SessionService.clear();
+  }
+
+  Future<void> logout() => signOut();
+
+  Future<AppUserModel?> checkUserSession() => currentUserProfile();
+
+  Future<void> resendPendingVerificationEmail() async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw AuthFailure('No authenticated user is available for verification.');
+    }
+
+    await user.sendEmailVerification();
   }
 
   Future<void> deleteCurrentAccount() async {

@@ -2,8 +2,10 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:wastenot/models/app_location.dart';
 import 'package:wastenot/models/app_user_model.dart';
 import 'package:wastenot/services/auth_service.dart';
+import 'package:wastenot/services/location_service.dart';
 import 'package:wastenot/services/session_service.dart';
 
 class DonorProfileScreen extends StatefulWidget {
@@ -21,10 +23,12 @@ class _DonorProfileScreenState extends State<DonorProfileScreen> {
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
   final AuthService _authService = AuthService();
+  final LocationService _locationService = const LocationService();
 
   bool _isEditing = false;
   bool _saving = false;
   File? _selectedImage;
+  AppLocation? _selectedLocation;
 
   @override
   void initState() {
@@ -53,7 +57,8 @@ class _DonorProfileScreenState extends State<DonorProfileScreen> {
     _nameController.text = user?.name ?? '';
     _emailController.text = user?.email ?? '';
     _phoneController.text = user?.phone ?? '';
-    _addressController.text = user?.address ?? '';
+    _selectedLocation = user?.location;
+    _addressController.text = user?.location?.address ?? user?.address ?? '';
   }
 
   Future<void> _pickImage() async {
@@ -69,6 +74,27 @@ class _DonorProfileScreenState extends State<DonorProfileScreen> {
     setState(() => _selectedImage = File(image.path));
   }
 
+  Future<void> _pickLocation() async {
+    if (!_isEditing) {
+      return;
+    }
+
+    final location = await _locationService.pickLocation(
+      context,
+      initialLocation: _selectedLocation,
+      title: 'Update Profile Location',
+    );
+
+    if (location == null || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _selectedLocation = location;
+      _addressController.text = location.address;
+    });
+  }
+
   Future<void> _toggleEditSave() async {
     if (!_isEditing) {
       setState(() => _isEditing = true);
@@ -82,6 +108,7 @@ class _DonorProfileScreenState extends State<DonorProfileScreen> {
   name: _nameController.text,
   phone: _phoneController.text,
   address: _addressController.text,
+  location: _selectedLocation,
   profileImage: _selectedImage,
 );
 
@@ -114,7 +141,13 @@ class _DonorProfileScreenState extends State<DonorProfileScreen> {
     );
   }
 
-  Widget _field(String label, TextEditingController controller) {
+  Widget _field(
+    String label,
+    TextEditingController controller, {
+    bool readOnly = false,
+    VoidCallback? onTap,
+    Widget? suffixIcon,
+  }) {
     final editable = _isEditing && label != 'Email';
 
     return Column(
@@ -125,6 +158,8 @@ class _DonorProfileScreenState extends State<DonorProfileScreen> {
         TextField(
           controller: controller,
           enabled: editable,
+          readOnly: readOnly,
+          onTap: onTap,
           decoration: InputDecoration(
             filled: true,
             fillColor: Colors.white,
@@ -138,6 +173,7 @@ class _DonorProfileScreenState extends State<DonorProfileScreen> {
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: Colors.black),
             ),
+            suffixIcon: suffixIcon,
           ),
         ),
         const SizedBox(height: 18),
@@ -224,7 +260,13 @@ class _DonorProfileScreenState extends State<DonorProfileScreen> {
                 _field('Name', _nameController),
                 _field('Email', _emailController),
                 _field('Phone', _phoneController),
-                _field('Address', _addressController),
+                _field(
+                  'Address',
+                  _addressController,
+                  readOnly: true,
+                  onTap: _pickLocation,
+                  suffixIcon: const Icon(Icons.map_outlined),
+                ),
               ],
             ),
           ),

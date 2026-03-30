@@ -71,7 +71,7 @@ class AcceptedDonationDetailScreen extends StatelessWidget {
               const Divider(),
               _row('Donor', donation.donorName),
               _row('Accepted by', donation.acceptedByNgoName ?? 'This NGO'),
-              _row('Location', donation.location ?? 'Not provided'),
+              _row('Location', donation.locationAddress ?? 'Location not set'),
               const SizedBox(height: 8),
               const Divider(),
               _row('Uploaded at', _formatDateTime(donation.createdAt)),

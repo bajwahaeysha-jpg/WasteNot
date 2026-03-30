@@ -2,8 +2,10 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:wastenot/models/app_location.dart';
 import 'package:wastenot/services/donation_services.dart';
 import 'package:wastenot/services/firestore_service.dart';
+import 'package:wastenot/services/location_service.dart';
 import 'package:wastenot/services/session_service.dart';
 
 class AddDonationScreen extends StatefulWidget {
@@ -17,11 +19,14 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
   final ImagePicker _picker = ImagePicker();
   final DonationService _donationService = DonationService();
   final FirestoreService _firestoreService = FirestoreService();
+  final LocationService _locationService = const LocationService();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   XFile? pickedImage;
   String? selectedServing;
   bool _isSubmitting = false;
+  bool _isLoadingLocation = true;
+  AppLocation? _selectedDonationLocation;
 
   final foodController = TextEditingController();
   final locationController = TextEditingController();
@@ -38,12 +43,52 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _loadProfileLocation();
+  }
+
+  @override
   void dispose() {
     foodController.dispose();
     locationController.dispose();
     descriptionController.dispose();
     precautionController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadProfileLocation() async {
+    final donor = SessionService.user;
+    if (donor == null || donor.uid.trim().isEmpty) {
+      if (mounted) {
+        setState(() => _isLoadingLocation = false);
+      }
+      return;
+    }
+
+    try {
+      final refreshedUser = await _firestoreService.getUserByUid(donor.uid);
+      final location = refreshedUser?.location ?? donor.location;
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _selectedDonationLocation = location;
+        locationController.text = location?.address ?? '';
+        _isLoadingLocation = false;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _selectedDonationLocation = donor.location;
+        locationController.text = donor.location?.address ?? '';
+        _isLoadingLocation = false;
+      });
+    }
   }
 
   Future<void> pickImage() async {
@@ -101,7 +146,7 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
           description: description.isEmpty ? null : description,
           // 🔥 FIX: NO MERGE — clean separation
           precaution: precaution.isEmpty ? null : precaution,
-          location: locationController.text.trim(),
+          location: _selectedDonationLocation!,
           imageUrls: uploadedImageUrl == null
               ? const <String>[]
               : <String>[uploadedImageUrl],
@@ -141,6 +186,23 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
         setState(() => _isSubmitting = false);
       }
     }
+  }
+
+  Future<void> _pickDonationLocation() async {
+    final location = await _locationService.pickLocation(
+      context,
+      initialLocation: _selectedDonationLocation,
+      title: 'Select Donation Location',
+    );
+
+    if (location == null || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _selectedDonationLocation = location;
+      locationController.text = location.address;
+    });
   }
 
   void _showError(String message) {
@@ -219,14 +281,18 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
                           const SizedBox(height: 6),
                           Expanded(
                             child: _textField(
-                              'Enter pickup location',
+                              _isLoadingLocation
+                                  ? 'Loading pickup location...'
+                                  : 'Enter pickup location',
                               locationController,
+                              readOnly: true,
+                              onTap: _pickDonationLocation,
+                              suffix: const Icon(Icons.map_outlined),
                               validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
+                                if (_selectedDonationLocation == null ||
+                                    value == null ||
+                                    value.trim().isEmpty) {
                                   return 'Location is required.';
-                                }
-                                if (value.trim().length < 3) {
-                                  return 'Enter valid location.';
                                 }
                                 return null;
                               },
@@ -343,6 +409,9 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
   Widget _textField(
     String hint,
     TextEditingController controller, {
+    bool readOnly = false,
+    VoidCallback? onTap,
+    Widget? suffix,
     String? Function(String?)? validator,
   }) {
     return Container(
@@ -354,8 +423,14 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
       ),
       child: TextFormField(
         controller: controller,
+        readOnly: readOnly,
+        onTap: onTap,
         validator: validator,
-        decoration: InputDecoration(border: InputBorder.none, hintText: hint),
+        decoration: InputDecoration(
+          border: InputBorder.none,
+          hintText: hint,
+          suffixIcon: suffix,
+        ),
       ),
     );
   }
@@ -392,7 +467,7 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
         border: Border.all(color: Colors.grey.shade300),
       ),
       child: DropdownButtonFormField<String>(
-        value: selectedServing,
+        initialValue: selectedServing,
         decoration: const InputDecoration(border: InputBorder.none),
         hint: const Text('Select servings'),
         isExpanded: true,
