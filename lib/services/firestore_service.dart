@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:wastenot/features/admin/more/feedback/feedback_model.dart';
+import 'package:wastenot/models/app_location.dart';
 import 'package:wastenot/models/app_user_model.dart';
 import 'package:wastenot/models/ngo_request_model.dart';
 import 'package:wastenot/services/notification_service.dart';
@@ -85,8 +86,10 @@ class FirestoreService {
     required String uid,
     required String name,
     required String email,
+    required String role,
     required String phone,
     required String address,
+    required AppLocation location,
     required String about,
     String? profileImageUrl,
   }) {
@@ -95,41 +98,15 @@ class FirestoreService {
       'email': email,
       'phone': phone,
       'address': address,
+      'location': location.toFirestore(),
       'about': about,
       'allowMessages': true,
       'notificationsEnabled': true,
       'profileImageUrl': profileImageUrl,
-      'role': 'donor',
+      'role': role,
       'approvedByAdmin': true,
       'createdAt': FieldValue.serverTimestamp(),
     });
-  }
-
-  Future<void> saveNgo({
-    required String uid,
-    required String organizationName,
-    required String email,
-    required String phone,
-    required String address,
-    required String registrationNumber,
-    required String description,
-    String? profileImageUrl,
-    bool approvedByAdmin = false,
-  }) {
-    return _users.doc(uid).set({
-      'organizationName': organizationName,
-      'email': email,
-      'phone': phone,
-      'address': address,
-      'registrationNumber': registrationNumber,
-      'organizationDescription': description,
-      'allowMessages': true,
-      'notificationsEnabled': true,
-      'profileImageUrl': profileImageUrl,
-      'role': 'ngo',
-      'approvedByAdmin': approvedByAdmin,
-      'createdAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
   }
 
   Future<void> updateUserProfile({
@@ -171,85 +148,26 @@ class FirestoreService {
     required String password,
     required String phone,
     required String address,
+    AppLocation? location,
     required String registrationNumber,
     required String description,
     String? profileImageUrl,
   }) {
     final encodedPassword = base64Encode(utf8.encode(password));
-    final normalizedEmail = email.trim().toLowerCase();
-    final requestId = ngoRequestIdForEmail(normalizedEmail);
 
-    return _ngoRequests.doc(requestId).set({
+    return _ngoRequests.add({
       'organizationName': organizationName,
-      'email': normalizedEmail,
+      'email': email,
       'password': encodedPassword,
       'phone': phone,
       'address': address,
+      'location': locationToFirestore(location),
       'registrationNumber': registrationNumber,
       'description': description,
       'profileImageUrl': profileImageUrl,
       'status': 'pending',
       'createdAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
-  }
-
-  Future<bool> ensureNgoRequestExists({
-    required String email,
-    required String organizationName,
-    String? password,
-    String? phone,
-    String? address,
-    String? registrationNumber,
-    String? description,
-    String? profileImageUrl,
-  }) async {
-    final normalizedEmail = email.trim().toLowerCase();
-    final requestId = ngoRequestIdForEmail(normalizedEmail);
-    final ref = _ngoRequests.doc(requestId);
-    var created = false;
-
-    await _firestore.runTransaction((transaction) async {
-      final snapshot = await transaction.get(ref);
-      if (snapshot.exists) {
-        return;
-      }
-
-      final payload = <String, dynamic>{
-        'email': normalizedEmail,
-        'organizationName': organizationName.trim().isEmpty
-            ? _defaultOrganizationNameForEmail(normalizedEmail)
-            : organizationName.trim(),
-        'status': 'pending',
-        'createdAt': FieldValue.serverTimestamp(),
-      };
-
-      final encodedPassword = password == null || password.isEmpty
-          ? null
-          : base64Encode(utf8.encode(password));
-      if (encodedPassword != null) {
-        payload['password'] = encodedPassword;
-      }
-      if (phone != null && phone.trim().isNotEmpty) {
-        payload['phone'] = phone.trim();
-      }
-      if (address != null && address.trim().isNotEmpty) {
-        payload['address'] = address.trim();
-      }
-      if (registrationNumber != null && registrationNumber.trim().isNotEmpty) {
-        payload['registrationNumber'] = registrationNumber.trim();
-      }
-      if (description != null && description.trim().isNotEmpty) {
-        payload['description'] = description.trim();
-      }
-      if (profileImageUrl != null && profileImageUrl.trim().isNotEmpty) {
-        payload['profileImageUrl'] = profileImageUrl.trim();
-      }
-
-      transaction.set(ref, payload);
-      created = true;
     });
-
-    return created;
   }
 
   Future<AppUserModel?> getUserByUid(String uid) async {
@@ -259,15 +177,6 @@ class FirestoreService {
     }
 
     return AppUserModel.fromFirestore(doc);
-  }
-
-  Future<Map<String, dynamic>?> getUserDataByUid(String uid) async {
-    final doc = await _users.doc(uid).get();
-    if (!doc.exists) {
-      return null;
-    }
-
-    return doc.data();
   }
 
   Stream<AppUserModel?> userStream(String uid) {
@@ -300,12 +209,7 @@ class FirestoreService {
   }
 
   Stream<List<AppUserModel>> usersByRole(String role) {
-    Query<Map<String, dynamic>> query = _users.where('role', isEqualTo: role);
-    if (role.trim().toLowerCase() == 'ngo') {
-      query = query.where('approvedByAdmin', isEqualTo: true);
-    }
-
-    return query.snapshots().map((snapshot) {
+    return _users.where('role', isEqualTo: role).snapshots().map((snapshot) {
       final users = snapshot.docs.map(AppUserModel.fromFirestore).toList();
       users.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       return users;
@@ -394,43 +298,6 @@ class FirestoreService {
   }
 
   Future<AppUserModel> approveNgoRequest(NgoRequestModel request) async {
-    final existingUser = await getUserByEmail(request.email);
-    if (existingUser != null) {
-      await _users.doc(existingUser.uid).set({
-        'organizationName': request.organizationName,
-        'email': request.email,
-        'phone': request.phone,
-        'address': request.address,
-        'registrationNumber': request.registrationNumber,
-        'organizationDescription': request.description,
-        'allowMessages': true,
-        'notificationsEnabled': true,
-        'profileImageUrl': request.profileImageUrl,
-        'role': 'ngo',
-        'approvedByAdmin': true,
-      }, SetOptions(merge: true));
-
-      await _createNotification(
-        email: request.email,
-        uid: existingUser.uid,
-        title: 'NGO Request Approved',
-        message:
-            'Your NGO registration request has been approved. You can now login.',
-      );
-
-      await _ngoRequests.doc(request.id).delete();
-
-      final user = await getUserByUid(existingUser.uid);
-      if (user == null) {
-        throw FirebaseException(
-          plugin: 'cloud_firestore',
-          message: 'NGO user document was not updated correctly.',
-        );
-      }
-
-      return user;
-    }
-
     final defaultApp = Firebase.app();
     final secondaryName = 'ngo-approval-${request.id}';
     FirebaseApp? secondaryApp;
@@ -461,6 +328,7 @@ class FirestoreService {
         'email': request.email,
         'phone': request.phone,
         'address': request.address,
+        'location': locationToFirestore(request.location),
         'registrationNumber': request.registrationNumber,
         'organizationDescription': request.description,
         'allowMessages': true,
@@ -647,18 +515,5 @@ class FirestoreService {
       'createdAt': FieldValue.serverTimestamp(),
       'timestamp': FieldValue.serverTimestamp(),
     });
-  }
-
-  static String ngoRequestIdForEmail(String email) {
-    return email.trim().toLowerCase().replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_');
-  }
-
-  static String _defaultOrganizationNameForEmail(String email) {
-    final localPart = email.split('@').first.trim();
-    if (localPart.isEmpty) {
-      return 'NGO';
-    }
-
-    return localPart;
   }
 }

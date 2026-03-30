@@ -1,8 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:wastenot/features/goal/services/goal_service.dart';
+import 'package:wastenot/models/app_location.dart';
 import 'package:wastenot/models/app_user_model.dart';
-import 'package:wastenot/services/notification_service.dart';
+import 'package:wastenot/services/location_service.dart';
 
 enum DonationStatus {
   active('active'),
@@ -29,7 +30,7 @@ class DonationCreateRequest {
     required this.quantity,
     this.description,
     this.precaution,
-    this.location,
+    required this.location,
     this.imageUrls = const <String>[],
     this.expiryAt,
   });
@@ -38,18 +39,22 @@ class DonationCreateRequest {
   final String quantity;
   final String? description;
   final String? precaution;
-  final String? location;
+  final AppLocation location;
   final List<String> imageUrls;
   final DateTime? expiryAt;
 
   Map<String, dynamic> toFirestore() {
     return {
       'foodItems': foodItems,
+      'food': foodItems.join(', '),
       'quantity': quantity.trim(),
       'servings': quantity.trim(),
       'description': _normalizeNullable(description),
       'precaution': _normalizeNullable(precaution),
-      'location': _normalizeNullable(location),
+      'location': location.toFirestore(),
+      'donationLatitude': location.latitude,
+      'donationLongitude': location.longitude,
+      'donationAddress': location.address,
       'imageUrls': imageUrls
           .map((url) => url.trim())
           .where((url) => url.isNotEmpty)
@@ -69,7 +74,6 @@ class DonationModel {
     required this.foodItems,
     required this.quantity,
     required this.status,
-    this.rejectedByNgoIds = const <String>[],
     this.donorPhone,
     this.donorAddress,
     this.donorProfileImageUrl,
@@ -82,6 +86,7 @@ class DonationModel {
     this.acceptedByNgoEmail,
     this.acceptedByNgoPhone,
     this.acceptedByNgoAddress,
+    this.acceptedByNgoLocation,
     this.acceptedByNgoProfileImageUrl,
     this.acceptedAt,
     this.completedAt,
@@ -97,10 +102,9 @@ class DonationModel {
   final String? donorProfileImageUrl;
   final List<String> foodItems;
   final String quantity;
-  final List<String> rejectedByNgoIds;
   final String? description;
   final String? precaution;
-  final String? location;
+  final AppLocation? location;
   final List<String> imageUrls;
   final String status;
   final String? acceptedByNgoId;
@@ -108,6 +112,7 @@ class DonationModel {
   final String? acceptedByNgoEmail;
   final String? acceptedByNgoPhone;
   final String? acceptedByNgoAddress;
+  final AppLocation? acceptedByNgoLocation;
   final String? acceptedByNgoProfileImageUrl;
   final DateTime createdAt;
   final DateTime? acceptedAt;
@@ -134,15 +139,15 @@ class DonationModel {
       'servings': quantity,
       'description': description,
       'precaution': precaution,
-      'location': location,
+      'location': locationToFirestore(location),
       'imageUrls': imageUrls,
-      'rejectedByNgoIds': rejectedByNgoIds,
       'status': status,
       'acceptedByNgoId': acceptedByNgoId,
       'acceptedByNgoName': acceptedByNgoName,
       'acceptedByNgoEmail': acceptedByNgoEmail,
       'acceptedByNgoPhone': acceptedByNgoPhone,
       'acceptedByNgoAddress': acceptedByNgoAddress,
+      'acceptedByNgoLocation': locationToFirestore(acceptedByNgoLocation),
       'acceptedByNgoProfileImageUrl': acceptedByNgoProfileImageUrl,
       'createdAt': Timestamp.fromDate(createdAt),
       'acceptedAt': acceptedAt == null ? null : Timestamp.fromDate(acceptedAt!),
@@ -173,14 +178,13 @@ class DonationModel {
             .where((item) => item.isNotEmpty)
             .toList()
         : <String>[];
-    final rawRejectedBy = data['rejectedByNgoIds'];
-    final normalizedRejectedBy = rawRejectedBy is List
-        ? rawRejectedBy
-            .map((item) => item?.toString().trim() ?? '')
-            .where((item) => item.isNotEmpty)
-            .toList()
-        : <String>[];
     final donorId = (data['donorId'] as String?)?.trim();
+    final donationLocation =
+        AppLocation.fromDynamic(data['location']) ??
+        _locationFromLegacyDonationFields(data) ??
+        AppLocation.fromDynamic(data['pickupLocation']);
+    final acceptedByNgoLocation =
+        AppLocation.fromDynamic(data['acceptedByNgoLocation']);
 
     return DonationModel(
       donationId: ((data['donationId'] as String?)?.trim().isNotEmpty ?? false)
@@ -195,10 +199,9 @@ class DonationModel {
           _normalizeNullable(data['donorProfileImageUrl'] as String?),
       foodItems: normalizedFoodItems,
       quantity: _resolveQuantity(data),
-      rejectedByNgoIds: normalizedRejectedBy,
       description: _normalizeNullable(data['description'] as String?),
       precaution: _normalizeNullable(data['precaution'] as String?),
-      location: _normalizeNullable(data['location'] as String?),
+      location: donationLocation,
       imageUrls: normalizedImageUrls,
       status: (data['status'] as String?)?.trim() ?? DonationStatus.active.value,
       acceptedByNgoId: _normalizeNullable(data['acceptedByNgoId'] as String?),
@@ -210,6 +213,7 @@ class DonationModel {
           _normalizeNullable(data['acceptedByNgoPhone'] as String?),
       acceptedByNgoAddress:
           _normalizeNullable(data['acceptedByNgoAddress'] as String?),
+      acceptedByNgoLocation: acceptedByNgoLocation,
       acceptedByNgoProfileImageUrl:
           _normalizeNullable(data['acceptedByNgoProfileImageUrl'] as String?),
       createdAt: _dateFromFirestore(data['createdAt']) ?? DateTime.now(),
@@ -223,12 +227,17 @@ class DonationModel {
 class DonationService {
   DonationService({
     FirebaseFirestore? firestore,
-  }) : _firestore = firestore ?? FirebaseFirestore.instance;
+    LocationService? locationService,
+  })  : _firestore = firestore ?? FirebaseFirestore.instance,
+        _locationService = locationService ?? const LocationService();
 
   final FirebaseFirestore _firestore;
+  final LocationService _locationService;
 
   CollectionReference<Map<String, dynamic>> get _donations =>
       _firestore.collection('donations');
+  CollectionReference<Map<String, dynamic>> get _users =>
+      _firestore.collection('users');
 
   String createDraftDonationId() => _donations.doc().id;
 
@@ -299,7 +308,7 @@ class DonationService {
       if (!doc.exists) {
         throw const DonationException('Donation not found.');
       }
-      return DonationModel.fromFirestore(doc);
+      return _resolveDonationLocation(DonationModel.fromFirestore(doc));
     } on FirebaseException catch (error) {
       throw DonationException(_mapFirebaseError(error));
     }
@@ -313,7 +322,11 @@ class DonationService {
         '[DonationService] getAllDonations(status: ${status?.value ?? 'all'})',
       );
       final snapshot = await _donations.get();
-      final donations = snapshot.docs.map(DonationModel.fromFirestore).toList();
+      final donations = await Future.wait(
+        snapshot.docs
+            .map(DonationModel.fromFirestore)
+            .map(_resolveDonationLocation),
+      );
       final filtered = status == null
           ? donations
           : donations.where((donation) => donation.status == status.value).toList();
@@ -347,7 +360,11 @@ class DonationService {
         '[DonationService] getDonorDonations(donorId: $normalizedDonorId, status: ${status?.value ?? 'all'})',
       );
       final snapshot = await _donations.get();
-      final donations = snapshot.docs.map(DonationModel.fromFirestore).toList();
+      final donations = await Future.wait(
+        snapshot.docs
+            .map(DonationModel.fromFirestore)
+            .map(_resolveDonationLocation),
+      );
       final filtered = donations.where((donation) {
         if (donation.donorId != normalizedDonorId) {
           return false;
@@ -374,7 +391,6 @@ class DonationService {
   }
 
   Future<List<DonationModel>> getAvailableDonationsForNgo({
-    String? ngoId,
     DateTime? now,
   }) async {
     try {
@@ -382,18 +398,16 @@ class DonationService {
       final snapshot = await _donations.get();
 
       final referenceTime = now ?? DateTime.now();
-      final trimmedNgoId = ngoId?.trim();
-      final donations = snapshot.docs.map(DonationModel.fromFirestore).toList();
+      final donations = await Future.wait(
+        snapshot.docs
+            .map(DonationModel.fromFirestore)
+            .map(_resolveDonationLocation),
+      );
       final filtered = donations.where((donation) {
         if (donation.status != DonationStatus.active.value) {
           return false;
         }
         if (donation.isAccepted) {
-          return false;
-        }
-        if (trimmedNgoId != null &&
-            trimmedNgoId.isNotEmpty &&
-            donation.rejectedByNgoIds.contains(trimmedNgoId)) {
           return false;
         }
         final expiryAt = donation.expiryAt;
@@ -429,7 +443,11 @@ class DonationService {
         '[DonationService] getNgoAcceptedDonations(ngoId: $normalizedNgoId, status: ${status?.value ?? 'all'})',
       );
       final snapshot = await _donations.get();
-      final donations = snapshot.docs.map(DonationModel.fromFirestore).toList();
+      final donations = await Future.wait(
+        snapshot.docs
+            .map(DonationModel.fromFirestore)
+            .map(_resolveDonationLocation),
+      );
       final filtered = donations.where((donation) {
         if (donation.acceptedByNgoId != normalizedNgoId) {
           return false;
@@ -469,7 +487,11 @@ class DonationService {
       final snapshot = await _donations
           .where('status', isEqualTo: DonationStatus.completed.value)
           .get();
-      final donations = snapshot.docs.map(DonationModel.fromFirestore).toList();
+      final donations = await Future.wait(
+        snapshot.docs
+            .map(DonationModel.fromFirestore)
+            .map(_resolveDonationLocation),
+      );
       donations.sort((a, b) {
         final aTime = a.completedAt ?? a.createdAt;
         final bTime = b.completedAt ?? b.createdAt;
@@ -543,6 +565,7 @@ class DonationService {
           'acceptedByNgoEmail': ngo.email.trim(),
           'acceptedByNgoPhone': _normalizeNullable(ngo.phone),
           'acceptedByNgoAddress': _normalizeNullable(ngo.address),
+          'acceptedByNgoLocation': locationToFirestore(ngo.location),
           'acceptedByNgoProfileImageUrl': _normalizeNullable(
             ngo.profileImageUrl,
           ),
@@ -551,64 +574,6 @@ class DonationService {
       });
 
       return getDonationById(donationId);
-    } on DonationException {
-      rethrow;
-    } on FirebaseException catch (error) {
-      throw DonationException(_mapFirebaseError(error));
-    }
-  }
-
-  Future<DonationModel> rejectDonation({
-    required String donationId,
-    required AppUserModel ngo,
-  }) async {
-    if (!ngo.isNgo) {
-      throw const DonationException(
-        'Only NGO accounts can reject donations.',
-      );
-    }
-
-    if (donationId.trim().isEmpty) {
-      throw const DonationException('Donation id is required.');
-    }
-
-    final docRef = _donations.doc(donationId.trim());
-
-    try {
-      final snapshot = await docRef.get();
-      if (!snapshot.exists) {
-        throw const DonationException('Donation not found.');
-      }
-
-      final donation = DonationModel.fromFirestore(snapshot);
-      if (!donation.isActive) {
-        throw const DonationException(
-          'Only active donations can be rejected.',
-        );
-      }
-
-      if (donation.isAccepted) {
-        throw const DonationException(
-          'Accepted donations cannot be rejected.',
-        );
-      }
-
-      await docRef.update({
-        'rejectedByNgoIds': FieldValue.arrayUnion([ngo.uid]),
-      });
-
-      final ngoName = ngo.displayName.trim();
-      final message = ngoName.isEmpty
-          ? 'Your donation was rejected by an NGO'
-          : 'Your donation was rejected by $ngoName';
-      await NotificationService(firestore: _firestore).sendNotification(
-        receiverId: donation.donorId,
-        title: 'Donation Rejected',
-        body: message,
-      );
-
-      final updated = await docRef.get();
-      return DonationModel.fromFirestore(updated);
     } on DonationException {
       rethrow;
     } on FirebaseException catch (error) {
@@ -767,6 +732,73 @@ class DonationService {
         return error.message ?? 'Something went wrong while handling donations.';
     }
   }
+
+  Future<DonationModel> _resolveDonationLocation(DonationModel donation) async {
+    if (donation.location != null || donation.donorId.trim().isEmpty) {
+      return donation;
+    }
+
+    try {
+      final donorDoc = await _users.doc(donation.donorId).get();
+      final donorData = donorDoc.data();
+      if (donorData != null) {
+        final donorLocation = AppLocation.fromDynamic(donorData['location']);
+        if (donorLocation != null) {
+          return _copyDonationWithLocation(donation, donorLocation);
+        }
+      }
+
+      final fallbackAddress =
+          donation.locationAddress ??
+          (donorData?['address'] as String?)?.trim() ??
+          donation.donorAddress;
+      if (fallbackAddress == null || fallbackAddress.trim().isEmpty) {
+        return donation;
+      }
+
+      final matches = await _locationService.searchLocations(fallbackAddress);
+      if (matches.isEmpty) {
+        return donation;
+      }
+
+      return _copyDonationWithLocation(donation, matches.first);
+    } catch (_) {
+      return donation;
+    }
+  }
+
+  DonationModel _copyDonationWithLocation(
+    DonationModel donation,
+    AppLocation location,
+  ) {
+    return DonationModel(
+      donationId: donation.donationId,
+      donorId: donation.donorId,
+      donorName: donation.donorName,
+      donorEmail: donation.donorEmail,
+      createdAt: donation.createdAt,
+      foodItems: donation.foodItems,
+      quantity: donation.quantity,
+      status: donation.status,
+      donorPhone: donation.donorPhone,
+      donorAddress: donation.donorAddress,
+      donorProfileImageUrl: donation.donorProfileImageUrl,
+      description: donation.description,
+      precaution: donation.precaution,
+      location: location,
+      imageUrls: donation.imageUrls,
+      acceptedByNgoId: donation.acceptedByNgoId,
+      acceptedByNgoName: donation.acceptedByNgoName,
+      acceptedByNgoEmail: donation.acceptedByNgoEmail,
+      acceptedByNgoPhone: donation.acceptedByNgoPhone,
+      acceptedByNgoAddress: donation.acceptedByNgoAddress,
+      acceptedByNgoLocation: donation.acceptedByNgoLocation,
+      acceptedByNgoProfileImageUrl: donation.acceptedByNgoProfileImageUrl,
+      acceptedAt: donation.acceptedAt,
+      completedAt: donation.completedAt,
+      expiryAt: donation.expiryAt,
+    );
+  }
 }
 
 class DonationException implements Exception {
@@ -776,6 +808,12 @@ class DonationException implements Exception {
 
   @override
   String toString() => message;
+}
+
+extension DonationModelLocationX on DonationModel {
+  AppLocation? get pickupLocation => location;
+  String? get locationAddress =>
+      location?.address ?? _normalizeNullable(donorAddress);
 }
 
 DateTime? _dateFromFirestore(dynamic value) {
@@ -808,4 +846,28 @@ String _resolveQuantity(Map<String, dynamic> data) {
   }
 
   return '';
+}
+
+AppLocation? _locationFromLegacyDonationFields(Map<String, dynamic> data) {
+  final lat = _toDouble(data['donationLatitude']);
+  final lng = _toDouble(data['donationLongitude']);
+  if (lat == null || lng == null) {
+    return null;
+  }
+
+  return AppLocation(
+    latitude: lat,
+    longitude: lng,
+    address: (data['donationAddress'] as String?)?.trim() ?? '',
+  );
+}
+
+double? _toDouble(dynamic value) {
+  if (value is num) {
+    return value.toDouble();
+  }
+  if (value is String) {
+    return double.tryParse(value);
+  }
+  return null;
 }

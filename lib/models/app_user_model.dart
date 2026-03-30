@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:wastenot/models/app_location.dart';
 
 class AppUserModel {
   const AppUserModel({
@@ -9,6 +10,7 @@ class AppUserModel {
     this.name,
     this.phone,
     this.address,
+    this.location,
     this.about,
     this.profileImageUrl,
     this.organizationName,
@@ -31,6 +33,7 @@ class AppUserModel {
   final String? name;
   final String? phone;
   final String? address;
+  final AppLocation? location;
   final String? about;
   final String? profileImageUrl;
   final String? organizationName;
@@ -59,6 +62,7 @@ class AppUserModel {
     String? name,
     String? phone,
     String? address,
+    AppLocation? location,
     String? about,
     String? profileImageUrl,
     String? organizationName,
@@ -81,6 +85,7 @@ class AppUserModel {
       name: name ?? this.name,
       phone: phone ?? this.phone,
       address: address ?? this.address,
+      location: location ?? this.location,
       about: about ?? this.about,
       profileImageUrl: profileImageUrl ?? this.profileImageUrl,
       organizationName: organizationName ?? this.organizationName,
@@ -105,6 +110,7 @@ class AppUserModel {
       'email': email,
       'phone': phone,
       'address': address,
+      'location': locationToFirestore(location),
       'about': about,
       'profileImageUrl': profileImageUrl,
       'organizationName': organizationName,
@@ -131,6 +137,7 @@ class AppUserModel {
       'role': role,
       'phone': phone,
       'address': address,
+      'location': locationToFirestore(location),
       'profileImageUrl': profileImageUrl,
       'status': status,
       'isSuspended': isSuspended,
@@ -144,6 +151,7 @@ class AppUserModel {
     final data = doc.data() ?? <String, dynamic>{};
     final createdAt = data['createdAt'];
     final suspendedAt = data['suspendedAt'];
+    final location = AppLocation.fromDynamic(data['location']);
     final isSuspended = (data['isSuspended'] as bool?) ??
         ((data['status'] as String?)?.toLowerCase() == 'suspended');
 
@@ -152,7 +160,8 @@ class AppUserModel {
       name: data['name'] as String?,
       email: (data['email'] as String?) ?? '',
       phone: data['phone'] as String?,
-      address: data['address'] as String?,
+      address: (data['address'] as String?) ?? location?.address,
+      location: location,
       about: data['about'] as String?,
       profileImageUrl: data['profileImageUrl'] as String?,
       organizationName: data['organizationName'] as String?,

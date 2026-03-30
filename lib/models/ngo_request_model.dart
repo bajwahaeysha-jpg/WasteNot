@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:wastenot/models/app_location.dart';
 
 class NgoRequestModel {
   const NgoRequestModel({
@@ -10,6 +11,7 @@ class NgoRequestModel {
     required this.pendingPassword,
     required this.phone,
     required this.address,
+    this.location,
     required this.registrationNumber,
     required this.description,
     required this.status,
@@ -23,6 +25,7 @@ class NgoRequestModel {
   final String pendingPassword;
   final String phone;
   final String address;
+  final AppLocation? location;
   final String registrationNumber;
   final String description;
   final String status;
@@ -41,6 +44,7 @@ class NgoRequestModel {
       'password': pendingPassword,
       'phone': phone,
       'address': address,
+      'location': locationToFirestore(location),
       'registrationNumber': registrationNumber,
       'description': description,
       'profileImageUrl': profileImageUrl,
@@ -54,6 +58,7 @@ class NgoRequestModel {
   ) {
     final data = doc.data() ?? <String, dynamic>{};
     final createdAt = data['createdAt'];
+    final location = AppLocation.fromDynamic(data['location']);
 
     return NgoRequestModel(
       id: doc.id,
@@ -61,7 +66,8 @@ class NgoRequestModel {
       email: (data['email'] as String?) ?? '',
       pendingPassword: (data['password'] as String?) ?? '',
       phone: (data['phone'] as String?) ?? '',
-      address: (data['address'] as String?) ?? '',
+      address: ((data['address'] as String?) ?? location?.address ?? '').trim(),
+      location: location,
       registrationNumber: (data['registrationNumber'] as String?) ?? '',
       description: (data['description'] as String?) ?? '',
       profileImageUrl: data['profileImageUrl'] as String?,
