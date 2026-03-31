@@ -1,89 +1,293 @@
-require("dotenv").config(); // 🔥 force load .env
+require("dotenv").config();
 
-const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const sgMail = require("@sendgrid/mail");
+const { onDocumentCreated, onDocumentUpdated } = require("firebase-functions/v2/firestore");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 
 admin.initializeApp();
 
-// ✅ ENV key safely load
+const db = admin.firestore();
+const messaging = admin.messaging();
 const SENDGRID_KEY = process.env.SENDGRID_KEY;
+const ADMIN_EMAIL = "wastenotapplication@gmail.com";
 
-if (!SENDGRID_KEY) {
-  console.error("❌ SENDGRID KEY missing in .env");
-} else {
+if (SENDGRID_KEY) {
   sgMail.setApiKey(SENDGRID_KEY);
 }
 
-const ADMIN_EMAIL = "wastenotapplication@gmail.com";
+const USERS_COLLECTION = "users";
+const NGO_REQUESTS_COLLECTION = "ngo_requests";
+const DONATIONS_COLLECTION = "donations";
+const NOTIFICATIONS_COLLECTION = "notifications";
 
-exports.sendEmailOnNewMessage = functions.firestore
-  .document("contact_messages/{id}")
-  .onCreate(async (snap, context) => {
-    try {
-      const data = snap.data() || {};
+const ROLE_TOPICS = {
+  admin: "role_admin",
+  ngo: "role_ngo",
+  donor: "role_donor",
+};
 
-      const name = data.name || "Unknown";
-      const email = data.email || "Unknown";
-      const role = data.role || "unknown";
-      const message = data.message || "";
+const NOTIFICATION_TYPES = {
+  NEW_NGO_REGISTRATION: "NEW_NGO_REGISTRATION",
+  NGO_APPROVED: "NGO_APPROVED",
+  NEW_DONATION: "NEW_DONATION",
+  DONOR_REMINDER: "DONOR_REMINDER",
+  DONATION_EXPIRING_SOON: "DONATION_EXPIRING_SOON",
+  DONATION_EXPIRED: "DONATION_EXPIRED",
+};
 
-      const msg = {
-        to: ADMIN_EMAIL,
-        from: ADMIN_EMAIL, // ⚠️ must be verified in SendGrid
-        subject: `New Contact Message from ${role.toUpperCase()}`,
-        text: `
-Name: ${name}
-Email: ${email}
-Role: ${role}
-
-Message:
-${message}
-`,
-      };
-
-      // ✅ extra safety
-      if (!SENDGRID_KEY) {
-        console.error("❌ Email not sent - missing API key");
-        return null;
-      }
-
-      await sgMail.send(msg);
-
-      console.log("✅ Email sent successfully:", context.params.id);
-      return null;
-    } catch (error) {
-      console.error("❌ Failed to send email:", error);
-      return null;
-    }
-  });
-
-const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
 const GOALS_COLLECTION = "goals";
 
-const toMillis = (value) => {
+exports.sendEmailOnNewMessage = onDocumentCreated(
+  "contact_messages/{id}",
+  async (event) => {
+    if (!SENDGRID_KEY) {
+      console.error("SENDGRID_KEY missing. Contact email was skipped.");
+      return;
+    }
+
+    const data = event.data?.data() || {};
+    const msg = {
+      to: ADMIN_EMAIL,
+      from: ADMIN_EMAIL,
+      subject: `New Contact Message from ${String(data.role || "unknown").toUpperCase()}`,
+      text: `
+Name: ${data.name || "Unknown"}
+Email: ${data.email || "Unknown"}
+Role: ${data.role || "unknown"}
+
+Message:
+${data.message || ""}
+`,
+    };
+
+    await sgMail.send(msg);
+  },
+);
+
+function buildPayload({ title, body, type, userRole, navigation }) {
+  return { title, body, type, userRole, navigation };
+}
+
+function toDataMap(payload, extraData = {}) {
+  const merged = { ...payload, ...extraData };
+  return Object.fromEntries(
+    Object.entries(merged)
+      .filter(([, value]) => value !== undefined && value !== null)
+      .map(([key, value]) => [key, String(value)]),
+  );
+}
+
+function nowTimestamp() {
+  return admin.firestore.FieldValue.serverTimestamp();
+}
+
+async function isNotificationsEnabled(uid) {
+  const userDoc = await db.collection(USERS_COLLECTION).doc(uid).get();
+  if (!userDoc.exists) {
+    return false;
+  }
+
+  return userDoc.data()?.notificationsEnabled !== false;
+}
+
+async function saveNotificationRecord({ uid, payload, extraData = {} }) {
+  const notificationRef = db.collection(NOTIFICATIONS_COLLECTION).doc();
+  await notificationRef.set({
+    notificationId: notificationRef.id,
+    receiverId: uid,
+    uid,
+    userId: uid,
+    title: payload.title,
+    body: payload.body,
+    message: payload.body,
+    type: payload.type,
+    userRole: payload.userRole,
+    navigation: payload.navigation,
+    createdAt: nowTimestamp(),
+    timestamp: nowTimestamp(),
+    isRead: false,
+    read: false,
+    ...extraData,
+  });
+}
+
+async function loadUserTokens(uid) {
+  const snapshot = await db
+    .collection(USERS_COLLECTION)
+    .doc(uid)
+    .collection("fcm_tokens")
+    .where("isActive", "!=", false)
+    .get();
+
+  return snapshot.docs
+    .map((doc) => doc.data()?.token)
+    .filter((token) => typeof token === "string" && token.trim().length > 0)
+    .map((token) => token.trim());
+}
+
+async function deleteToken(uid, token) {
+  await db
+    .collection(USERS_COLLECTION)
+    .doc(uid)
+    .collection("fcm_tokens")
+    .doc(token)
+    .delete()
+    .catch(() => null);
+}
+
+async function sendMessageToToken({ uid, token, payload, extraData = {} }) {
+  try {
+    await messaging.send({
+      token,
+      notification: {
+        title: payload.title,
+        body: payload.body,
+      },
+      data: toDataMap(payload, extraData),
+      android: {
+        priority: "high",
+        notification: {
+          channelId: "wastenot_fcm_channel",
+          clickAction: "FLUTTER_NOTIFICATION_CLICK",
+        },
+      },
+      apns: {
+        payload: {
+          aps: {
+            sound: "default",
+          },
+        },
+      },
+    });
+    return true;
+  } catch (error) {
+    const code = error?.errorInfo?.code || error?.code || "";
+    if (code.includes("registration-token-not-registered") || code.includes("invalid-registration-token")) {
+      await deleteToken(uid, token);
+    }
+    console.error(`FCM send failed for uid=${uid}`, error);
+    return false;
+  }
+}
+
+async function sendToUser({ uid, payload, extraData = {}, persist = true }) {
+  const trimmedUid = `${uid || ""}`.trim();
+  if (!trimmedUid) {
+    return 0;
+  }
+
+  const notificationsEnabled = await isNotificationsEnabled(trimmedUid);
+  if (!notificationsEnabled) {
+    return 0;
+  }
+
+  if (persist) {
+    await saveNotificationRecord({
+      uid: trimmedUid,
+      payload,
+      extraData,
+    });
+  }
+
+  const tokens = await loadUserTokens(trimmedUid);
+  let delivered = 0;
+
+  for (const token of tokens) {
+    const sent = await sendMessageToToken({
+      uid: trimmedUid,
+      token,
+      payload,
+      extraData,
+    });
+    if (sent) {
+      delivered += 1;
+    }
+  }
+
+  return delivered;
+}
+
+async function sendToTopic({ topic, payload, extraData = {} }) {
+  await messaging.send({
+    topic,
+    notification: {
+      title: payload.title,
+      body: payload.body,
+    },
+    data: toDataMap(payload, extraData),
+    android: {
+      priority: "high",
+      notification: {
+        channelId: "wastenot_fcm_channel",
+        clickAction: "FLUTTER_NOTIFICATION_CLICK",
+      },
+    },
+    apns: {
+      payload: {
+        aps: {
+          sound: "default",
+        },
+      },
+    },
+  });
+}
+
+async function sendToUsersByRole({
+  role,
+  payload,
+  extraData = {},
+  filters = [],
+  fallbackTopic = false,
+}) {
+  let query = db.collection(USERS_COLLECTION).where("role", "==", role);
+  for (const [field, op, value] of filters) {
+    query = query.where(field, op, value);
+  }
+
+  const snapshot = await query.get();
+  if (snapshot.empty) {
+    if (fallbackTopic && ROLE_TOPICS[role]) {
+      await sendToTopic({
+        topic: ROLE_TOPICS[role],
+        payload,
+        extraData,
+      });
+    }
+    return 0;
+  }
+
+  let delivered = 0;
+  for (const doc of snapshot.docs) {
+    delivered += await sendToUser({
+      uid: doc.id,
+      payload,
+      extraData,
+    });
+  }
+
+  return delivered;
+}
+
+function timestampToDate(value) {
   if (!value) {
     return null;
   }
   if (typeof value.toDate === "function") {
-    return value.toDate().getTime();
+    return value.toDate();
   }
   if (value instanceof Date) {
-    return value.getTime();
-  }
-  if (typeof value === "number") {
     return value;
   }
   return null;
-};
+}
 
-const monthKeyForDate = (date) => {
+function monthKeyForDate(date) {
   const month = `${date.getUTCMonth() + 1}`.padStart(2, "0");
   return `${date.getUTCFullYear()}-${month}`;
-};
+}
 
-const monthBoundsFromKey = (monthKey) => {
+function monthBoundsFromKey(monthKey) {
   const parts = `${monthKey}`.split("-");
   if (parts.length !== 2) {
     return null;
@@ -95,12 +299,13 @@ const monthBoundsFromKey = (monthKey) => {
     return null;
   }
 
-  const start = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
-  const end = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0));
-  return { start, end };
-};
+  return {
+    start: new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0)),
+    end: new Date(Date.UTC(year, month, 1, 0, 0, 0, 0)),
+  };
+}
 
-const monthLabelFromKey = (monthKey) => {
+function monthLabelFromKey(monthKey) {
   const bounds = monthBoundsFromKey(monthKey);
   if (!bounds) {
     return "this";
@@ -110,9 +315,9 @@ const monthLabelFromKey = (monthKey) => {
     month: "long",
     timeZone: "UTC",
   });
-};
+}
 
-const parseMealsToInt = (value) => {
+function parseMealsToInt(value) {
   if (typeof value === "number" && Number.isFinite(value)) {
     return Math.max(0, Math.trunc(value));
   }
@@ -137,252 +342,355 @@ const parseMealsToInt = (value) => {
   }
 
   return Math.max(0, Number.parseInt(matches[matches.length - 1], 10));
-};
+}
 
-const calculateGoalPercentage = (achieved, target) => {
+function calculateGoalPercentage(achieved, target) {
   if (!target || target <= 0) {
     return 0;
   }
   return Math.round((achieved / target) * 100);
-};
+}
 
-exports.expireDonations = onSchedule("every 5 minutes", async () => {
-  const db = admin.firestore();
-  const nowMillis = Date.now();
-  const expiryTimestamp = admin.firestore.Timestamp.fromMillis(nowMillis);
-  const notificationCollection = db.collection("notifications");
-
-  const createNotification = (batch, receiverId, title, message) => {
-    const trimmedId = typeof receiverId === "string" ? receiverId.trim() : "";
-    if (!trimmedId) {
-      return 0;
-    }
-
-    const notificationRef = notificationCollection.doc();
-    batch.set(notificationRef, {
-      notificationId: notificationRef.id,
-      receiverId: trimmedId,
-      uid: trimmedId,
-      userId: trimmedId,
-      title: title.trim(),
-      body: message.trim(),
-      message: message.trim(),
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      timestamp: admin.firestore.FieldValue.serverTimestamp(),
-      isRead: false,
-      read: false,
-    });
-
-    return 1;
-  };
-
-  try {
-    const snapshot = await db
-      .collection("donations")
-      .where("status", "==", "active")
-      .get();
-
-    if (snapshot.empty) {
+exports.notifyAdminOnNewNgoRequest = onDocumentCreated(
+  `${NGO_REQUESTS_COLLECTION}/{requestId}`,
+  async (event) => {
+    const data = event.data?.data();
+    if (!data) {
       return;
     }
 
-    let batch = db.batch();
-    let opCount = 0;
+    const payload = buildPayload({
+      title: "New NGO Approval Request",
+      body: "A new NGO wants approval",
+      type: NOTIFICATION_TYPES.NEW_NGO_REGISTRATION,
+      userRole: "admin",
+      navigation: "admin_ngo_requests",
+    });
 
-    const commitIfNeeded = async () => {
-      if (opCount === 0) {
-        return;
-      }
-      await batch.commit();
-      batch = db.batch();
-      opCount = 0;
-    };
+    await sendToUsersByRole({
+      role: "admin",
+      payload,
+      extraData: {
+        requestId: event.params.requestId,
+        ngoEmail: data.email || "",
+        organizationName: data.organizationName || "",
+      },
+      fallbackTopic: true,
+    });
+  },
+);
 
-    for (const doc of snapshot.docs) {
-      const data = doc.data() || {};
-      if (data.status !== "active") {
-        continue;
-      }
-      if (data.expiryAt != null) {
-        continue;
-      }
-      if (data.completedAt != null) {
-        continue;
-      }
-
-      const donorId =
-        typeof data.donorId === "string" ? data.donorId.trim() : "";
-      const acceptedByNgoId =
-        typeof data.acceptedByNgoId === "string"
-          ? data.acceptedByNgoId.trim()
-          : "";
-
-      const createdAtMillis = toMillis(data.createdAt);
-      const acceptedAtMillis = toMillis(data.acceptedAt);
-
-      const isAccepted = Boolean(acceptedByNgoId);
-
-      const expireAtMillis = isAccepted ? acceptedAtMillis : createdAtMillis;
-
-      if (expireAtMillis == null) {
-        continue;
-      }
-
-      const expiredNotificationSent = data.expiredNotificationSent === true;
-
-      const shouldExpire = expireAtMillis + TWO_HOURS_MS <= nowMillis;
-
-      if (shouldExpire) {
-        batch.update(doc.ref, {
-          status: "expired",
-          expiryAt: expiryTimestamp,
-          expiredNotificationSent: expiredNotificationSent || true,
-        });
-        opCount += 1;
-
-        if (!expiredNotificationSent) {
-          if (isAccepted) {
-            opCount += createNotification(
-              batch,
-              donorId,
-              "Your donation has been expired",
-              "Your donation has been expired",
-            );
-            opCount += createNotification(
-              batch,
-              acceptedByNgoId,
-              "Your donation has been expired",
-              "Your donation has been expired",
-            );
-          } else {
-            opCount += createNotification(
-              batch,
-              donorId,
-              "Your donation has expired",
-              "Your donation has expired",
-            );
-          }
-        }
-      }
-
-      if (opCount >= 450) {
-        await commitIfNeeded();
-      }
+exports.notifyNgoWhenApproved = onDocumentCreated(
+  `${USERS_COLLECTION}/{userId}`,
+  async (event) => {
+    const data = event.data?.data();
+    if (!data) {
+      return;
     }
 
-    await commitIfNeeded();
-  } catch (error) {
-    console.error("Failed to expire donations:", error);
+    const role = `${data.role || ""}`.trim().toLowerCase();
+    const approvedByAdmin = data.approvedByAdmin === true;
+    if (role !== "ngo" || !approvedByAdmin) {
+      return;
+    }
+
+    const payload = buildPayload({
+      title: "Registration Approved",
+      body: "You are successfully registered as an NGO in WasteNot. Login now.",
+      type: NOTIFICATION_TYPES.NGO_APPROVED,
+      userRole: "ngo",
+      navigation: "ngo_dashboard",
+    });
+
+    await sendToUser({
+      uid: event.params.userId,
+      payload,
+    });
+  },
+);
+
+exports.notifyNgosOnNewDonation = onDocumentCreated(
+  `${DONATIONS_COLLECTION}/{donationId}`,
+  async (event) => {
+    const data = event.data?.data();
+    if (!data) {
+      return;
+    }
+
+    if (`${data.status || ""}`.trim().toLowerCase() !== "active") {
+      return;
+    }
+
+    const payload = buildPayload({
+      title: "New Donation Available",
+      body: "New donation is available. Hurry up and accept!",
+      type: NOTIFICATION_TYPES.NEW_DONATION,
+      userRole: "ngo",
+      navigation: "available_donations",
+    });
+
+    await sendToUsersByRole({
+      role: "ngo",
+      payload,
+      extraData: {
+        donationId: event.params.donationId,
+        donorId: data.donorId || "",
+      },
+      filters: [["approvedByAdmin", "==", true]],
+      fallbackTopic: true,
+    });
+  },
+);
+
+exports.notifyDonorWhenDonationExpires = onDocumentUpdated(
+  `${DONATIONS_COLLECTION}/{donationId}`,
+  async (event) => {
+    const before = event.data?.before?.data();
+    const after = event.data?.after?.data();
+    if (!after) {
+      return;
+    }
+
+    const beforeStatus = `${before?.status || ""}`.trim().toLowerCase();
+    const afterStatus = `${after.status || ""}`.trim().toLowerCase();
+    if (afterStatus !== "expired" || beforeStatus === "expired") {
+      return;
+    }
+
+    const donorId = `${after.donorId || ""}`.trim();
+    if (!donorId) {
+      return;
+    }
+
+    const payload = buildPayload({
+      title: "Donation Expired",
+      body: "Your donation has expired",
+      type: NOTIFICATION_TYPES.DONATION_EXPIRED,
+      userRole: "donor",
+      navigation: "donor_expired_donations",
+    });
+
+    await sendToUser({
+      uid: donorId,
+      payload,
+      extraData: {
+        donationId: event.params.donationId,
+      },
+    });
+  },
+);
+
+exports.checkDonationExpiryWindows = onSchedule("every 1 hours", async () => {
+  const now = new Date();
+  const thirtyMinutesFromNow = new Date(now.getTime() + 30 * 60 * 1000);
+
+  const snapshot = await db
+    .collection(DONATIONS_COLLECTION)
+    .where("status", "==", "active")
+    .get();
+
+  const batch = db.batch();
+
+  for (const doc of snapshot.docs) {
+    const data = doc.data() || {};
+    const expiryAt = timestampToDate(data.expiryAt);
+    if (!expiryAt) {
+      continue;
+    }
+
+    const donationId = doc.id;
+
+    if (expiryAt <= now) {
+      batch.update(doc.ref, {
+        status: "expired",
+        expiryAt: admin.firestore.Timestamp.fromDate(expiryAt),
+        expiredBySchedulerAt: nowTimestamp(),
+      });
+      continue;
+    }
+
+    const alreadySentExpiringAlert = Boolean(data.expiringNotificationSentAt);
+    if (alreadySentExpiringAlert) {
+      continue;
+    }
+
+    if (expiryAt <= thirtyMinutesFromNow) {
+      const payload = buildPayload({
+        title: "Donation Expiring Soon",
+        body: "Save food and feed the hungry before it expires!",
+        type: NOTIFICATION_TYPES.DONATION_EXPIRING_SOON,
+        userRole: "ngo",
+        navigation: "available_donations",
+      });
+
+      await sendToUsersByRole({
+        role: "ngo",
+        payload,
+        extraData: { donationId },
+        filters: [["approvedByAdmin", "==", true]],
+        fallbackTopic: true,
+      });
+
+      batch.update(doc.ref, {
+        expiringNotificationSentAt: nowTimestamp(),
+      });
+    }
+  }
+
+  await batch.commit();
+});
+
+async function donorNeedsReminder(userDoc) {
+  const userId = userDoc.id;
+  const userData = userDoc.data() || {};
+
+  if (userData.notificationsEnabled === false) {
+    return false;
+  }
+
+  const lastReminderAt = timestampToDate(userData.lastDonationReminderAt);
+  if (lastReminderAt) {
+    const daysSinceReminder = (Date.now() - lastReminderAt.getTime()) / (1000 * 60 * 60 * 24);
+    if (daysSinceReminder < 3) {
+      return false;
+    }
+  }
+
+  const latestDonationSnapshot = await db
+    .collection(DONATIONS_COLLECTION)
+    .where("donorId", "==", userId)
+    .orderBy("createdAt", "desc")
+    .limit(1)
+    .get();
+
+  if (latestDonationSnapshot.empty) {
+    return true;
+  }
+
+  const latestDonation = latestDonationSnapshot.docs[0].data();
+  const latestDonationDate = timestampToDate(latestDonation.createdAt);
+  if (!latestDonationDate) {
+    return true;
+  }
+
+  const daysSinceDonation = (Date.now() - latestDonationDate.getTime()) / (1000 * 60 * 60 * 24);
+  return daysSinceDonation >= 34;
+}
+
+exports.sendDonorReminders = onSchedule("every 72 hours", async () => {
+  const donorSnapshot = await db
+    .collection(USERS_COLLECTION)
+    .where("role", "==", "donor")
+    .get();
+
+  for (const donorDoc of donorSnapshot.docs) {
+    const shouldSend = await donorNeedsReminder(donorDoc);
+    if (!shouldSend) {
+      continue;
+    }
+
+    const payload = buildPayload({
+      title: "Donate Now",
+      body: "Donate food now so we can feed the needy",
+      type: NOTIFICATION_TYPES.DONOR_REMINDER,
+      userRole: "donor",
+      navigation: "donation_form",
+    });
+
+    await sendToUser({
+      uid: donorDoc.id,
+      payload,
+    });
+
+    await donorDoc.ref.set({
+      lastDonationReminderAt: nowTimestamp(),
+    }, { merge: true });
   }
 });
 
 exports.sendMonthlyGoalSummaryNotifications = onSchedule(
   "every 60 minutes",
   async () => {
-    const db = admin.firestore();
     const currentMonth = monthKeyForDate(new Date());
+    const goalsSnapshot = await db
+      .collection(GOALS_COLLECTION)
+      .where("month", "<", currentMonth)
+      .get();
 
-    try {
-      const goalsSnapshot = await db
-        .collection(GOALS_COLLECTION)
-        .where("month", "<", currentMonth)
-        .get();
+    if (goalsSnapshot.empty) {
+      return;
+    }
 
-      if (goalsSnapshot.empty) {
-        return;
+    for (const doc of goalsSnapshot.docs) {
+      const data = doc.data() || {};
+      const month = typeof data.month === "string" ? data.month.trim() : "";
+      const userId =
+        typeof data.userId === "string"
+          ? data.userId.trim()
+          : typeof data.uid === "string"
+            ? data.uid.trim()
+            : "";
+      const role =
+        typeof data.role === "string" ? data.role.trim().toLowerCase() : "";
+      const targetMeals =
+        Number.parseInt(`${data.targetMeals ?? data.monthlyTarget ?? 0}`, 10) || 0;
+
+      if (!month || !userId || !role || targetMeals <= 0 || data.monthEndNotificationSentAt) {
+        continue;
       }
 
-      for (const doc of goalsSnapshot.docs) {
-        const data = doc.data() || {};
-        const month = typeof data.month === "string" ? data.month.trim() : "";
-        const userId =
-          typeof data.userId === "string"
-            ? data.userId.trim()
-            : typeof data.uid === "string"
-              ? data.uid.trim()
-              : "";
-        const role =
-          typeof data.role === "string" ? data.role.trim().toLowerCase() : "";
-        const targetMeals = Number.parseInt(`${data.targetMeals ?? data.monthlyTarget ?? 0}`, 10) || 0;
+      const bounds = monthBoundsFromKey(month);
+      if (!bounds) {
+        continue;
+      }
 
-        if (!month || !userId || !role || targetMeals <= 0) {
-          continue;
+      let donationQuery = db
+        .collection(DONATIONS_COLLECTION)
+        .where("status", "==", "completed")
+        .where("completedAt", ">=", admin.firestore.Timestamp.fromDate(bounds.start))
+        .where("completedAt", "<", admin.firestore.Timestamp.fromDate(bounds.end));
+
+      if (role === "ngo") {
+        donationQuery = donationQuery.where("acceptedByNgoId", "==", userId);
+      } else if (role === "donor") {
+        donationQuery = donationQuery.where("donorId", "==", userId);
+      } else {
+        continue;
+      }
+
+      const donationsSnapshot = await donationQuery.get();
+      let achieved = 0;
+
+      if (role === "ngo") {
+        for (const donationDoc of donationsSnapshot.docs) {
+          const donation = donationDoc.data() || {};
+          achieved += parseMealsToInt(donation.quantity ?? donation.servings ?? "");
         }
+      } else {
+        achieved = donationsSnapshot.size;
+      }
 
-        if (data.monthEndNotificationSentAt) {
-          continue;
-        }
+      const percent = calculateGoalPercentage(achieved, targetMeals);
+      const monthLabel = monthLabelFromKey(month);
+      const payload = buildPayload({
+        title: "Monthly goal summary",
+        body: `You completed ${percent}% of your ${monthLabel} goal. Keep it up!`,
+        type: "MONTHLY_GOAL_SUMMARY",
+        userRole: role,
+        navigation: role === "ngo" ? "ngo_dashboard" : "donation_form",
+      });
 
-        const bounds = monthBoundsFromKey(month);
-        if (!bounds) {
-          continue;
-        }
-
-        let donationQuery = db
-          .collection("donations")
-          .where("status", "==", "completed")
-          .where(
-            "completedAt",
-            ">=",
-            admin.firestore.Timestamp.fromDate(bounds.start),
-          )
-          .where(
-            "completedAt",
-            "<",
-            admin.firestore.Timestamp.fromDate(bounds.end),
-          );
-
-        if (role === "ngo") {
-          donationQuery = donationQuery.where("acceptedByNgoId", "==", userId);
-        } else if (role === "donor") {
-          donationQuery = donationQuery.where("donorId", "==", userId);
-        } else {
-          continue;
-        }
-
-        const donationsSnapshot = await donationQuery.get();
-        let achieved = 0;
-
-        if (role === "ngo") {
-          for (const donationDoc of donationsSnapshot.docs) {
-            const donation = donationDoc.data() || {};
-            achieved += parseMealsToInt(
-              donation.quantity ?? donation.servings ?? "",
-            );
-          }
-        } else {
-          achieved = donationsSnapshot.size;
-        }
-
-        const percent = calculateGoalPercentage(achieved, targetMeals);
-        const monthLabel = monthLabelFromKey(month);
-        const notificationRef = db.collection("notifications").doc();
-
-        const batch = db.batch();
-        batch.set(notificationRef, {
-          notificationId: notificationRef.id,
-          receiverId: userId,
-          uid: userId,
-          userId,
-          title: "Monthly goal summary",
-          body: `You completed ${percent}% of your ${monthLabel} goal. Keep it up!`,
-          message: `You completed ${percent}% of your ${monthLabel} goal. Keep it up!`,
-          type: "monthly_goal_summary",
+      await sendToUser({
+        uid: userId,
+        payload,
+        extraData: {
           goalMonth: month,
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          timestamp: admin.firestore.FieldValue.serverTimestamp(),
-          isRead: false,
-          read: false,
-        });
-        batch.update(doc.ref, {
-          monthEndNotificationSentAt:
-            admin.firestore.FieldValue.serverTimestamp(),
-        });
-        await batch.commit();
-      }
-    } catch (error) {
-      console.error("Failed to send monthly goal summary notifications:", error);
+        },
+      });
+
+      await doc.ref.set({
+        monthEndNotificationSentAt: nowTimestamp(),
+      }, { merge: true });
     }
   },
 );
-

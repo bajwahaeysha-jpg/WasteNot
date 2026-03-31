@@ -6,7 +6,8 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return signedIn() && request.auth.token.email == 'admin@email.com';
+      return signedIn() &&
+          request.auth.token.email == 'wastenotapplication@gmail.com';
     }
 
     function isOwner(uid) {
@@ -16,6 +17,10 @@ service cloud.firestore {
     match /users/{uid} {
       allow read, update, delete: if isOwner(uid) || isAdmin();
       allow create: if isOwner(uid) || isAdmin();
+
+      match /fcm_tokens/{tokenId} {
+        allow read, create, update, delete: if isOwner(uid) || isAdmin();
+      }
     }
 
     match /ngo_requests/{requestId} {
@@ -27,6 +32,23 @@ service cloud.firestore {
     match /feedback/{feedbackId} {
       allow read: if true;
       allow create: if signedIn();
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if signedIn() && (
+          resource.data.receiverId == request.auth.uid ||
+          resource.data.uid == request.auth.uid ||
+          resource.data.userId == request.auth.uid ||
+          isAdmin()
+      );
+      allow create: if signedIn();
+      allow update: if signedIn() && (
+          resource.data.receiverId == request.auth.uid ||
+          resource.data.uid == request.auth.uid ||
+          resource.data.userId == request.auth.uid ||
+          isAdmin()
+      );
+      allow delete: if isAdmin();
     }
 
     match /goals/{goalId} {

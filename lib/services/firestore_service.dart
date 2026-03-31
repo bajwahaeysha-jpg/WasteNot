@@ -347,14 +347,6 @@ class FirestoreService {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      await _createNotification(
-        email: request.email,
-        uid: firebaseUser.uid,
-        title: 'NGO Request Approved',
-        message:
-            'Your NGO registration request has been approved. You can now login.',
-      );
-
       await _ngoRequests.doc(request.id).delete();
 
       final user = await getUserByUid(firebaseUser.uid);

@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:wastenot/models/app_location.dart';
 import 'package:wastenot/models/app_user_model.dart';
 import 'package:wastenot/services/firestore_service.dart';
+import 'package:wastenot/services/fcm_service.dart';
 import 'package:wastenot/services/admin_registration_notification_service.dart';
 import 'package:wastenot/services/session_service.dart';
 
@@ -346,6 +347,7 @@ class AuthService {
   }
 
   Future<void> signOut() async {
+    await FcmService.instance.unregisterCurrentDevice();
     await _auth.signOut();
     SessionService.clear();
   }
@@ -372,6 +374,7 @@ class AuthService {
     final uid = currentUser.uid;
 
     try {
+      await FcmService.instance.unregisterCurrentDevice();
       await currentUser.delete();
       await _firestoreService.deleteUserDocument(uid);
       SessionService.clear();

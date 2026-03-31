@@ -1,10 +1,12 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:wastenot/screens/splash_screen.dart';
+import 'package:wastenot/services/fcm_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  await FcmService.instance.initialize();
   runApp(const WasteNotApp());
 }
 
@@ -16,6 +18,7 @@ class WasteNotApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'WasteNot',
+      navigatorKey: FcmService.navigatorKey,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF0B4B3F)),
         scaffoldBackgroundColor: const Color(0xFFF7F9F8),
