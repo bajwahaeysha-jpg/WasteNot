@@ -6,9 +6,9 @@ import '../../../../widgets/dashboard_stat_card.dart';
 import '../../../../widgets/pressable_scale.dart';
 import '../../alerts/alert_screen.dart';
 import '../../donations/all_donations_screen.dart';
+import '../../donors/all_donors_screen.dart';
 import '../../meals/all_meals_screen.dart';
 import '../../ngos/all_ngos_screen.dart';
-import '../../quick_actions/requests/requests_screen.dart';
 
 class StatsSection extends StatelessWidget {
   const StatsSection({super.key});
@@ -90,11 +90,11 @@ class StatsSection extends StatelessWidget {
                 ),
                 _buildCard(
                   context,
-                  screen: RequestsScreen(),
-                  title: "Requests",
-                  value: _formatCompactNumber(stats.totalRequests),
-                  icon: Icons.pending_actions,
-                  iconColor: Colors.orange,
+                  screen: const AllDonorsScreen(),
+                  title: "Donors",
+                  value: _formatCompactNumber(stats.totalDonors),
+                  icon: Icons.people_alt,
+                  iconColor: Colors.deepOrange,
                 ),
               ],
             );
@@ -166,12 +166,14 @@ class _AdminHomeStats {
     this.totalDonations = 0,
     this.totalMeals = 0,
     this.totalNgos = 0,
+    this.totalDonors = 0,
     this.totalRequests = 0,
   });
 
   final int totalDonations;
   final int totalMeals;
   final int totalNgos;
+  final int totalDonors;
   final int totalRequests;
 }
 
@@ -183,6 +185,10 @@ class _AdminHomeStatsService {
       final ngosSnap = await _firestore
           .collection('users')
           .where('role', isEqualTo: 'ngo')
+          .get();
+      final donorsSnap = await _firestore
+          .collection('users')
+          .where('role', isEqualTo: 'donor')
           .get();
 
       final requestsSnap =
@@ -202,6 +208,7 @@ class _AdminHomeStatsService {
         totalDonations: donationsSnap.size,
         totalMeals: totalMeals,
         totalNgos: ngosSnap.size,
+        totalDonors: donorsSnap.size,
         totalRequests: requestsSnap.size,
       );
     });
