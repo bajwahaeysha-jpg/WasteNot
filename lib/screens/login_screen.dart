@@ -56,15 +56,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: TextStyle(color: Colors.black54),
                   ),
                   const SizedBox(height: 32),
-
                   _input(
                     label: 'Name',
                     controller: _nameController,
                     validator: (_) => null,
                   ),
-
                   const SizedBox(height: 16),
-
                   _input(
                     label: 'Email',
                     controller: _emailController,
@@ -79,9 +76,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       return null;
                     },
                   ),
-
                   const SizedBox(height: 16),
-
                   _input(
                     label: 'Password',
                     controller: _passwordController,
@@ -93,16 +88,13 @@ class _LoginScreenState extends State<LoginScreen> {
                       return null;
                     },
                     suffix: IconButton(
-                      icon: Icon(_obscure
-                          ? Icons.visibility_off
-                          : Icons.visibility),
-                      onPressed: () =>
-                          setState(() => _obscure = !_obscure),
+                      icon: Icon(
+                        _obscure ? Icons.visibility_off : Icons.visibility,
+                      ),
+                      onPressed: () => setState(() => _obscure = !_obscure),
                     ),
                   ),
-
                   const SizedBox(height: 28),
-
                   SizedBox(
                     height: 54,
                     child: ElevatedButton(
@@ -123,9 +115,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           : const Text('Login'),
                     ),
                   ),
-
                   const SizedBox(height: 12),
-
                   TextButton(
                     onPressed: () {
                       Navigator.push(
@@ -138,9 +128,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                     child: const Text('Need an account? Sign up'),
                   ),
-
                   const SizedBox(height: 8),
-
                   const Text(
                     'Shared login for donor, NGO, and admin.',
                     textAlign: TextAlign.center,
@@ -181,7 +169,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // 🔥 UPDATED LOGIN FUNCTION
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -197,16 +184,16 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
 
       _goToDashboard(user);
-
     } on AuthFailure catch (error) {
-
-      // ✅ EMAIL VERIFICATION HANDLING
+      // EMAIL VERIFICATION TEMPORARILY DISABLED FOR TESTING
+      /*
       if (error.message.contains('verify your email')) {
         _showVerifyDialog();
       } else {
         _showMessage(error.message, isError: true);
       }
-
+      */
+      _showMessage(error.message, isError: true);
     } catch (error) {
       _showMessage(error.toString(), isError: true);
     } finally {
@@ -216,14 +203,15 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  // 🔥 NEW DIALOG FUNCTION
+  // EMAIL VERIFICATION TEMPORARILY DISABLED FOR TESTING
+  /*
   void _showVerifyDialog() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Email Not Verified"),
+        title: const Text('Email Not Verified'),
         content: const Text(
-          "Please verify your email from your mailbox.",
+          'Please verify your email from your mailbox.',
         ),
         actions: [
           TextButton(
@@ -233,28 +221,29 @@ class _LoginScreenState extends State<LoginScreen> {
               try {
                 await _authService.resendPendingVerificationEmail();
 
-                _showMessage("Verification email sent again");
+                _showMessage('Verification email sent again');
                 await _authService.signOut();
               } catch (e) {
                 _showMessage(
-                  "Failed to send verification email. Try again.",
+                  'Failed to send verification email. Try again.',
                   isError: true,
                 );
               }
             },
-            child: const Text("Resend"),
+            child: const Text('Resend'),
           ),
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
               await _authService.signOut();
             },
-            child: const Text("OK"),
+            child: const Text('OK'),
           ),
         ],
       ),
     );
   }
+  */
 
   void _goToDashboard(AppUserModel user) {
     AppNavigationHandler.goToHome(context, user);

@@ -83,6 +83,7 @@ class AuthService {
     }
 
     SessionService.setUser(profile, firestoreService: _firestoreService);
+    await FcmService.instance.syncTokenForSignedInUser(forceRefresh: false);
     return profile;
   }
 
@@ -135,6 +136,7 @@ class AuthService {
       }
 
       SessionService.setUser(profile, firestoreService: _firestoreService);
+      await FcmService.instance.syncTokenForSignedInUser(forceRefresh: false);
       return profile;
     } on FirebaseAuthException catch (error) {
       if (error.code == 'user-not-found' || error.code == 'invalid-credential') {
@@ -357,12 +359,15 @@ class AuthService {
   Future<AppUserModel?> checkUserSession() => currentUserProfile();
 
   Future<void> resendPendingVerificationEmail() async {
+    // EMAIL VERIFICATION TEMPORARILY DISABLED FOR TESTING
+    /*
     final user = _auth.currentUser;
     if (user == null) {
       throw AuthFailure('No authenticated user is available for verification.');
     }
 
     await user.sendEmailVerification();
+    */
   }
 
   Future<void> deleteCurrentAccount() async {

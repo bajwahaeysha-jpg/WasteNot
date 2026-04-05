@@ -3,6 +3,7 @@ require("dotenv").config();
 const admin = require("firebase-admin");
 const sgMail = require("@sendgrid/mail");
 const { onDocumentCreated, onDocumentUpdated } = require("firebase-functions/v2/firestore");
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 
 admin.initializeApp();
@@ -31,6 +32,7 @@ const NOTIFICATION_TYPES = {
   NEW_NGO_REGISTRATION: "NEW_NGO_REGISTRATION",
   NGO_APPROVED: "NGO_APPROVED",
   NEW_DONATION: "NEW_DONATION",
+  DONATION_ACCEPTED: "DONATION_ACCEPTED",
   DONOR_REMINDER: "DONOR_REMINDER",
   DONATION_EXPIRING_SOON: "DONATION_EXPIRING_SOON",
   DONATION_EXPIRED: "DONATION_EXPIRED",
@@ -67,6 +69,10 @@ ${data.message || ""}
 
 function buildPayload({ title, body, type, userRole, navigation }) {
   return { title, body, type, userRole, navigation };
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function toDataMap(payload, extraData = {}) {
@@ -120,13 +126,18 @@ async function loadUserTokens(uid) {
     .where("isActive", "!=", false)
     .get();
 
-  return snapshot.docs
+  const tokens = snapshot.docs
     .map((doc) => doc.data()?.token)
     .filter((token) => typeof token === "string" && token.trim().length > 0)
     .map((token) => token.trim());
+
+  const uniqueTokens = [...new Set(tokens)];
+  console.log("FCM loadUserTokens", { uid, tokenCount: uniqueTokens.length, tokens: uniqueTokens });
+  return uniqueTokens;
 }
 
 async function deleteToken(uid, token) {
+  console.warn("FCM deleting stale token", { uid, token });
   await db
     .collection(USERS_COLLECTION)
     .doc(uid)
@@ -136,9 +147,20 @@ async function deleteToken(uid, token) {
     .catch(() => null);
 }
 
+async function loadUserTokensWithRetry(uid, { retries = 1, delayMs = 2500 } = {}) {
+  let tokens = await loadUserTokens(uid);
+  for (let attempt = 1; tokens.length === 0 && attempt <= retries; attempt += 1) {
+    console.warn("FCM token list empty, retrying", { uid, attempt, delayMs });
+    await sleep(delayMs);
+    tokens = await loadUserTokens(uid);
+  }
+
+  return tokens;
+}
+
 async function sendMessageToToken({ uid, token, payload, extraData = {} }) {
   try {
-    await messaging.send({
+    const messageId = await messaging.send({
       token,
       notification: {
         title: payload.title,
@@ -156,9 +178,17 @@ async function sendMessageToToken({ uid, token, payload, extraData = {} }) {
         payload: {
           aps: {
             sound: "default",
+            contentAvailable: true,
           },
         },
       },
+    });
+    console.log("FCM sent", {
+      uid,
+      token,
+      messageId,
+      type: payload.type,
+      navigation: payload.navigation,
     });
     return true;
   } catch (error) {
@@ -171,16 +201,31 @@ async function sendMessageToToken({ uid, token, payload, extraData = {} }) {
   }
 }
 
-async function sendToUser({ uid, payload, extraData = {}, persist = true }) {
+async function sendToUser({
+  uid,
+  payload,
+  extraData = {},
+  persist = true,
+  retryIfNoTokens = true,
+}) {
   const trimmedUid = `${uid || ""}`.trim();
   if (!trimmedUid) {
+    console.warn("FCM send skipped: empty uid", { payload });
     return 0;
   }
 
   const notificationsEnabled = await isNotificationsEnabled(trimmedUid);
   if (!notificationsEnabled) {
+    console.log("FCM send skipped: notifications disabled", { uid: trimmedUid, type: payload.type });
     return 0;
   }
+
+  console.log("FCM sendToUser start", {
+    uid: trimmedUid,
+    type: payload.type,
+    navigation: payload.navigation,
+    persist,
+  });
 
   if (persist) {
     await saveNotificationRecord({
@@ -190,7 +235,19 @@ async function sendToUser({ uid, payload, extraData = {}, persist = true }) {
     });
   }
 
-  const tokens = await loadUserTokens(trimmedUid);
+  const tokens = await loadUserTokensWithRetry(trimmedUid, {
+    retries: retryIfNoTokens ? 1 : 0,
+    delayMs: 2500,
+  });
+  if (tokens.length === 0) {
+    console.warn("FCM send skipped: no active tokens", {
+      uid: trimmedUid,
+      type: payload.type,
+      extraData,
+    });
+    return 0;
+  }
+
   let delivered = 0;
 
   for (const token of tokens) {
@@ -205,11 +262,17 @@ async function sendToUser({ uid, payload, extraData = {}, persist = true }) {
     }
   }
 
+  console.log("FCM sendToUser complete", {
+    uid: trimmedUid,
+    delivered,
+    requestedTokens: tokens.length,
+    type: payload.type,
+  });
   return delivered;
 }
 
 async function sendToTopic({ topic, payload, extraData = {} }) {
-  await messaging.send({
+  const messageId = await messaging.send({
     topic,
     notification: {
       title: payload.title,
@@ -227,9 +290,16 @@ async function sendToTopic({ topic, payload, extraData = {} }) {
       payload: {
         aps: {
           sound: "default",
+          contentAvailable: true,
         },
       },
     },
+  });
+  console.log("FCM topic send", {
+    topic,
+    messageId,
+    type: payload.type,
+    navigation: payload.navigation,
   });
 }
 
@@ -247,6 +317,7 @@ async function sendToUsersByRole({
 
   const snapshot = await query.get();
   if (snapshot.empty) {
+    console.warn("FCM role send: no matching users", { role, filters, fallbackTopic });
     if (fallbackTopic && ROLE_TOPICS[role]) {
       await sendToTopic({
         topic: ROLE_TOPICS[role],
@@ -259,14 +330,32 @@ async function sendToUsersByRole({
 
   let delivered = 0;
   for (const doc of snapshot.docs) {
-    delivered += await sendToUser({
+    const deliveredToUser = await sendToUser({
       uid: doc.id,
+      payload,
+      extraData,
+    });
+    delivered += deliveredToUser;
+  }
+
+  if (delivered === 0 && fallbackTopic && ROLE_TOPICS[role]) {
+    console.warn("FCM role send fallback to topic because direct delivery count is zero", {
+      role,
+      userCount: snapshot.size,
+      type: payload.type,
+    });
+    await sendToTopic({
+      topic: ROLE_TOPICS[role],
       payload,
       extraData,
     });
   }
 
   return delivered;
+}
+
+async function markDocument(path, data) {
+  await db.doc(path).set(data, { merge: true });
 }
 
 function timestampToDate(value) {
@@ -380,34 +469,100 @@ exports.notifyAdminOnNewNgoRequest = onDocumentCreated(
   },
 );
 
-exports.notifyNgoWhenApproved = onDocumentCreated(
+exports.notifyNgoWhenApprovedAfterUpdate = onDocumentUpdated(
   `${USERS_COLLECTION}/{userId}`,
   async (event) => {
-    const data = event.data?.data();
-    if (!data) {
+    const before = event.data?.before?.data();
+    const after = event.data?.after?.data();
+    if (!after) {
       return;
     }
 
-    const role = `${data.role || ""}`.trim().toLowerCase();
-    const approvedByAdmin = data.approvedByAdmin === true;
-    if (role !== "ngo" || !approvedByAdmin) {
+    const role = `${after.role || ""}`.trim().toLowerCase();
+    const approvedBefore = before?.approvedByAdmin === true;
+    const approvedAfter = after.approvedByAdmin === true;
+    const alreadySent = Boolean(after.approvalNotificationSentAt);
+    const tokenBefore = `${before?.latestFcmToken || ""}`.trim();
+    const tokenAfter = `${after.latestFcmToken || ""}`.trim();
+    const approvalJustChanged = !approvedBefore && approvedAfter;
+    const tokenBecameAvailable = tokenAfter.length > 0 && tokenBefore !== tokenAfter;
+
+    if (role !== "ngo" || !approvedAfter || alreadySent) {
+      return;
+    }
+
+    if (!approvalJustChanged && !tokenBecameAvailable) {
+      console.log("FCM NGO approval update ignored", {
+        uid: event.params.userId,
+        approvalJustChanged,
+        tokenBecameAvailable,
+        tokenAfter,
+      });
       return;
     }
 
     const payload = buildPayload({
       title: "Registration Approved",
-      body: "You are successfully registered as an NGO in WasteNot. Login now.",
+      body: "Your account is approved. You can now login.",
       type: NOTIFICATION_TYPES.NGO_APPROVED,
       userRole: "ngo",
       navigation: "ngo_dashboard",
     });
 
-    await sendToUser({
+    const delivered = await sendToUser({
       uid: event.params.userId,
       payload,
+      retryIfNoTokens: true,
+    });
+
+    if (delivered === 0) {
+      console.warn("FCM NGO approval deferred because no token was available", {
+        uid: event.params.userId,
+        tokenAfter,
+      });
+      return;
+    }
+
+    await markDocument(`${USERS_COLLECTION}/${event.params.userId}`, {
+      approvalNotificationSentAt: nowTimestamp(),
     });
   },
 );
+
+exports.sendTestNotificationToUid = onCall(async (request) => {
+  const callerEmail = `${request.auth?.token?.email || ""}`.trim().toLowerCase();
+  if (callerEmail !== ADMIN_EMAIL) {
+    throw new HttpsError("permission-denied", "Only the admin can send test notifications.");
+  }
+
+  const uid = `${request.data?.uid || ""}`.trim();
+  if (!uid) {
+    throw new HttpsError("invalid-argument", "uid is required.");
+  }
+
+  const payload = buildPayload({
+    title: `${request.data?.title || "FCM Test"}`.trim() || "FCM Test",
+    body: `${request.data?.body || "Manual test notification from Cloud Functions."}`.trim(),
+    type: `${request.data?.type || "MANUAL_TEST"}`.trim() || "MANUAL_TEST",
+    userRole: `${request.data?.userRole || "unknown"}`.trim() || "unknown",
+    navigation: `${request.data?.navigation || "manual_test"}`.trim() || "manual_test",
+  });
+
+  const delivered = await sendToUser({
+    uid,
+    payload,
+    extraData: {
+      triggeredBy: callerEmail,
+      source: "manual_test_function",
+    },
+  });
+
+  return {
+    uid,
+    delivered,
+    payload,
+  };
+});
 
 exports.notifyNgosOnNewDonation = onDocumentCreated(
   `${DONATIONS_COLLECTION}/{donationId}`,
@@ -480,9 +635,46 @@ exports.notifyDonorWhenDonationExpires = onDocumentUpdated(
   },
 );
 
-exports.checkDonationExpiryWindows = onSchedule("every 1 hours", async () => {
+exports.notifyDonorWhenDonationAccepted = onDocumentUpdated(
+  `${DONATIONS_COLLECTION}/{donationId}`,
+  async (event) => {
+    const before = event.data?.before?.data();
+    const after = event.data?.after?.data();
+    if (!after) {
+      return;
+    }
+
+    const beforeNgoId = `${before?.acceptedByNgoId || ""}`.trim();
+    const afterNgoId = `${after.acceptedByNgoId || ""}`.trim();
+    const donorId = `${after.donorId || ""}`.trim();
+
+    if (!afterNgoId || beforeNgoId === afterNgoId || !donorId) {
+      return;
+    }
+
+    const payload = buildPayload({
+      title: "Donation Accepted",
+      body: "Your donation has been accepted",
+      type: NOTIFICATION_TYPES.DONATION_ACCEPTED,
+      userRole: "donor",
+      navigation: "accepted_donations",
+    });
+
+    await sendToUser({
+      uid: donorId,
+      payload,
+      extraData: {
+        donationId: event.params.donationId,
+        ngoId: afterNgoId,
+        ngoName: after.acceptedByNgoName || "",
+      },
+    });
+  },
+);
+
+exports.checkDonationExpiryWindows = onSchedule("every 5 minutes", async () => {
   const now = new Date();
-  const thirtyMinutesFromNow = new Date(now.getTime() + 30 * 60 * 1000);
+  const twentyMinutesFromNow = new Date(now.getTime() + 20 * 60 * 1000);
 
   const snapshot = await db
     .collection(DONATIONS_COLLECTION)
@@ -514,22 +706,41 @@ exports.checkDonationExpiryWindows = onSchedule("every 1 hours", async () => {
       continue;
     }
 
-    if (expiryAt <= thirtyMinutesFromNow) {
-      const payload = buildPayload({
+    if (expiryAt <= twentyMinutesFromNow) {
+      const donorId = `${data.donorId || ""}`.trim();
+      const acceptedNgoId = `${data.acceptedByNgoId || ""}`.trim();
+
+      const donorPayload = buildPayload({
         title: "Donation Expiring Soon",
-        body: "Save food and feed the hungry before it expires!",
+        body: "Donation is about to expire. Please take action.",
         type: NOTIFICATION_TYPES.DONATION_EXPIRING_SOON,
-        userRole: "ngo",
-        navigation: "available_donations",
+        userRole: "donor",
+        navigation: "donor_donations",
       });
 
-      await sendToUsersByRole({
-        role: "ngo",
-        payload,
-        extraData: { donationId },
-        filters: [["approvedByAdmin", "==", true]],
-        fallbackTopic: true,
-      });
+      if (donorId) {
+        await sendToUser({
+          uid: donorId,
+          payload: donorPayload,
+          extraData: { donationId },
+        });
+      }
+
+      if (acceptedNgoId) {
+        const ngoPayload = buildPayload({
+          title: "Donation Expiring Soon",
+          body: "Donation is about to expire. Please take action.",
+          type: NOTIFICATION_TYPES.DONATION_EXPIRING_SOON,
+          userRole: "ngo",
+          navigation: "available_donations",
+        });
+
+        await sendToUser({
+          uid: acceptedNgoId,
+          payload: ngoPayload,
+          extraData: { donationId, donorId },
+        });
+      }
 
       batch.update(doc.ref, {
         expiringNotificationSentAt: nowTimestamp(),

@@ -8,7 +8,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:wastenot/features/admin/quick_actions/requests/requests_screen.dart';
 import 'package:wastenot/features/donor/presentation/donate/screens/add_donation_screen.dart';
+import 'package:wastenot/features/donor/presentation/home/screens/accepted_donations_screen.dart';
 import 'package:wastenot/features/donor/presentation/home/screens/expired_donations_screen.dart';
+import 'package:wastenot/features/donor/presentation/home/screens/your_donations_screen.dart';
 import 'package:wastenot/features/ngo/presentation/screens/home/all_donations/all_donations_screen.dart';
 import 'package:wastenot/models/app_user_model.dart';
 import 'package:wastenot/navigation/app_navigation_handler.dart';
@@ -17,10 +19,18 @@ import 'package:wastenot/services/session_service.dart';
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
+  debugPrint(
+    'FCM background message received: id=${message.messageId} data=${message.data}',
+  );
 }
 
 class FcmService {
   FcmService._();
+
+  static const String channelId = 'wastenot_fcm_channel';
+  static const String channelName = 'WasteNot Notifications';
+  static const String channelDescription =
+      'Real-time notifications for WasteNot donations and approvals';
 
   static final FcmService instance = FcmService._();
   static final GlobalKey<NavigatorState> navigatorKey =
@@ -32,10 +42,15 @@ class FcmService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   bool _initialized = false;
+  bool _isSessionSyncInProgress = false;
   String? _currentUserRoleTopic;
   String? _currentToken;
   String? _currentTokenOwnerUid;
+  String? _lastSessionSyncUid;
+  String? _lastSessionSyncedToken;
   Map<String, dynamic>? _pendingNavigationData;
+
+  String? get currentToken => _currentToken;
 
   Future<void> initialize() async {
     if (_initialized) {
@@ -46,16 +61,7 @@ class FcmService {
     try {
       FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
       await _initializeLocalNotifications();
-
-      await _messaging.requestPermission(
-        alert: true,
-        badge: true,
-        sound: true,
-        announcement: false,
-        criticalAlert: false,
-        provisional: false,
-        carPlay: false,
-      );
+      await _requestNotificationPermissions();
 
       await _messaging.setForegroundNotificationPresentationOptions(
         alert: true,
@@ -71,6 +77,21 @@ class FcmService {
 
       SessionService.currentUser.addListener(_handleSessionChanged);
       await _syncSessionState();
+
+      final launchDetails =
+          await _localNotifications.getNotificationAppLaunchDetails();
+      final launchPayload =
+          launchDetails?.notificationResponse?.payload?.trim() ?? '';
+      if (launchPayload.isNotEmpty) {
+        final decoded = jsonDecode(launchPayload);
+        if (decoded is Map<String, dynamic>) {
+          _pendingNavigationData = decoded;
+        } else if (decoded is Map) {
+          _pendingNavigationData = decoded.map(
+            (key, value) => MapEntry(key.toString(), value),
+          );
+        }
+      }
 
       final initialMessage = await _messaging.getInitialMessage();
       if (initialMessage != null) {
@@ -112,7 +133,7 @@ class FcmService {
 
   Future<void> _initializeLocalNotifications() async {
     const androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+        AndroidInitializationSettings('@drawable/ic_stat_notification');
     const iosSettings = DarwinInitializationSettings();
     const settings = InitializationSettings(
       android: androidSettings,
@@ -139,6 +160,49 @@ class FcmService {
         }
       },
     );
+
+    final androidPlugin = _localNotifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+
+    if (androidPlugin != null) {
+      const channel = AndroidNotificationChannel(
+        channelId,
+        channelName,
+        description: channelDescription,
+        importance: Importance.max,
+      );
+      await androidPlugin.createNotificationChannel(channel);
+    }
+  }
+
+  Future<void> _requestNotificationPermissions() async {
+    await _messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+      announcement: false,
+      criticalAlert: false,
+      provisional: false,
+      carPlay: false,
+    );
+
+    final androidPlugin = _localNotifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    await androidPlugin?.requestNotificationsPermission();
+
+    final iosPlugin = _localNotifications
+        .resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin
+        >();
+    await iosPlugin?.requestPermissions(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
   }
 
   Future<void> _handleForegroundMessage(RemoteMessage message) async {
@@ -150,11 +214,12 @@ class FcmService {
     }
 
     const androidDetails = AndroidNotificationDetails(
-      'wastenot_fcm_channel',
-      'WasteNot Notifications',
-      channelDescription: 'Foreground notifications for WasteNot',
+      channelId,
+      channelName,
+      channelDescription: channelDescription,
       importance: Importance.max,
       priority: Priority.high,
+      icon: '@drawable/ic_stat_notification',
     );
     const iosDetails = DarwinNotificationDetails();
 
@@ -171,13 +236,30 @@ class FcmService {
   }
 
   Future<void> _handleTokenRefresh(String token) async {
-    _currentToken = token;
-    final user = SessionService.user;
-    if (user == null) {
+    final normalizedToken = token.trim();
+    final previousToken = _currentToken?.trim();
+    _currentToken = normalizedToken;
+
+    if (normalizedToken.isEmpty) {
+      debugPrint('FCM token refresh ignored because the token is empty.');
       return;
     }
 
-    await _saveTokenForUser(user, token);
+    if (previousToken == normalizedToken) {
+      debugPrint('FCM token refresh skipped because the token did not change.');
+    } else {
+      debugPrint(
+        'FCM token changed: ${previousToken ?? '<null>'} -> $normalizedToken',
+      );
+    }
+
+    final user = SessionService.user;
+    if (user == null) {
+      debugPrint('FCM token refresh skipped because no user is signed in.');
+      return;
+    }
+
+    await _saveTokenForUser(user, normalizedToken, source: 'token_refresh');
   }
 
   Future<void> _handleSessionChanged() async {
@@ -186,25 +268,90 @@ class FcmService {
   }
 
   Future<void> _syncSessionState() async {
+    if (_isSessionSyncInProgress) {
+      debugPrint('FCM session sync skipped because another sync is in progress.');
+      return;
+    }
+
+    _isSessionSyncInProgress = true;
     final user = SessionService.user;
-    await _syncRoleTopic(user);
-
-    if (user == null) {
-      _currentTokenOwnerUid = null;
-      return;
-    }
-
-    final token = _currentToken ?? await _messaging.getToken();
-    if (token == null || token.trim().isEmpty) {
-      return;
-    }
-
-    _currentToken = token;
     try {
-      await _saveTokenForUser(user, token);
-    } catch (error) {
-      debugPrint('FCM token sync failed for ${user.uid}: $error');
+      await _syncRoleTopic(user);
+
+      if (user == null) {
+        _currentTokenOwnerUid = null;
+        _lastSessionSyncUid = null;
+        _lastSessionSyncedToken = null;
+        return;
+      }
+
+      final token = await getDeviceToken(forceRefresh: false);
+      final normalizedToken = token?.trim() ?? '';
+      if (normalizedToken.isEmpty) {
+        debugPrint('FCM session sync skipped for ${user.uid}: token is empty.');
+        return;
+      }
+
+      _currentToken = normalizedToken;
+      if (_lastSessionSyncUid == user.uid &&
+          _lastSessionSyncedToken == normalizedToken &&
+          _currentTokenOwnerUid == user.uid) {
+        debugPrint(
+          'FCM session sync skipped for ${user.uid}: token unchanged.',
+        );
+        return;
+      }
+
+      try {
+        await _saveTokenForUser(
+          user,
+          normalizedToken,
+          source: 'session_listener',
+        );
+        _lastSessionSyncUid = user.uid;
+        _lastSessionSyncedToken = normalizedToken;
+      } catch (error) {
+        debugPrint('FCM token sync failed for ${user.uid}: $error');
+      }
+    } finally {
+      _isSessionSyncInProgress = false;
     }
+  }
+
+  Future<void> syncTokenForSignedInUser({bool forceRefresh = false}) async {
+    final user = SessionService.user;
+    if (user == null) {
+      debugPrint('FCM sync skipped because there is no signed-in user.');
+      return;
+    }
+
+    final token = await getDeviceToken(forceRefresh: forceRefresh);
+    final normalizedToken = token?.trim() ?? '';
+    if (normalizedToken.isEmpty) {
+      debugPrint('FCM sync skipped for ${user.uid}: token is empty.');
+      return;
+    }
+
+    _currentToken = normalizedToken;
+    await _saveTokenForUser(
+      user,
+      normalizedToken,
+      source: forceRefresh ? 'manual_forced_sync' : 'manual_sync',
+    );
+    _lastSessionSyncUid = user.uid;
+    _lastSessionSyncedToken = normalizedToken;
+    debugPrint('FCM token sync completed for ${user.uid}: $normalizedToken');
+  }
+
+  Future<String?> getDeviceToken({bool forceRefresh = false}) async {
+    if (!forceRefresh && _currentToken != null && _currentToken!.trim().isNotEmpty) {
+      return _currentToken;
+    }
+
+    final token = await _messaging.getToken();
+    _currentToken = token?.trim();
+    debugPrint('FCM getToken result: ${_currentToken ?? '<null>'}');
+    return _currentToken;
   }
 
   Future<void> _syncRoleTopic(AppUserModel? user) async {
@@ -214,12 +361,14 @@ class FcmService {
     }
 
     if (_currentUserRoleTopic != null) {
+      debugPrint('FCM unsubscribing from topic $_currentUserRoleTopic');
       await _messaging.unsubscribeFromTopic(_currentUserRoleTopic!);
     }
 
     _currentUserRoleTopic = nextTopic;
 
     if (nextTopic != null) {
+      debugPrint('FCM subscribing to topic $nextTopic');
       await _messaging.subscribeToTopic(nextTopic);
     }
   }
@@ -241,9 +390,14 @@ class FcmService {
     return null;
   }
 
-  Future<void> _saveTokenForUser(AppUserModel user, String token) async {
+  Future<void> _saveTokenForUser(
+    AppUserModel user,
+    String token, {
+    required String source,
+  }) async {
     final normalizedToken = token.trim();
     if (normalizedToken.isEmpty) {
+      debugPrint('FCM token save skipped for ${user.uid}: token is empty.');
       return;
     }
 
@@ -251,27 +405,60 @@ class FcmService {
       await _deleteTokenForUser(_currentTokenOwnerUid!);
     }
 
-    final tokenDoc = _firestore
-        .collection('users')
-        .doc(user.uid)
-        .collection('fcm_tokens')
-        .doc(normalizedToken);
+    final userDoc = _firestore.collection('users').doc(user.uid);
+    final tokenDoc = userDoc.collection('fcm_tokens').doc(normalizedToken);
+    final platform = _platformName();
 
-    await tokenDoc.set(<String, dynamic>{
+    final snapshots = await Future.wait([
+      tokenDoc.get(),
+      userDoc.get(),
+    ]);
+    final tokenSnapshot = snapshots[0] as DocumentSnapshot<Map<String, dynamic>>;
+    final userSnapshot = snapshots[1] as DocumentSnapshot<Map<String, dynamic>>;
+    final tokenData = tokenSnapshot.data() ?? <String, dynamic>{};
+    final latestUserToken =
+        (userSnapshot.data()?['latestFcmToken'] as String? ?? '').trim();
+    final tokenAlreadyActive =
+        tokenSnapshot.exists &&
+        (tokenData['token'] as String? ?? '').trim() == normalizedToken &&
+        (tokenData['isActive'] as bool?) != false &&
+        (tokenData['role'] as String? ?? '') == user.role &&
+        (tokenData['platform'] as String? ?? '') == platform;
+
+    if (tokenAlreadyActive && latestUserToken == normalizedToken) {
+      _currentTokenOwnerUid = user.uid;
+      _lastSessionSyncUid = user.uid;
+      _lastSessionSyncedToken = normalizedToken;
+      debugPrint(
+        'FCM token save skipped for ${user.uid}: duplicate token from $source.',
+      );
+      return;
+    }
+
+    final tokenPayload = <String, dynamic>{
       'token': normalizedToken,
       'role': user.role,
-      'platform': _platformName(),
+      'platform': platform,
       'updatedAt': FieldValue.serverTimestamp(),
-      'createdAt': FieldValue.serverTimestamp(),
       'isActive': true,
-    }, SetOptions(merge: true));
+    };
+    if (!tokenSnapshot.exists) {
+      tokenPayload['createdAt'] = FieldValue.serverTimestamp();
+    }
 
-    await _firestore.collection('users').doc(user.uid).set(<String, dynamic>{
+    await tokenDoc.set(tokenPayload, SetOptions(merge: true));
+
+    await userDoc.set(<String, dynamic>{
       'latestFcmToken': normalizedToken,
       'lastFcmTokenUpdatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
 
     _currentTokenOwnerUid = user.uid;
+    _lastSessionSyncUid = user.uid;
+    _lastSessionSyncedToken = normalizedToken;
+    debugPrint(
+      'FCM token saved for ${user.uid} from $source: $normalizedToken',
+    );
   }
 
   Future<void> _deleteTokenForUser(String uid) async {
@@ -288,6 +475,7 @@ class FcmService {
         .doc(normalizedToken)
         .delete()
         .catchError((_) {});
+    debugPrint('FCM token deleted for $normalizedUid: $normalizedToken');
   }
 
   String _platformName() {
@@ -346,6 +534,10 @@ class FcmService {
       'NEW_DONATION' ||
       'DONATION_EXPIRING_SOON' when user.isNgo =>
         MaterialPageRoute<void>(builder: (_) => const AllDonationsScreen()),
+      'accepted_donations' || 'DONATION_ACCEPTED' when user.isDonor =>
+        MaterialPageRoute<void>(builder: (_) => const AcceptedDonationsScreen()),
+      'donor_donations' || 'DONATION_EXPIRING_SOON' when user.isDonor =>
+        MaterialPageRoute<void>(builder: (_) => const YourDonationsScreen()),
       'donation_form' || 'DONOR_REMINDER' when user.isDonor =>
         MaterialPageRoute<void>(builder: (_) => const AddDonationScreen()),
       'donor_expired_donations' || 'DONATION_EXPIRED' when user.isDonor =>
