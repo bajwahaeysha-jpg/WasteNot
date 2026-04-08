@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:wastenot/core/utils/meal_parser.dart';
 import 'package:wastenot/models/app_user_model.dart';
 import 'package:wastenot/services/notification_service.dart';
 import 'package:wastenot/services/session_service.dart';
@@ -477,18 +478,9 @@ class AdminDonorManagementService {
 
   int _mealCountFromDonation(Map<String, dynamic> donation) {
     for (final key in const ['servings', 'meals', 'mealCount', 'totalMeals']) {
-      final value = donation[key];
-      if (value is int) {
-        return value;
-      }
-      if (value is num) {
-        return value.round();
-      }
-      if (value is String) {
-        final parsed = int.tryParse(value);
-        if (parsed != null) {
-          return parsed;
-        }
+      final parsed = parseMealValue(donation[key]);
+      if (parsed > 0) {
+        return parsed;
       }
     }
     return 0;

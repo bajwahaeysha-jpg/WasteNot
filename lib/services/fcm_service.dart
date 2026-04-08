@@ -70,9 +70,13 @@ class FcmService {
       );
 
       FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
-      FirebaseMessaging.onMessageOpenedApp.listen(
-        (message) => _handleMessageTap(message.data),
-      );
+      FirebaseMessaging.onMessageOpenedApp.listen((message) {
+  debugPrint("📲 BACKGROUND CLICK DATA: ${message.data}");
+
+  Future.delayed(const Duration(milliseconds: 500), () {
+    _handleMessageTap(message.data);
+  });
+});
       _messaging.onTokenRefresh.listen(_handleTokenRefresh);
 
       SessionService.currentUser.addListener(_handleSessionChanged);
@@ -94,9 +98,14 @@ class FcmService {
       }
 
       final initialMessage = await _messaging.getInitialMessage();
-      if (initialMessage != null) {
-        _handleMessageTap(initialMessage.data);
-      }
+
+if (initialMessage != null) {
+  debugPrint("🚀 TERMINATED CLICK DATA: ${initialMessage.data}");
+
+  Future.delayed(const Duration(milliseconds: 500), () {
+    _handleMessageTap(initialMessage.data);
+  });
+}
     } catch (error, stackTrace) {
       debugPrint('FCM initialization skipped: $error');
       debugPrintStack(stackTrace: stackTrace);
@@ -500,55 +509,77 @@ class FcmService {
   }
 
   Future<void> _handleMessageTap(Map<String, dynamic> data) async {
-    if (!_canNavigateNow()) {
-      _pendingNavigationData = Map<String, dynamic>.from(data);
-      return;
-    }
+  debugPrint("🔥 NOTIFICATION CLICK DATA: $data");
 
-    await _navigateFromData(data);
+  if (!_canNavigateNow()) {
+    debugPrint("⏳ Cannot navigate yet, saving pending data...");
+    _pendingNavigationData = Map<String, dynamic>.from(data);
+    return;
   }
+
+  debugPrint("🚀 Navigating now...");
+  await _navigateFromData(data);
+}
 
   bool _canNavigateNow() {
     return navigatorKey.currentState != null && SessionService.user != null;
   }
 
   Future<void> _navigateFromData(Map<String, dynamic> data) async {
-    final navigator = navigatorKey.currentState;
-    final user = SessionService.user;
-    if (navigator == null || user == null) {
-      _pendingNavigationData = Map<String, dynamic>.from(data);
-      return;
-    }
+  final navigator = navigatorKey.currentState;
+  final user = SessionService.user;
 
-    final navigation =
-        (data['navigation'] ?? data['screen'] ?? '').toString().trim();
-    final type = (data['type'] ?? '').toString().trim();
-    final key = navigation.isNotEmpty ? navigation : type;
+  debugPrint("📥 RAW DATA: $data");
 
-    final route = switch (key) {
-      'admin_ngo_requests' || 'NEW_NGO_REGISTRATION' when user.isAdmin =>
-        MaterialPageRoute<void>(builder: (_) => const RequestsScreen()),
-      'ngo_dashboard' || 'NGO_APPROVED' when user.isNgo =>
-        AppNavigationHandler.homeRoute(user),
-      'available_donations' ||
-      'NEW_DONATION' ||
-      'DONATION_EXPIRING_SOON' when user.isNgo =>
-        MaterialPageRoute<void>(builder: (_) => const AllDonationsScreen()),
-      'accepted_donations' || 'DONATION_ACCEPTED' when user.isDonor =>
-        MaterialPageRoute<void>(builder: (_) => const AcceptedDonationsScreen()),
-      'donor_donations' || 'DONATION_EXPIRING_SOON' when user.isDonor =>
-        MaterialPageRoute<void>(builder: (_) => const YourDonationsScreen()),
-      'donation_form' || 'DONOR_REMINDER' when user.isDonor =>
-        MaterialPageRoute<void>(builder: (_) => const AddDonationScreen()),
-      'donor_expired_donations' || 'DONATION_EXPIRED' when user.isDonor =>
-        MaterialPageRoute<void>(builder: (_) => const ExpiredDonationsScreen()),
-      _ => null,
-    };
-
-    if (route == null) {
-      return;
-    }
-
-    await navigator.push(route);
+  if (navigator == null || user == null) {
+    debugPrint("⏳ Navigator ya user null → saving pending");
+    _pendingNavigationData = Map<String, dynamic>.from(data);
+    return;
   }
+
+  final navigation =
+      (data['navigation'] ?? data['screen'] ?? '').toString().trim();
+  final type = (data['type'] ?? '').toString().trim();
+  final key = navigation.isNotEmpty ? navigation : type;
+
+  debugPrint("🎯 navigation: $navigation");
+  debugPrint("🎯 type: $type");
+  debugPrint("🎯 final key: $key");
+  debugPrint("👤 user role: ${user.role}");
+
+  final route = switch (key) {
+    'admin_ngo_requests' || 'NEW_NGO_REGISTRATION' when user.isAdmin =>
+      MaterialPageRoute<void>(builder: (_) => const RequestsScreen()),
+
+    'ngo_dashboard' || 'NGO_APPROVED' when user.isNgo =>
+      AppNavigationHandler.homeRoute(user),
+
+    'available_donations' ||
+    'NEW_DONATION' ||
+    'DONATION_EXPIRING_SOON' when user.isNgo =>
+      MaterialPageRoute<void>(builder: (_) => const AllDonationsScreen()),
+
+    'accepted_donations' || 'DONATION_ACCEPTED' when user.isDonor =>
+      MaterialPageRoute<void>(builder: (_) => const AcceptedDonationsScreen()),
+
+    'donor_donations' || 'DONATION_EXPIRING_SOON' when user.isDonor =>
+      MaterialPageRoute<void>(builder: (_) => const YourDonationsScreen()),
+
+    'donation_form' || 'DONOR_REMINDER' when user.isDonor =>
+      MaterialPageRoute<void>(builder: (_) => const AddDonationScreen()),
+
+    'donor_expired_donations' || 'DONATION_EXPIRED' when user.isDonor =>
+      MaterialPageRoute<void>(builder: (_) => const ExpiredDonationsScreen()),
+
+    _ => null,
+  };
+
+  if (route == null) {
+    debugPrint("❌ No matching route for key: $key");
+    return;
+  }
+
+  debugPrint("✅ Navigating to screen...");
+  await navigator.push(route);
+}
 }

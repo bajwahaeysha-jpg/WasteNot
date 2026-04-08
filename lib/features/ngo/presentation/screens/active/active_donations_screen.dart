@@ -24,7 +24,7 @@ class _ActiveDonationsScreenState extends State<ActiveDonationsScreen> {
         final stream = uid == null
             ? Stream<List<DonationModel>>.value(const <DonationModel>[])
             : _donationService.streamDonationsByStatus(
-                status: DonationStatus.active,
+                status: DonationStatus.accepted,
                 ngoId: uid,
                 orderByCreatedAt: false,
               );

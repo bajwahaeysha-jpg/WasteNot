@@ -36,7 +36,7 @@ class ImpactScreen extends StatelessWidget {
 
               final impact = snapshot.data ??
                   const NgoImpactData(
-                    totalAcceptedDonations: 0,
+                    totalCompletedDonations: 0,
                     totalMeals: 0,
                     totalPeopleServed: 0,
                     weeklyActivity: [],

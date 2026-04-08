@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:wastenot/features/donor/presentation/goal/screens/donor_goal_screen.dart';
 import 'package:wastenot/navigation/app_navigation_handler.dart';
 import 'home/screens/donor_home_screen.dart';
 import 'donate/screens/donate_screen.dart';
@@ -271,7 +272,20 @@ class _DonorNavigationScreenState extends State<DonorNavigationScreen> {
               },
             ),
 
-            // ✅ NEW FEEDBACK OPTION
+            ListTile(
+              leading: const Icon(Icons.flag_outlined),
+              title: const Text("Set Monthly Goal"),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const DonorGoalScreen(),
+                  ),
+                );
+              },
+            ),
 
             ListTile(
               leading: const Icon(Icons.feedback),

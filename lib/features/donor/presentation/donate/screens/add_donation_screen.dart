@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:wastenot/models/app_location.dart';
@@ -7,6 +6,8 @@ import 'package:wastenot/services/donation_services.dart';
 import 'package:wastenot/services/firestore_service.dart';
 import 'package:wastenot/services/location_service.dart';
 import 'package:wastenot/services/session_service.dart';
+
+const Color mainGreen = Color(0xFF0E5E53);
 
 class AddDonationScreen extends StatefulWidget {
   const AddDonationScreen({super.key});
@@ -22,8 +23,10 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
   final LocationService _locationService = const LocationService();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
-  XFile? pickedImage;
+  List<XFile> pickedImages = [];
   String? selectedServing;
+  String selectedPrecaution = 'None';
+
   bool _isSubmitting = false;
   bool _isLoadingLocation = true;
   AppLocation? _selectedDonationLocation;
@@ -31,7 +34,6 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
   final foodController = TextEditingController();
   final locationController = TextEditingController();
   final descriptionController = TextEditingController();
-  final precautionController = TextEditingController();
 
   final List<String> servingOptions = const [
     '1 - 10',
@@ -41,6 +43,23 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
     '40 - 50',
     'More than 50',
   ];
+
+  final List<String> precautionOptions = const [
+    'Refrigerator',
+    'Containers',
+    'Handle carefully',
+    'Keep warm',
+    'None',
+  ];
+
+  final TextStyle headingStyle = const TextStyle(
+    fontWeight: FontWeight.bold,
+    fontSize: 18,
+  );
+
+  final TextStyle inputStyle = const TextStyle(
+    fontSize: 15,
+  );
 
   @override
   void initState() {
@@ -53,25 +72,21 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
     foodController.dispose();
     locationController.dispose();
     descriptionController.dispose();
-    precautionController.dispose();
     super.dispose();
   }
 
   Future<void> _loadProfileLocation() async {
     final donor = SessionService.user;
+
     if (donor == null || donor.uid.trim().isEmpty) {
-      if (mounted) {
-        setState(() => _isLoadingLocation = false);
-      }
+      setState(() => _isLoadingLocation = false);
       return;
     }
 
     try {
-      final refreshedUser = await _firestoreService.getUserByUid(donor.uid);
+      final refreshedUser =
+          await _firestoreService.getUserByUid(donor.uid);
       final location = refreshedUser?.location ?? donor.location;
-      if (!mounted) {
-        return;
-      }
 
       setState(() {
         _selectedDonationLocation = location;
@@ -79,10 +94,6 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
         _isLoadingLocation = false;
       });
     } catch (_) {
-      if (!mounted) {
-        return;
-      }
-
       setState(() {
         _selectedDonationLocation = donor.location;
         locationController.text = donor.location?.address ?? '';
@@ -91,47 +102,46 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
     }
   }
 
-  Future<void> pickImage() async {
-    final img = await _picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 80,
-    );
-    if (img != null && mounted) {
-      setState(() => pickedImage = img);
+  Future<void> pickImages() async {
+    final images = await _picker.pickMultiImage(imageQuality: 80);
+
+    if (images != null) {
+      setState(() {
+        pickedImages = images.take(3).toList();
+      });
     }
   }
 
   Future<void> _submitDonation() async {
     if (_isSubmitting) return;
-
     if (!_formKey.currentState!.validate()) return;
 
-    // ✅ IMAGE VALIDATION (NEW)
-    if (pickedImage == null) {
-      _showError('Please add an image for the donation.');
+    if (pickedImages.isEmpty) {
+      _showError('Please add at least one image');
       return;
     }
 
     final donor = SessionService.user;
     if (donor == null || !donor.isDonor) {
-      _showError('Please log in as a donor to create a donation.');
+      _showError('Please log in as donor');
       return;
     }
-
-    final description = descriptionController.text.trim();
-    final precaution = precautionController.text.trim();
 
     setState(() => _isSubmitting = true);
 
     try {
       final donationId = _donationService.createDraftDonationId();
+      List<String> uploadedUrls = [];
 
-      final uploadedImageUrl =
-          await _firestoreService.uploadDonationImage(
-        donorId: donor.uid,
-        donationId: donationId,
-        imageFile: File(pickedImage!.path),
-      );
+      for (var img in pickedImages) {
+        final url = await _firestoreService.uploadDonationImage(
+          donorId: donor.uid,
+          donationId: donationId,
+          imageFile: File(img.path),
+        );
+
+        if (url != null) uploadedUrls.add(url);
+      }
 
       await _donationService.createDonation(
         donor: donor,
@@ -139,52 +149,39 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
         request: DonationCreateRequest(
           foodItems: foodController.text
               .split(',')
-              .map((item) => item.trim())
-              .where((item) => item.isNotEmpty)
+              .map((e) => e.trim())
+              .where((e) => e.isNotEmpty)
               .toList(),
           quantity: selectedServing!,
-          description: description.isEmpty ? null : description,
-          // 🔥 FIX: NO MERGE — clean separation
-          precaution: precaution.isEmpty ? null : precaution,
+          description: descriptionController.text.trim().isEmpty
+              ? null
+              : descriptionController.text.trim(),
+          precaution:
+              selectedPrecaution == 'None' ? null : selectedPrecaution,
           location: _selectedDonationLocation!,
-          imageUrls: uploadedImageUrl == null
-              ? const <String>[]
-              : <String>[uploadedImageUrl],
+          imageUrls: uploadedUrls,
         ),
       );
 
       if (!mounted) return;
 
-      await showDialog<void>(
-        context: context,
-        builder: (_) => AlertDialog(
-          backgroundColor: const Color(0xFFF5F7F6),
-          title: const Text('Donation Submitted'),
-          content: const Text(
-            'Your donation is now visible to all registered NGOs and is ready to be accepted.',
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text("Donation submitted successfully"),
+          duration: const Duration(seconds: 1),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(20),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('OK'),
-            ),
-          ],
         ),
       );
 
-      if (!mounted) return;
-
-      Navigator.of(context).pop(true);
-    } on DonationException catch (error) {
-      _showError(error.message);
-    } on Exception {
-      _showError('Image upload failed. Please try again.');
-    } catch (_) {
-      _showError('Unable to submit donation right now. Please try again.');
+      Navigator.pop(context, true);
+    } catch (e) {
+      _showError('Error submitting donation');
     } finally {
-      if (mounted) {
-        setState(() => _isSubmitting = false);
-      }
+      setState(() => _isSubmitting = false);
     }
   }
 
@@ -192,213 +189,220 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
     final location = await _locationService.pickLocation(
       context,
       initialLocation: _selectedDonationLocation,
-      title: 'Select Donation Location',
+      title: 'Select Location',
     );
 
-    if (location == null || !mounted) {
-      return;
+    if (location != null) {
+      setState(() {
+        _selectedDonationLocation = location;
+        locationController.text = location.address;
+      });
     }
-
-    setState(() {
-      _selectedDonationLocation = location;
-      locationController.text = location.address;
-    });
   }
 
-  void _showError(String message) {
+  void _showError(String msg) {
     ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+        .showSnackBar(SnackBar(content: Text(msg)));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: true,
       backgroundColor: const Color(0xFFF5F7F6),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0E5E53),
+        backgroundColor: mainGreen,
         title: const Text(
           'Add Donation',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: Colors.white, fontSize: 18),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Form(
         key: _formKey,
         child: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(
-            14,
-            14,
-            14,
-            MediaQuery.of(context).viewInsets.bottom + 20,
-          ),
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                "Your surplus, someone's meal",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'Together, we can turn your generosity into a meal that truly matters.',
-              ),
-              const SizedBox(height: 12),
 
-              const Text('Food', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text("Food", style: headingStyle),
               const SizedBox(height: 6),
-              _textField(
-                'What food are you donating?',
-                foodController,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Enter at least one food item.';
-                  }
-                  if (value
-                      .split(',')
-                      .where((e) => e.trim().isNotEmpty)
-                      .isEmpty) {
-                    return 'Enter valid food items.';
-                  }
-                  return null;
-                },
-              ),
+              _textField("Enter food items", foodController),
 
-              const SizedBox(height: 10),
+              const SizedBox(height: 16),
+
+              Row(
+                children: [
+                  Expanded(child: Text("Location", style: headingStyle)),
+                  Expanded(child: Text("Servings", style: headingStyle)),
+                ],
+              ),
+              const SizedBox(height: 6),
 
               Row(
                 children: [
                   Expanded(
-                    child: SizedBox(
-                      height: 120,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Location',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 6),
-                          Expanded(
-                            child: _textField(
-                              _isLoadingLocation
-                                  ? 'Loading pickup location...'
-                                  : 'Enter pickup location',
-                              locationController,
-                              readOnly: true,
-                              onTap: _pickDonationLocation,
-                              suffix: const Icon(Icons.map_outlined),
-                              validator: (value) {
-                                if (_selectedDonationLocation == null ||
-                                    value == null ||
-                                    value.trim().isEmpty) {
-                                  return 'Location is required.';
-                                }
-                                return null;
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
+                    child: _textField(
+                      "Location",
+                      locationController,
+                      readOnly: true,
+                      onTap: _pickDonationLocation,
+                      suffix: const Icon(Icons.location_on,
+                          color: Colors.red),
                     ),
                   ),
                   const SizedBox(width: 10),
-                  Expanded(
-                    child: SizedBox(
-                      height: 120,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Images',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 6),
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: pickImage,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border:
-                                      Border.all(color: Colors.grey.shade300),
-                                ),
-                                child: pickedImage == null
-                                    ? const Center(
-                                        child: Icon(
-                                          Icons.add_a_photo,
-                                          size: 30,
-                                        ),
-                                      )
-                                    : ClipRRect(
-                                        borderRadius: BorderRadius.circular(12),
-                                        child: Image.file(
-                                          File(pickedImage!.path),
-                                          fit: BoxFit.cover,
-                                          width: double.infinity,
-                                        ),
-                                      ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                  Expanded(child: _servingDropdown()),
                 ],
               ),
 
-              const SizedBox(height: 10),
+              const SizedBox(height: 16),
 
-              const Text(
-                'Details',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 6),
-              _servingDropdown(),
-
-              const SizedBox(height: 10),
-
-              const Text('Description'),
-              const SizedBox(height: 4),
-              _textArea(descriptionController, minLines: 2),
-
+              Text("Images", style: headingStyle),
               const SizedBox(height: 8),
 
-              const Text('Precaution'),
-              const SizedBox(height: 4),
-              _textArea(precautionController, minLines: 1),
+              Row(
+                children: [
 
-              const SizedBox(height: 20),
-
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0E5E53),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                  ),
-                  onPressed: _isSubmitting ? null : _submitDonation,
-                  child: _isSubmitting
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : const Text(
-                          'Continue',
-                          style: TextStyle(color: Colors.white),
+                  // 🔥 HIDE BUTTON WHEN IMAGES EXIST
+                  if (pickedImages.isEmpty)
+                    GestureDetector(
+                      onTap: pickImages,
+                      child: Container(
+                        height: 85,
+                        width: 85,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(12),
+                          color: Colors.white,
                         ),
-                ),
+                        child: const Icon(Icons.add_a_photo),
+                      ),
+                    ),
+
+                  if (pickedImages.isNotEmpty)
+                    Expanded(
+                      child: SizedBox(
+                        height: 85,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: pickedImages.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(width: 10),
+                          itemBuilder: (_, i) => ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Image.file(
+                              File(pickedImages[i].path),
+                              width: 85,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
+
+              const SizedBox(height: 16),
+
+              Text("Precaution", style: headingStyle),
+              const SizedBox(height: 8),
+
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: precautionOptions.map((option) {
+                  final isSelected = selectedPrecaution == option;
+
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() => selectedPrecaution = option);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? mainGreen.withOpacity(0.1)
+                            : Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isSelected
+                              ? mainGreen
+                              : Colors.grey.shade300,
+                        ),
+                      ),
+                      child: Text(
+                        option,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: isSelected
+                              ? mainGreen
+                              : Colors.black87,
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+
+              const SizedBox(height: 16),
+
+              Text("Description", style: headingStyle),
+              const SizedBox(height: 6),
+              _textArea(descriptionController),
+
+              const SizedBox(height: 30),
+
+              Center(
+                child: SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.7,
+                  height: 55,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: mainGreen,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                    ),
+                    onPressed:
+                        _isSubmitting ? null : _submitDonation,
+                   child: _isSubmitting
+    ? Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: const [
+          SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor:
+                  AlwaysStoppedAnimation<Color>(Colors.white),
+            ),
+          ),
+          SizedBox(width: 10),
+          Text(
+            "Submitting...",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+        ],
+      )
+    : const Text(
+        "Submit",
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      ),
+                  ),
+                ),
+              )
             ],
           ),
         ),
@@ -406,82 +410,102 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
     );
   }
 
-  Widget _textField(
-    String hint,
-    TextEditingController controller, {
-    bool readOnly = false,
-    VoidCallback? onTap,
-    Widget? suffix,
-    String? Function(String?)? validator,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: TextFormField(
-        controller: controller,
-        readOnly: readOnly,
-        onTap: onTap,
-        validator: validator,
-        decoration: InputDecoration(
-          border: InputBorder.none,
-          hintText: hint,
-          suffixIcon: suffix,
+  Widget _textField(String hint, TextEditingController controller,
+      {bool readOnly = false,
+      VoidCallback? onTap,
+      Widget? suffix}) {
+    return TextFormField(
+      controller: controller,
+      readOnly: readOnly,
+      onTap: onTap,
+      style: inputStyle,
+      decoration: InputDecoration(
+        hintText: hint,
+        suffixIcon: suffix,
+        filled: true,
+        fillColor: Colors.white,
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: Colors.grey.shade400),
         ),
       ),
     );
   }
 
-  Widget _textArea(
-    TextEditingController controller, {
-    required int minLines,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: TextFormField(
-        controller: controller,
-        minLines: minLines,
-        maxLines: null,
-        decoration: const InputDecoration(
-          border: InputBorder.none,
-          hintText: 'Write here...',
+  Widget _textArea(TextEditingController controller) {
+    return TextFormField(
+      controller: controller,
+      maxLines: 3,
+      style: inputStyle,
+      decoration: InputDecoration(
+        hintText: "Write here...",
+        filled: true,
+        fillColor: Colors.white,
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: Colors.grey.shade400),
         ),
       ),
     );
   }
 
   Widget _servingDropdown() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
+  return DropdownButtonFormField<String>(
+    value: selectedServing,
+    dropdownColor: Colors.white, // 🔥 dropdown bg fix
+
+    hint: const Text(
+      "Servings",
+      style: TextStyle(color: Colors.black54),
+    ),
+
+    style: const TextStyle(
+      fontSize: 15,
+      color: Colors.black, // 🔥 selected text visible
+    ),
+
+    items: servingOptions.map((e) {
+      return DropdownMenuItem(
+        value: e,
+        child: Text(
+          e,
+          style: const TextStyle(
+            color: Colors.black, // 🔥 list items visible
+            fontSize: 15,
+          ),
+        ),
+      );
+    }).toList(),
+
+    onChanged: (val) => setState(() => selectedServing = val),
+
+    icon: const Icon(Icons.keyboard_arrow_down,
+        color: Colors.black), // 🔥 arrow visible
+
+    decoration: InputDecoration(
+      filled: true,
+      fillColor: Colors.white,
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: Colors.grey.shade300),
       ),
-      child: DropdownButtonFormField<String>(
-        initialValue: selectedServing,
-        decoration: const InputDecoration(border: InputBorder.none),
-        hint: const Text('Select servings'),
-        isExpanded: true,
-        items: servingOptions
-            .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-            .toList(),
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return 'Select quantity or servings.';
-          }
-          return null;
-        },
-        onChanged: (val) => setState(() => selectedServing = val),
+
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: Colors.grey.shade400),
       ),
-    );
-  }
+    ),
+  );
+}
 }

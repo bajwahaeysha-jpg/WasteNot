@@ -26,7 +26,7 @@ class ActiveScreen extends StatelessWidget {
       ),
       body: StreamBuilder<List<DonationModel>>(
         stream: donationService.streamDonationsByStatus(
-          status: DonationStatus.active,
+          status: DonationStatus.accepted,
           donorId: donorId,
           ngoId: ngoId,
         ),
@@ -36,12 +36,12 @@ class ActiveScreen extends StatelessWidget {
           }
 
           if (snapshot.hasError) {
-            return const Center(child: Text('No active donations'));
+            return const Center(child: Text('No active operations'));
           }
 
           final operations = snapshot.data ?? <DonationModel>[];
           if (operations.isEmpty) {
-            return const Center(child: Text('No active donations'));
+            return const Center(child: Text('No active operations'));
           }
 
           return ListView.builder(

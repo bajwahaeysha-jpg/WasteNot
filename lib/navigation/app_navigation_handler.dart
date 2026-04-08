@@ -3,8 +3,8 @@ import 'package:wastenot/features/admin/navigation/admin_bottom_navigation.dart'
 import 'package:wastenot/features/donor/presentation/donor_navigation_screen.dart';
 import 'package:wastenot/features/ngo/presentation/screens/home/ngo_home_screen.dart';
 import 'package:wastenot/models/app_user_model.dart';
+import 'package:wastenot/repositories/auth_repository.dart';
 import 'package:wastenot/screens/login_screen.dart';
-import 'package:wastenot/services/auth_service.dart';
 
 class AppNavigationHandler {
   static Route<void> loginRoute() {
@@ -69,41 +69,29 @@ class _ProtectedHomeScreen extends StatefulWidget {
 }
 
 class _ProtectedHomeScreenState extends State<_ProtectedHomeScreen> {
-  late final Future<AppUserModel?> _sessionFuture;
+  final AuthRepository _authRepository = AuthRepository();
 
   @override
   void initState() {
     super.initState();
-    _sessionFuture = AuthService().checkUserSession();
+    _authRepository.refreshSessionInBackground(
+      onResolved: (user) {
+        if (!mounted || user != null) {
+          return;
+        }
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) {
+            return;
+          }
+          AppNavigationHandler.goToLogin(context);
+        });
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<AppUserModel?>(
-      future: _sessionFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
-
-        final user = snapshot.data;
-        if (user == null) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!mounted) {
-              return;
-            }
-            AppNavigationHandler.goToLogin(context);
-          });
-
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
-
-        return AppNavigationHandler.homeForUser(user);
-      },
-    );
+    return AppNavigationHandler.homeForUser(widget.initialUser);
   }
 }

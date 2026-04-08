@@ -430,7 +430,15 @@ function parseMealsToInt(value) {
     return 0;
   }
 
-  return Math.max(0, Number.parseInt(matches[matches.length - 1], 10));
+  if (matches.length >= 2 && trimmed.includes("-")) {
+    const min = Number.parseInt(matches[0], 10);
+    const max = Number.parseInt(matches[1], 10);
+    if (Number.isInteger(min) && Number.isInteger(max)) {
+      return Math.max(0, Math.round((min + max) / 2));
+    }
+  }
+
+  return Math.max(0, Number.parseInt(matches[0], 10));
 }
 
 function calculateGoalPercentage(achieved, target) {
@@ -445,6 +453,10 @@ exports.notifyAdminOnNewNgoRequest = onDocumentCreated(
   async (event) => {
     const data = event.data?.data();
     if (!data) {
+      return;
+    }
+
+    if (`${data.status || ""}`.trim().toLowerCase() !== "pending") {
       return;
     }
 
@@ -525,6 +537,42 @@ exports.notifyNgoWhenApprovedAfterUpdate = onDocumentUpdated(
 
     await markDocument(`${USERS_COLLECTION}/${event.params.userId}`, {
       approvalNotificationSentAt: nowTimestamp(),
+    });
+  },
+);
+
+exports.notifyAdminWhenNgoRequestBecomesPending = onDocumentUpdated(
+  `${NGO_REQUESTS_COLLECTION}/{requestId}`,
+  async (event) => {
+    const before = event.data?.before?.data();
+    const after = event.data?.after?.data();
+    if (!after) {
+      return;
+    }
+
+    const beforeStatus = `${before?.status || ""}`.trim().toLowerCase();
+    const afterStatus = `${after.status || ""}`.trim().toLowerCase();
+    if (afterStatus !== "pending" || beforeStatus === "pending") {
+      return;
+    }
+
+    const payload = buildPayload({
+      title: "New NGO Approval Request",
+      body: "A verified NGO is waiting for approval",
+      type: NOTIFICATION_TYPES.NEW_NGO_REGISTRATION,
+      userRole: "admin",
+      navigation: "admin_ngo_requests",
+    });
+
+    await sendToUsersByRole({
+      role: "admin",
+      payload,
+      extraData: {
+        requestId: event.params.requestId,
+        ngoEmail: after.email || "",
+        organizationName: after.organizationName || "",
+      },
+      fallbackTopic: true,
     });
   },
 );
@@ -672,83 +720,140 @@ exports.notifyDonorWhenDonationAccepted = onDocumentUpdated(
   },
 );
 
-exports.checkDonationExpiryWindows = onSchedule("every 5 minutes", async () => {
+exports.checkDonationExpiryWindows = onSchedule("every 1 minutes", async () => {
   const now = new Date();
-  const twentyMinutesFromNow = new Date(now.getTime() + 20 * 60 * 1000);
+  console.log("Donation expiry scheduler started", { now: now.toISOString() });
 
   const snapshot = await db
     .collection(DONATIONS_COLLECTION)
     .where("status", "==", "active")
     .get();
 
-  const batch = db.batch();
+  let expiredCount = 0;
+  let notifiedCount = 0;
+  let skippedWithoutCreatedAt = 0;
 
   for (const doc of snapshot.docs) {
     const data = doc.data() || {};
-    const expiryAt = timestampToDate(data.expiryAt);
-    if (!expiryAt) {
-      continue;
-    }
-
     const donationId = doc.id;
+    const createdAt = timestampToDate(data.createdAt);
 
-    if (expiryAt <= now) {
-      batch.update(doc.ref, {
-        status: "expired",
-        expiryAt: admin.firestore.Timestamp.fromDate(expiryAt),
-        expiredBySchedulerAt: nowTimestamp(),
-      });
+    if (!createdAt) {
+      skippedWithoutCreatedAt += 1;
+      console.warn("Donation expiry skipped: missing createdAt", { donationId });
       continue;
     }
 
-    const alreadySentExpiringAlert = Boolean(data.expiringNotificationSentAt);
-    if (alreadySentExpiringAlert) {
-      continue;
-    }
+    const expiryTime = new Date(createdAt.getTime() + 2 * 60 * 60 * 1000);
+    const notificationTime = new Date(expiryTime.getTime() - 20 * 60 * 1000);
+    const donorId = `${data.donorId || ""}`.trim();
 
-    if (expiryAt <= twentyMinutesFromNow) {
-      const donorId = `${data.donorId || ""}`.trim();
-      const acceptedNgoId = `${data.acceptedByNgoId || ""}`.trim();
-
-      const donorPayload = buildPayload({
-        title: "Donation Expiring Soon",
-        body: "Donation is about to expire. Please take action.",
-        type: NOTIFICATION_TYPES.DONATION_EXPIRING_SOON,
-        userRole: "donor",
-        navigation: "donor_donations",
-      });
-
-      if (donorId) {
-        await sendToUser({
-          uid: donorId,
-          payload: donorPayload,
-          extraData: { donationId },
+    if (now >= expiryTime) {
+      try {
+        await doc.ref.update({
+          status: "expired",
+          expiryAt: admin.firestore.Timestamp.fromDate(expiryTime),
+          expiredBySchedulerAt: nowTimestamp(),
         });
+        expiredCount += 1;
+        console.log("Donation marked expired", {
+          donationId,
+          createdAt: createdAt.toISOString(),
+          expiryTime: expiryTime.toISOString(),
+        });
+      } catch (error) {
+        console.error("Failed to expire donation", { donationId, error });
       }
+      continue;
+    }
 
-      if (acceptedNgoId) {
-        const ngoPayload = buildPayload({
+    const shouldNotify = now >= notificationTime && data.notificationSent !== true;
+    if (!shouldNotify) {
+      continue;
+    }
+
+    let reservedNotification = false;
+    try {
+      reservedNotification = await db.runTransaction(async (transaction) => {
+        const freshSnapshot = await transaction.get(doc.ref);
+        if (!freshSnapshot.exists) {
+          return false;
+        }
+
+        const freshData = freshSnapshot.data() || {};
+        const freshStatus = `${freshData.status || ""}`.trim().toLowerCase();
+        const freshCreatedAt = timestampToDate(freshData.createdAt);
+        const freshDonorId = `${freshData.donorId || ""}`.trim();
+        if (
+          freshStatus !== "active" ||
+          !freshCreatedAt ||
+          !freshDonorId ||
+          freshData.notificationSent === true
+        ) {
+          return false;
+        }
+
+        const freshExpiryTime = new Date(freshCreatedAt.getTime() + 2 * 60 * 60 * 1000);
+        const freshNotificationTime = new Date(freshExpiryTime.getTime() - 20 * 60 * 1000);
+        if (now < freshNotificationTime || now >= freshExpiryTime) {
+          return false;
+        }
+
+        transaction.update(doc.ref, {
+          notificationSent: true,
+          notificationSentAt: nowTimestamp(),
+          expiryAt: admin.firestore.Timestamp.fromDate(freshExpiryTime),
+        });
+        return true;
+      });
+    } catch (error) {
+      console.error("Failed to reserve donation expiry notification", { donationId, error });
+      continue;
+    }
+
+    if (!reservedNotification) {
+      continue;
+    }
+
+    if (!donorId) {
+      console.warn("Donation expiry notification skipped: missing donorId", { donationId });
+      continue;
+    }
+
+    try {
+      await sendToUser({
+        uid: donorId,
+        payload: buildPayload({
           title: "Donation Expiring Soon",
-          body: "Donation is about to expire. Please take action.",
+          body: "Your donation will expire in 20 minutes",
           type: NOTIFICATION_TYPES.DONATION_EXPIRING_SOON,
-          userRole: "ngo",
-          navigation: "available_donations",
-        });
-
-        await sendToUser({
-          uid: acceptedNgoId,
-          payload: ngoPayload,
-          extraData: { donationId, donorId },
-        });
-      }
-
-      batch.update(doc.ref, {
-        expiringNotificationSentAt: nowTimestamp(),
+          userRole: "donor",
+          navigation: "donor_donations",
+        }),
+        extraData: { donationId },
+      });
+      notifiedCount += 1;
+      console.log("Donation expiry notification sent", {
+        donationId,
+        donorId,
+        notificationTime: notificationTime.toISOString(),
+        expiryTime: expiryTime.toISOString(),
+      });
+    } catch (error) {
+      console.error("Failed to send donation expiry notification", {
+        donationId,
+        donorId,
+        error,
       });
     }
   }
 
-  await batch.commit();
+  console.log("Donation expiry scheduler finished", {
+    processed: snapshot.size,
+    expiredCount,
+    notifiedCount,
+    skippedWithoutCreatedAt,
+  });
 });
 
 async function donorNeedsReminder(userDoc) {

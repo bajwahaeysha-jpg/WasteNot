@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:wastenot/features/admin/donations/expire_reason_screen.dart';
 import 'package:wastenot/shared/widgets/location_map_preview.dart';
 import 'package:wastenot/services/donation_services.dart';
+
+const Color mainGreen = Color(0xFF0E5E53);
 
 class DonationProfileScreen extends StatefulWidget {
   const DonationProfileScreen({super.key, required this.donation});
@@ -9,7 +10,8 @@ class DonationProfileScreen extends StatefulWidget {
   final DonationModel donation;
 
   @override
-  State<DonationProfileScreen> createState() => _DonationProfileScreenState();
+  State<DonationProfileScreen> createState() =>
+      _DonationProfileScreenState();
 }
 
 class _DonationProfileScreenState extends State<DonationProfileScreen> {
@@ -19,129 +21,141 @@ class _DonationProfileScreenState extends State<DonationProfileScreen> {
   @override
   void initState() {
     super.initState();
-    _donationFuture = _donationService.getDonationById(widget.donation.donationId);
-  }
-
-  Future<void> _expireDonation(DonationModel donation) async {
-    final result = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ExpireReasonScreen(donation: donation),
-      ),
-    );
-
-    if (result == true && mounted) {
-      setState(() {
-        _donationFuture = _donationService.getDonationById(donation.donationId);
-      });
-    }
+    _donationFuture =
+        _donationService.getDonationById(widget.donation.donationId);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F2F2),
+      backgroundColor: const Color(0xFFF5F7F6),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F4C45),
-        elevation: 0,
-        title: const Text(
-          'Donation Details',
-          style: TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
-        ),
+        backgroundColor: mainGreen,
+        title: const Text("Donation Details",
+            style: TextStyle(color: Colors.white)),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: FutureBuilder<DonationModel>(
         future: _donationFuture,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
-          }
-
-          if (snapshot.hasError || !snapshot.hasData) {
-            return Center(
-              child: ElevatedButton(
-                onPressed: () => setState(() {
-                  _donationFuture = _donationService.getDonationById(
-                    widget.donation.donationId,
-                  );
-                }),
-                child: const Text('Retry'),
-              ),
-            );
           }
 
           final d = snapshot.data!;
 
           return ListView(
-            padding: const EdgeInsets.all(18),
+            padding: const EdgeInsets.all(16),
             children: [
-              _row('Donor name', d.donorName),
-              _row('Donor email', d.donorEmail),
-              _row('Donor phone', d.donorPhone ?? 'Not provided'),
-              _row('Donor address', d.donorAddress ?? 'Not provided'),
-              _row('Location', d.locationAddress ?? d.donorAddress ?? 'Unknown'),
-              const SizedBox(height: 12),
+
+              /// 🔥 PICTURES + STATUS SAME LINE
+              if (d.imageUrls.isNotEmpty)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _heading("Pictures"),
+                    _statusChip(d.status),
+                  ],
+                ),
+
+              const SizedBox(height: 10),
+
+              /// 🔥 IMAGES (SMALLER)
+              if (d.imageUrls.isNotEmpty) ...[
+                _images(d.imageUrls),
+                const SizedBox(height: 20),
+              ],
+
+              /// 🔥 LOCATION
+              _heading("Location"),
+              const SizedBox(height: 10),
+
               LocationMapPreview(location: d.location, height: 160),
-              const Divider(height: 32),
-              _row('Created at', _formatDateTime(d.createdAt)),
-              _row(
-                'Expiry date',
-                d.expiryAt == null ? 'Not available' : _formatDateTime(d.expiryAt!),
-              ),
-              _row(
-                'Accepted at',
-                d.acceptedAt == null
-                    ? 'Not accepted yet'
-                    : _formatDateTime(d.acceptedAt!),
-              ),
-              _row(
-                'Completed at',
-                d.completedAt == null
-                    ? 'Not completed yet'
-                    : _formatDateTime(d.completedAt!),
-              ),
-              const Divider(height: 32),
-              const Text(
-                'Donation Description',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 14),
-              _row(
-                'Food',
-                d.foodItems.isEmpty ? 'Not provided' : d.foodItems.join(', '),
-              ),
-              _row('Servings', d.quantity),
-              _row('Status', d.status.toUpperCase()),
-              _row('Details', d.description ?? 'No description provided'),
-              const SizedBox(height: 24),
-              const Text(
-                'Accepted NGO Details',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 14),
-              _row('NGO name', d.acceptedByNgoName ?? 'Not accepted yet'),
-              _row('NGO email', d.acceptedByNgoEmail ?? 'Not available'),
-              _row('NGO phone', d.acceptedByNgoPhone ?? 'Not available'),
-              _row('NGO address', d.acceptedByNgoAddress ?? 'Not available'),
-              const SizedBox(height: 24),
-              const Text(
-                'Pictures',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 14),
-              _images(d.imageUrls),
-              const SizedBox(height: 20),
-              if (d.isActive)
-                GestureDetector(
-                  onTap: () => _expireDonation(d),
-                  child: const Text(
-                    'Mark as Expired',
-                    style: TextStyle(
-                      color: Colors.red,
-                      fontWeight: FontWeight.w600,
+
+              const SizedBox(height: 10),
+
+              Row(
+                children: [
+                  const Icon(Icons.location_on, color: Colors.red),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      d.locationAddress ?? "Unknown location",
                     ),
                   ),
+                ],
+              ),
+
+              const Divider(height: 30),
+
+              /// 🔥 DONOR / NGO
+              _info("Donated by", d.donorName),
+              if (d.acceptedByNgoName != null)
+                _info("Accepted by", d.acceptedByNgoName!),
+
+              const SizedBox(height: 10),
+
+              /// 🔥 TIMES
+              _info("Donated at", _formatDateTime(d.createdAt)),
+              if (d.acceptedAt != null)
+                _info("Accepted at", _formatDateTime(d.acceptedAt!)),
+
+              if (d.expiryAt != null)
+                _info("Expired at", _formatDateTime(d.expiryAt!)),
+
+              const SizedBox(height: 20),
+
+              /// 🔥 FOOD INLINE
+              if (d.foodItems.isNotEmpty)
+                Row(
+                  children: [
+                    const SizedBox(
+                      width: 120,
+                      child: Text(
+                        "Food",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(d.foodItems.join(", ")),
+                    ),
+                  ],
                 ),
+
+              const SizedBox(height: 12),
+
+              /// 🔥 SERVINGS NEXT LINE
+              Row(
+                children: [
+                  const SizedBox(
+                    width: 120,
+                    child: Text(
+                      "Servings",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(d.quantity),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+
+              /// 🔥 DESCRIPTION
+              if ((d.description ?? '').isNotEmpty) ...[
+                _heading("Description"),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: Text(d.description!),
+                ),
+              ],
             ],
           );
         },
@@ -149,71 +163,90 @@ class _DonationProfileScreenState extends State<DonationProfileScreen> {
     );
   }
 
-  Widget _row(String label, String value) {
+  /// 🔥 HELPERS
+
+  Widget _heading(String text) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontWeight: FontWeight.bold,
+        fontSize: 16,
+      ),
+    );
+  }
+
+  Widget _info(String title, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
             width: 120,
             child: Text(
-              label,
-              style: const TextStyle(fontSize: 15, color: Colors.black87),
+              title,
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(fontSize: 15, color: Colors.black54),
-            ),
-          ),
+          Expanded(child: Text(value)),
         ],
       ),
     );
   }
 
-  Widget _images(List<String> imageUrls) {
-    if (imageUrls.isEmpty) {
-      return Container(
-        height: 120,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: const Text('No images uploaded'),
-      );
-    }
-
+  Widget _images(List<String> urls) {
     return SizedBox(
-      height: 120,
+      height: 90, // 🔥 reduced size
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        itemCount: imageUrls.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 12),
-        itemBuilder: (_, index) => ClipRRect(
-          borderRadius: BorderRadius.circular(16),
+        itemCount: urls.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemBuilder: (_, i) => ClipRRect(
+          borderRadius: BorderRadius.circular(12),
           child: Image.network(
-            imageUrls[index],
-            width: 140,
-            height: 120,
+            urls[i],
+            width: 90, // 🔥 reduced
             fit: BoxFit.cover,
-            errorBuilder: (_, _, _) => Container(
-              width: 140,
-              height: 120,
-              color: Colors.grey.shade200,
-              child: const Icon(Icons.broken_image),
-            ),
           ),
         ),
       ),
     );
   }
+
+  Widget _statusChip(String status) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: _statusColor(status),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        status.toUpperCase(),
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+          fontSize: 12,
+        ),
+      ),
+    );
+  }
+
+  Color _statusColor(String status) {
+    switch (status) {
+      case 'accepted':
+        return mainGreen;
+      case 'expired':
+        return Colors.red;
+      case 'completed':
+        return Colors.blueGrey;
+      default:
+        return Colors.orange;
+    }
+  }
 }
 
 String _formatDateTime(DateTime value) {
-  final hour = value.hour == 0 ? 12 : (value.hour > 12 ? value.hour - 12 : value.hour);
+  final hour =
+      value.hour == 0 ? 12 : (value.hour > 12 ? value.hour - 12 : value.hour);
   final suffix = value.hour >= 12 ? 'PM' : 'AM';
   final minute = value.minute.toString().padLeft(2, '0');
   return '${value.day}/${value.month}/${value.year} $hour:$minute $suffix';

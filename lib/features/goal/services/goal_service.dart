@@ -1,9 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
+import 'package:wastenot/core/utils/meal_parser.dart';
 import 'package:wastenot/features/goal/models/goal_model.dart';
 import 'package:wastenot/models/app_user_model.dart';
 import 'package:wastenot/services/donation_services.dart';
+import 'package:wastenot/services/local_cache_service.dart';
 
 class GoalService {
   GoalService({
@@ -14,6 +16,7 @@ class GoalService {
   static final ValueNotifier<int> refreshNotifier = ValueNotifier<int>(0);
 
   final FirebaseFirestore _firestore;
+  final LocalCacheService _cache = LocalCacheService();
 
   CollectionReference<Map<String, dynamic>> get _goals =>
       _firestore.collection(goalsCollection);
@@ -45,22 +48,28 @@ class GoalService {
     DateTime? now,
   }) async {
     final month = currentMonthKey(now);
-    final goal = await fetchCurrentMonthGoal(user: user, now: now);
-    var achievedCount = 0;
     try {
-      achievedCount = await _fetchAchievedCount(
+      final goal = await fetchCurrentMonthGoal(user: user, now: now);
+      final achievedCount = await _fetchAchievedCount(
         user: user,
         month: month,
       );
+      final progress = GoalProgress(
+        month: month,
+        target: goal?.target ?? 0,
+        achievedCount: achievedCount,
+      );
+      await _cache.saveGoalProgress(_goalProgressCacheKey(user.uid, month), progress);
+      return progress;
     } on FirebaseException {
-      achievedCount = 0;
+      final cached = await _cache.getGoalProgress(
+        _goalProgressCacheKey(user.uid, month),
+      );
+      if (cached != null) {
+        return cached;
+      }
+      return GoalProgress.empty(month);
     }
-
-    return GoalProgress(
-      month: month,
-      target: goal?.target ?? 0,
-      achievedCount: achievedCount,
-    );
   }
 
   Future<MonthlyGoalRecord> saveCurrentMonthGoal({
@@ -134,7 +143,11 @@ class GoalService {
     var totalMeals = 0;
     for (final doc in monthlyDocs) {
       final data = doc.data();
-      totalMeals += _parseMealsToInt(
+      final status = data['status']?.toString().trim().toLowerCase();
+      if (status != DonationStatus.completed.value) {
+        continue;
+      }
+      totalMeals += parseMealValue(
         data['meals'] ??
             data['mealCount'] ??
             data['totalMeals'] ??
@@ -231,6 +244,9 @@ class GoalService {
 
     return docsById.values.toList();
   }
+
+  String _goalProgressCacheKey(String userId, String month) =>
+      'goal_progress.$userId.$month';
 }
 
 class GoalException implements Exception {
@@ -272,35 +288,4 @@ DateTime? _parseDate(dynamic value) {
 bool _isCompletedDonationDoc(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
   final status = doc.data()['status']?.toString().trim().toLowerCase();
   return status == DonationStatus.completed.value;
-}
-
-int _parseMealsToInt(dynamic value) {
-  if (value is int) {
-    return value;
-  }
-  if (value is num) {
-    return value.toInt();
-  }
-  if (value is! String) {
-    return 0;
-  }
-
-  final normalized = value.trim();
-  if (normalized.isEmpty) {
-    return 0;
-  }
-
-  final direct = int.tryParse(normalized);
-  if (direct != null) {
-    return direct;
-  }
-
-  final matches = RegExp(r'\d+').allMatches(normalized).toList();
-  if (matches.isEmpty) {
-    return 0;
-  }
-  if (matches.length >= 2 && normalized.contains('-')) {
-    return int.parse(matches.first.group(0)!);
-  }
-  return int.parse(matches.first.group(0)!);
 }

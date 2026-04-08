@@ -77,6 +77,7 @@ class _AcceptedDonationsScreenState extends State<AcceptedDonationsScreen> {
           final stream = uid == null
               ? Stream<List<DonationModel>>.value(const <DonationModel>[])
               : _donationService.streamDonationsByStatus(
+                  status: DonationStatus.completed,
                   ngoId: uid,
                   orderByCreatedAt: false,
                 );
@@ -107,12 +108,19 @@ class _AcceptedDonationsScreenState extends State<AcceptedDonationsScreen> {
                         d.foodItems.join(', ').toLowerCase().contains(query);
                   })
                   .toList()
-                ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+                ..sort((a, b) {
+                  final aTime = a.completedAt ?? a.createdAt;
+                  final bTime = b.completedAt ?? b.createdAt;
+                  return bTime.compareTo(aTime);
+                });
 
               final Map<String, List<DonationModel>> grouped = {};
               for (final donation in filtered) {
                 grouped
-                    .putIfAbsent(_groupLabel(donation.createdAt), () => [])
+                    .putIfAbsent(
+                      _groupLabel(donation.completedAt ?? donation.createdAt),
+                      () => [],
+                    )
                     .add(donation);
               }
 
@@ -207,7 +215,7 @@ class _AcceptedDonationsScreenState extends State<AcceptedDonationsScreen> {
                                   ),
                                 ),
                                 Text(
-                                  _timeOnly(d.acceptedAt ?? d.createdAt),
+                                  _timeOnly(d.completedAt ?? d.createdAt),
                                   style: const TextStyle(
                                     color: Color(0xFF0F4C45),
                                     fontWeight: FontWeight.w600,

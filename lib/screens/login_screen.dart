@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:wastenot/models/app_user_model.dart';
 import 'package:wastenot/navigation/app_navigation_handler.dart';
+import 'package:wastenot/repositories/auth_repository.dart';
 import 'package:wastenot/screens/role_selection_screen.dart';
 import 'package:wastenot/services/auth_service.dart';
 
@@ -16,6 +17,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final AuthRepository _authRepository = AuthRepository();
   final AuthService _authService = AuthService();
 
   bool _obscure = true;
@@ -175,7 +177,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _loading = true);
 
     try {
-      final user = await _authService.login(
+      final user = await _authRepository.signIn(
         name: _nameController.text,
         email: _emailController.text,
         password: _passwordController.text,
@@ -185,15 +187,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
       _goToDashboard(user);
     } on AuthFailure catch (error) {
-      // EMAIL VERIFICATION TEMPORARILY DISABLED FOR TESTING
-      /*
       if (error.message.contains('verify your email')) {
         _showVerifyDialog();
+      } else if (error.message.contains('Waiting for admin approval')) {
+        _showMessage('Waiting for admin approval.', isError: false);
       } else {
         _showMessage(error.message, isError: true);
       }
-      */
-      _showMessage(error.message, isError: true);
     } catch (error) {
       _showMessage(error.toString(), isError: true);
     } finally {
@@ -203,15 +203,13 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  // EMAIL VERIFICATION TEMPORARILY DISABLED FOR TESTING
-  /*
   void _showVerifyDialog() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Email Not Verified'),
         content: const Text(
-          'Please verify your email from your mailbox.',
+          'Please verify your email. If the link expired or is invalid, send a new verification email.',
         ),
         actions: [
           TextButton(
@@ -219,11 +217,15 @@ class _LoginScreenState extends State<LoginScreen> {
               Navigator.pop(context);
 
               try {
-                await _authService.resendPendingVerificationEmail();
+                await _authService.resendVerificationEmailForCredentials(
+                  email: _emailController.text,
+                  password: _passwordController.text,
+                );
 
                 _showMessage('Verification email sent again');
-                await _authService.signOut();
-              } catch (e) {
+              } on AuthFailure catch (error) {
+                _showMessage(error.message, isError: true);
+              } catch (_) {
                 _showMessage(
                   'Failed to send verification email. Try again.',
                   isError: true,
@@ -243,7 +245,6 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
-  */
 
   void _goToDashboard(AppUserModel user) {
     AppNavigationHandler.goToHome(context, user);

@@ -10,50 +10,63 @@ class DonationDetailsScreen extends StatefulWidget {
   final DonationModel donation;
 
   @override
-  State<DonationDetailsScreen> createState() => _DonationDetailsScreenState();
+  State<DonationDetailsScreen> createState() =>
+      _DonationDetailsScreenState();
 }
 
 class _DonationDetailsScreenState extends State<DonationDetailsScreen> {
   final DonationService _donationService = DonationService();
   final LocationEstimateService _locationEstimateService =
       const LocationEstimateService();
-  bool _isAccepting = false;
+
   late Future<DonationModel> _donationFuture;
+  bool _isAccepting = false;
 
   @override
   void initState() {
     super.initState();
-    _donationFuture = _donationService.getDonationById(widget.donation.donationId);
+    _donationFuture =
+        _donationService.getDonationById(widget.donation.donationId);
   }
 
-  Future<void> _accept(DonationModel donation) async {
-    final ngo = SessionService.user;
-    if (ngo == null || !ngo.isNgo) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please log in as an NGO first.')),
-      );
-      return;
-    }
+  /// 📸 OPEN IMAGE
+  void _openImage(String url) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.9),
+      builder: (_) => Stack(
+        children: [
+          Center(child: InteractiveViewer(child: Image.network(url))),
+          Positioned(
+            top: 40,
+            right: 20,
+            child: IconButton(
+              icon: const Icon(Icons.close,
+                  color: Colors.white, size: 30),
+              onPressed: () => Navigator.pop(context),
+            ),
+          )
+        ],
+      ),
+    );
+  }
 
+  /// ✅ ACCEPT DONATION
+  Future<void> _accept(DonationModel donation) async {
     setState(() => _isAccepting = true);
+
     try {
       await _donationService.acceptDonation(
         donationId: donation.donationId,
-        ngo: ngo,
+        ngo: SessionService.user!,
       );
-      if (!mounted) {
-        return;
-      }
+
+      if (!mounted) return;
+
+      _showSuccessPopup(); // ✅ popup
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Donation accepted successfully.')),
-      );
-      Navigator.pop(context, true);
-    } on DonationException catch (error) {
-      if (!mounted) {
-        return;
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message)),
+        const SnackBar(content: Text('Failed to accept donation')),
       );
     } finally {
       if (mounted) {
@@ -62,76 +75,134 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen> {
     }
   }
 
-  Future<void> _reject(DonationModel donation) async {
-    final ngo = SessionService.user;
-    if (ngo == null || !ngo.isNgo) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please log in as an NGO first.')),
-      );
-      return;
-    }
+  /// ✅ SUCCESS POPUP
+  void _showSuccessPopup() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return Container(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius:
+                BorderRadius.vertical(top: Radius.circular(22)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              /// drag line
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
 
-    try {
-      await _donationService.rejectDonation(
-        donationId: donation.donationId,
-        ngo: ngo,
-      );
-      if (!mounted) {
-        return;
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Donation rejected successfully.')),
-      );
-      Navigator.pop(context, true);
-    } on DonationException catch (error) {
-      if (!mounted) {
-        return;
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message)),
-      );
-    } finally {
-    }
+              const SizedBox(height: 20),
+
+              /// icon
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF0F4C45),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.check,
+                    color: Colors.white, size: 32),
+              ),
+
+              const SizedBox(height: 18),
+
+              /// title
+              const Text(
+                "Donation Accepted!",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              /// subtitle
+              const Text(
+                "You can track it in active donations.",
+                textAlign: TextAlign.center,
+                style:
+                    TextStyle(color: Colors.black54, fontSize: 14),
+              ),
+
+              const SizedBox(height: 22),
+
+              /// button
+              SizedBox(
+                width: double.infinity,
+                height: 46,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor:
+                        const Color(0xFF0F4C45),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius:
+                          BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(context); // close popup
+                    Navigator.pop(context, true); // go back
+                  },
+                  child: const Text("OK",
+                      style: TextStyle(fontSize: 15)),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// 📏 ADDRESS SHORTENER
+  String _truncate(String text) {
+    if (text.length > 40) return "${text.substring(0, 40)}...";
+    return text;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7F6),
+      backgroundColor: const Color(0xFFF2F2F2),
+
+      /// 🔥 APPBAR
       appBar: AppBar(
         backgroundColor: const Color(0xFF0F4C45),
         iconTheme: const IconThemeData(color: Colors.white),
-        centerTitle: false,
         title: const Text(
-          'Donation Details',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          "Donation Details",
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 19,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-        elevation: 0,
       ),
+
       body: FutureBuilder<DonationModel>(
         future: _donationFuture,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (snapshot.hasError || !snapshot.hasData) {
-            return Center(
-              child: ElevatedButton(
-                onPressed: () {
-                  setState(() {
-                    _donationFuture = _donationService.getDonationById(
-                      widget.donation.donationId,
-                    );
-                  });
-                },
-                child: const Text('Retry'),
-              ),
-            );
+          if (!snapshot.hasData) {
+            return const Center(
+                child: CircularProgressIndicator());
           }
 
           final donation = snapshot.data!;
           final ngoLocation = SessionService.user?.location;
+
           final estimate = _locationEstimateService.estimate(
             from: ngoLocation,
             to: donation.location,
@@ -141,170 +212,187 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen> {
             children: [
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 20, vertical: 16),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Pictures',
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      if (donation.imageUrls.isEmpty)
-                        Row(
-                          children: List.generate(
-                            3,
-                            (_) => Padding(
-                              padding: const EdgeInsets.only(right: 10),
-                              child: _imageBox(null),
-                            ),
-                          ),
-                        )
-                      else
-                        SizedBox(
-                          height: 90,
-                          child: ListView.separated(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: donation.imageUrls.length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(width: 10),
-                            itemBuilder: (context, index) => _imageBox(
-                              donation.imageUrls[index],
-                            ),
-                          ),
-                        ),
-                      const SizedBox(height: 26),
-                      const Text(
-                        'Location',
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      LocationMapPreview(
-                        location: donation.location,
-                        secondaryLocation: ngoLocation,
-                        height: 180,
-                      ),
-                      const SizedBox(height: 12),
+                      /// 📸 IMAGES
+                      const Text("Pictures",
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18)),
+
+                      const SizedBox(height: 10),
+
                       Row(
-                        children: [
-                          const Icon(Icons.location_on, color: Colors.red),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              donation.locationAddress ?? 'Location not set',
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500,
+                        children: donation.imageUrls
+                            .take(3)
+                            .map((url) {
+                          return Padding(
+                            padding:
+                                const EdgeInsets.only(right: 10),
+                            child: GestureDetector(
+                              onTap: () => _openImage(url),
+                              child: ClipRRect(
+                                borderRadius:
+                                    BorderRadius.circular(12),
+                                child: Image.network(
+                                  url,
+                                  height: 90,
+                                  width: 90,
+                                  fit: BoxFit.cover,
+                                ),
                               ),
                             ),
+                          );
+                        }).toList(),
+                      ),
+
+                      const SizedBox(height: 22),
+
+                      /// 📍 LOCATION
+                      const Text("Location",
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18)),
+
+                      const SizedBox(height: 10),
+
+                      Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                              color: Colors.grey.shade300,
+                              width: 1),
+                          borderRadius:
+                              BorderRadius.circular(16),
+                        ),
+                        child: ClipRRect(
+                          borderRadius:
+                              BorderRadius.circular(16),
+                          child: LocationMapPreview(
+                            location: donation.location,
+                            secondaryLocation: ngoLocation,
+                            height: 170,
                           ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      Row(
+                        children: [
+                          const Icon(Icons.location_on,
+                              color: Colors.red, size: 20),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              _truncate(donation
+                                      .locationAddress ??
+                                  ""),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Text(
+                            estimate == null
+                                ? ""
+                                : "${estimate.distanceKm.toStringAsFixed(1)} km",
+                          )
                         ],
                       ),
+
                       const SizedBox(height: 10),
-                      _detailRow(
-                        'Distance',
-                        estimate == null
-                            ? 'Distance unavailable'
-                            : '${estimate.distanceKm.toStringAsFixed(1)} km away',
+
+                      Row(
+                        mainAxisAlignment:
+                            MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text("Estimated Time"),
+                          Text(
+                            estimate == null
+                                ? "--"
+                                : "${estimate.estimatedMinutes} mins",
+                            style: const TextStyle(
+                                color: Colors.orange,
+                                fontWeight: FontWeight.bold),
+                          )
+                        ],
                       ),
-                      const SizedBox(height: 12),
-                      _detailRow(
-                        'Time',
-                        estimate == null
-                            ? 'Distance unavailable'
-                            : 'Approx ${estimate.estimatedMinutes} mins',
-                      ),
-                      const SizedBox(height: 22),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 4),
-                        child: Column(
-                          children: [
-                            _detailRow('Donor', donation.donorName),
-                            const SizedBox(height: 12),
-                            _detailRow('Email', donation.donorEmail),
-                            const SizedBox(height: 12),
-                            _detailRow('Servings', donation.quantity),
-                            const SizedBox(height: 12),
-                            _detailRow(
-                              'Phone',
-                              donation.donorPhone ?? 'Not provided',
-                            ),
-                            const SizedBox(height: 12),
-                            _detailRow(
-                              'Uploaded',
-                              _formatDateTime(donation.createdAt),
-                            ),
-                            const SizedBox(height: 16),
-                            _descriptionSection(
-                              donation.description ?? 'No description provided.',
-                            ),
-                          ],
+
+                      const Divider(height: 25),
+
+                      /// INFO
+                      _info("Donor", donation.donorName),
+                      _info("Servings",
+                          "${donation.quantity} Persons"),
+                      _info("Contact",
+                          donation.donorPhone ?? "-"),
+
+                      const SizedBox(height: 18),
+
+                      const Text("Description",
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold)),
+
+                      const SizedBox(height: 8),
+
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                              color: Colors.grey.shade400),
+                          borderRadius:
+                              BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          donation.description ?? "",
+                          style:
+                              const TextStyle(height: 1.6),
                         ),
                       ),
                     ],
                   ),
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8)],
-                ),
+
+              /// 🔻 BUTTONS
+              Padding(
+                padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [
                     Expanded(
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.red,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                          foregroundColor: Colors.white,
+                          padding:
+                              const EdgeInsets.symmetric(
+                                  vertical: 17),
                         ),
-                        onPressed: donation.isAccepted || !donation.isActive
-                            ? null
-                            : () => _reject(donation),
-                        child: const Text(
-                          'Return',
-                          style: TextStyle(color: Colors.white),
-                        ),
+                        onPressed: () =>
+                            Navigator.pop(context),
+                        child: const Text("Return"),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 14),
                     Expanded(
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF0F4C45),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                          backgroundColor:
+                              const Color(0xFF0F4C45),
+                          foregroundColor: Colors.white,
+                          padding:
+                              const EdgeInsets.symmetric(
+                                  vertical: 17),
                         ),
-                        onPressed: donation.isAccepted || !donation.isActive || _isAccepting
+                        onPressed: _isAccepting
                             ? null
                             : () => _accept(donation),
                         child: _isAccepting
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.white,
-                                  ),
-                                ),
-                              )
-                            : Text(
-                                donation.isAccepted ? 'Accepted' : 'Accept',
-                                style: const TextStyle(color: Colors.white),
-                              ),
+                            ? const CircularProgressIndicator(
+                                color: Colors.white)
+                            : const Text("Accept"),
                       ),
                     ),
                   ],
@@ -317,81 +405,19 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen> {
     );
   }
 
-  Widget _imageBox(String? imageUrl) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(14),
-      child: imageUrl == null
-          ? Container(
-              width: 90,
-              height: 90,
-              color: Colors.grey.shade300,
-              child: const Icon(Icons.image_not_supported),
-            )
-          : Image.network(
-              imageUrl,
-              width: 90,
-              height: 90,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                width: 90,
-                height: 90,
-                color: Colors.grey.shade300,
-                child: const Icon(Icons.broken_image),
-              ),
-            ),
+  Widget _info(String title, String value) {
+    return Padding(
+      padding:
+          const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(title),
+          ),
+          Expanded(child: Text(value)),
+        ],
+      ),
     );
   }
-
-  Widget _detailRow(String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 95,
-          child: Text(
-            label,
-            style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600),
-          ),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(fontSize: 14.5, height: 1.4),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _descriptionSection(String text) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Description',
-          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.black26),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            text,
-            style: const TextStyle(fontSize: 14, height: 1.5),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-String _formatDateTime(DateTime value) {
-  final hour = value.hour == 0 ? 12 : (value.hour > 12 ? value.hour - 12 : value.hour);
-  final suffix = value.hour >= 12 ? 'PM' : 'AM';
-  final minute = value.minute.toString().padLeft(2, '0');
-  return '${value.day}/${value.month}/${value.year} $hour:$minute $suffix';
 }

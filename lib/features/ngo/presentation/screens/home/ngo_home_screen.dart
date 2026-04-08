@@ -12,6 +12,7 @@ import 'package:wastenot/features/ngo/presentation/screens/home/accepted/accepte
 import 'package:wastenot/features/ngo/presentation/screens/home/all_donations/all_donations_screen.dart';
 import 'package:wastenot/features/ngo/presentation/screens/home/all_donations/donation_details_screen.dart';
 import 'package:wastenot/features/ngo/presentation/screens/home/concern/raise_concern_screen.dart';
+import 'package:wastenot/features/ngo/presentation/screens/home/goal/ngo_goal_screen.dart';
 import 'package:wastenot/features/ngo/presentation/screens/home/impact/impact_screen.dart';
 import 'package:wastenot/features/ngo/presentation/screens/home/notification/notifications_screen.dart';
 import 'package:wastenot/features/ngo/presentation/screens/home/setting/account/personal_information_screen.dart';
@@ -40,9 +41,9 @@ class _NgoHomeScreenState extends State<NgoHomeScreen>
     with WidgetsBindingObserver {
   int _index = 0;
   final GoalService _goalService = GoalService();
-  final ConcernService _concernService = ConcernService();
   GoalProgress? _goalData;
   bool _isLoadingGoal = true;
+  final ConcernService _concernService = ConcernService();
   Timer? _goalMonthTimer;
 
   @override
@@ -90,14 +91,12 @@ class _NgoHomeScreenState extends State<NgoHomeScreen>
     }
 
     try {
-      final progress = await _goalService.fetchCurrentMonthProgress(
-        user: user,
-      );
+      final data = await _goalService.fetchCurrentMonthProgress(user: user);
       if (!mounted) {
         return;
       }
       setState(() {
-        _goalData = progress;
+        _goalData = data;
         _isLoadingGoal = false;
       });
     } catch (_) {
@@ -249,13 +248,6 @@ class _NgoHomeScreenState extends State<NgoHomeScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    GoalWidget(
-  achievedCount: _goalData?.achievedCount ?? 0,
-  target: _goalData?.target ?? 0,
-  isLoading: _isLoadingGoal,
-  title: 'Your Goal This Month',
-  unitLabel: 'meals',
-),
                     const SizedBox(height: 24),
                     Container(
                       padding: const EdgeInsets.all(14),
@@ -413,6 +405,14 @@ class _NgoHomeScreenState extends State<NgoHomeScreen>
                           }).toList(),
                         );
                       },
+                    ),
+                    const SizedBox(height: 24),
+                    GoalWidget(
+                      achievedCount: _goalData?.achievedCount ?? 0,
+                      target: _goalData?.target ?? 0,
+                      isLoading: _isLoadingGoal,
+                      title: 'Meals Goal This Month',
+                      unitLabel: 'meals',
                     ),
                   ],
                 ),
@@ -613,6 +613,13 @@ class _NgoHomeScreenState extends State<NgoHomeScreen>
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              );
+            }),
+            _moreItem(Icons.flag_outlined, 'Set Monthly Goal', () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const NgoGoalScreen()),
               );
             }),
             _moreItem(Icons.report_problem, 'Raise a Concern', () {

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:wastenot/features/ngo/presentation/screens/home/goal/ngo_goal_screen.dart';
 import 'package:wastenot/features/ngo/presentation/screens/home/setting/about_screen.dart';
 import 'package:wastenot/features/ngo/presentation/screens/home/setting/account/account_screen.dart';
 import 'package:wastenot/features/ngo/presentation/screens/home/setting/contact_screen.dart';
@@ -88,7 +87,6 @@ class SettingsScreen extends StatelessWidget {
                 _tile(context, Icons.mail_outline, 'Contact Us', const ContactScreen()),
                 _tile(context, Icons.info_outline, 'About App', const AboutScreen()),
                 _tile(context, Icons.help_outline, 'FAQ', const FaqScreen()),
-                _tile(context, Icons.flag_outlined, 'Set Monthly Goal', const NgoGoalScreen()),
                 _tile(
                   context,
                   Icons.privacy_tip_outlined,

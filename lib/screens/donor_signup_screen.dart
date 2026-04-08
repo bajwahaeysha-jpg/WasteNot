@@ -271,7 +271,9 @@ class _DonorSignupScreenState extends State<DonorSignupScreen> {
         return;
       }
 
-      _showMessage('Account created successfully. Please login to continue.');
+      _showMessage(
+        'Account created. Please verify your email before logging in.',
+      );
 
       Navigator.pushAndRemoveUntil(
         context,

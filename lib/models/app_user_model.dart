@@ -18,6 +18,7 @@ class AppUserModel {
     this.organizationDescription,
     this.allowMessages = true,
     this.notificationsEnabled = true,
+    this.emailVerified = false,
     this.approvedByAdmin = false,
     this.status,
     this.isSuspended = false,
@@ -41,6 +42,7 @@ class AppUserModel {
   final String? organizationDescription;
   final bool allowMessages;
   final bool notificationsEnabled;
+  final bool emailVerified;
   final bool approvedByAdmin;
   final String? status;
   final bool isSuspended;
@@ -70,6 +72,7 @@ class AppUserModel {
     String? organizationDescription,
     bool? allowMessages,
     bool? notificationsEnabled,
+    bool? emailVerified,
     bool? approvedByAdmin,
     String? status,
     bool? isSuspended,
@@ -94,6 +97,7 @@ class AppUserModel {
           organizationDescription ?? this.organizationDescription,
       allowMessages: allowMessages ?? this.allowMessages,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
+      emailVerified: emailVerified ?? this.emailVerified,
       approvedByAdmin: approvedByAdmin ?? this.approvedByAdmin,
       status: status ?? this.status,
       isSuspended: isSuspended ?? this.isSuspended,
@@ -118,6 +122,7 @@ class AppUserModel {
       'organizationDescription': organizationDescription,
       'allowMessages': allowMessages,
       'notificationsEnabled': notificationsEnabled,
+      'emailVerified': emailVerified,
       'role': role,
       'approvedByAdmin': approvedByAdmin,
       'status': status,
@@ -169,6 +174,7 @@ class AppUserModel {
       organizationDescription: data['organizationDescription'] as String?,
       allowMessages: (data['allowMessages'] as bool?) ?? true,
       notificationsEnabled: (data['notificationsEnabled'] as bool?) ?? true,
+      emailVerified: (data['emailVerified'] as bool?) ?? false,
       role: (data['role'] as String?) ?? 'donor',
       approvedByAdmin: (data['approvedByAdmin'] as bool?) ?? false,
       status: data['status'] as String?,

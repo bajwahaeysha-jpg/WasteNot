@@ -126,10 +126,13 @@ class AdminAnalyticsService {
     final successfulDonations = donationDocs.where(
       (doc) => _isAcceptedOrCompletedDonation(doc.data()),
     );
+    final completedDonations = donationDocs.where(
+      (doc) => _isCompletedDonation(doc.data()),
+    );
 
     final totalDonations = donationDocs.length;
     final successfulCount = successfulDonations.length;
-    final totalMeals = successfulDonations.fold<int>(
+    final totalMeals = completedDonations.fold<int>(
       0,
       (sum, doc) => sum + quantityToMeals(doc.data()['quantity']),
     );
@@ -184,6 +187,11 @@ class AdminAnalyticsService {
         (acceptedByNgoId?.isNotEmpty == true || legacyNgoId?.isNotEmpty == true) &&
         status != 'expired' &&
         status != 'rejected';
+  }
+
+  bool _isCompletedDonation(Map<String, dynamic> data) {
+    final status = (data['status'] as String?)?.trim().toLowerCase();
+    return status == 'completed';
   }
 
   bool _isDonor(Map<String, dynamic> data) {

@@ -79,6 +79,8 @@ class _AllDonationsScreenState extends State<AllDonationsScreen> {
             const SizedBox(width: 10),
             _filterChip('Active', DonationStatus.active),
             const SizedBox(width: 10),
+            _filterChip('Accepted', DonationStatus.accepted),
+            const SizedBox(width: 10),
             _filterChip('Expired', DonationStatus.expired),
             const SizedBox(width: 10),
             _filterChip('Completed', DonationStatus.completed),
@@ -190,6 +192,8 @@ class _AllDonationsScreenState extends State<AllDonationsScreen> {
         return Colors.green.shade700;
       case 'active':
         return Colors.orange.shade700;
+      case 'accepted':
+        return Colors.blue.shade700;
       default:
         return Colors.red.shade700;
     }

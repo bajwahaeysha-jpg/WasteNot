@@ -15,35 +15,32 @@ class AdminHomeScreen extends StatefulWidget {
 }
 
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
-
   @override
   Widget build(BuildContext context) {
-
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
       backgroundColor: AppColors.background,
-
       body: Column(
         children: [
 
-          /// 🔹 FIXED HEADER
+          /// 🔹 HEADER
           Header(user: widget.user),
 
-          /// 🔹 SCROLLABLE CONTENT
+          /// 🔹 CONTENT
           Expanded(
             child: SingleChildScrollView(
               child: Padding(
                 padding: EdgeInsets.symmetric(
-                  horizontal: size.width * 0.04,
-                  vertical: size.height * 0.015,
+                  horizontal: size.width * 0.045,
+                  vertical: size.height * 0.018,
                 ),
 
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
 
-                    /// 🔍 SEARCH BAR (NOW FIRST)
+                    /// 🔍 SEARCH BAR (ENHANCED)
                     TextField(
                       readOnly: true,
                       onTap: () {
@@ -55,15 +52,23 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                           ),
                         );
                       },
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                      ),
                       decoration: InputDecoration(
                         hintText: "Search across admin panel...",
-                        prefixIcon: const Icon(Icons.search),
-                        suffixIcon: const Icon(Icons.tune),
+                        hintStyle: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                        ),
+                        prefixIcon: const Icon(Icons.search, size: 22),
+                        suffixIcon: const Icon(Icons.tune, size: 20),
                         filled: true,
                         fillColor: Colors.white,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 20,
-                          vertical: 16,
+                          vertical: 18,
                         ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(30),
@@ -72,33 +77,38 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
 
-                    /// 👤 USER NAME (NOW BELOW SEARCH)
+                    /// 👤 USER NAME (BIGGER + STRONG)
                     Text(
                       (widget.user['name'] ?? "Admin")
                           .toString()
                           .toUpperCase(),
                       style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 24, // 🔥 bigger
+                        fontWeight: FontWeight.w800, // 🔥 stronger
+                        letterSpacing: 0.5,
                       ),
                     ),
 
+                    const SizedBox(height: 2),
+
+                    /// ROLE
                     const Text(
                       "Admin",
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 14, // 🔥 slightly bigger
                         color: Colors.grey,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
 
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
 
                     /// 📊 ALERT + STATS
                     const StatsSection(),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 22),
 
                     /// ⚡ QUICK ACTIONS
                     const QuickActionsSection(),

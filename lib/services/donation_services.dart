@@ -1,12 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:wastenot/core/utils/meal_parser.dart';
 import 'package:wastenot/features/goal/services/goal_service.dart';
 import 'package:wastenot/models/app_location.dart';
 import 'package:wastenot/models/app_user_model.dart';
+import 'package:wastenot/services/local_cache_service.dart';
 import 'package:wastenot/services/location_service.dart';
 
 enum DonationStatus {
   active('active'),
+  accepted('accepted'),
   expired('expired'),
   completed('completed');
 
@@ -122,9 +125,10 @@ class DonationModel {
   final List<String> rejectedByNgoIds;
 
   bool get isActive => status == DonationStatus.active.value;
+  bool get isAccepted => status == DonationStatus.accepted.value;
   bool get isExpired => status == DonationStatus.expired.value;
   bool get isCompleted => status == DonationStatus.completed.value;
-  bool get isAccepted =>
+  bool get hasAcceptedNgo =>
       acceptedByNgoId != null && acceptedByNgoId!.trim().isNotEmpty;
 
   Map<String, dynamic> toFirestore() {
@@ -244,6 +248,7 @@ class DonationService {
 
   final FirebaseFirestore _firestore;
   final LocationService _locationService;
+  final LocalCacheService _cache = LocalCacheService();
 
   CollectionReference<Map<String, dynamic>> get _donations =>
       _firestore.collection('donations');
@@ -275,7 +280,6 @@ class DonationService {
       );
     }
 
-    final now = DateTime.now();
     final docRef = donationId == null || donationId.trim().isEmpty
         ? _donations.doc()
         : _donations.doc(donationId.trim());
@@ -296,7 +300,8 @@ class DonationService {
       'acceptedByNgoProfileImageUrl': null,
       'acceptedAt': null,
       'completedAt': null,
-      'createdAt': Timestamp.fromDate(now),
+      'notificationSent': false,
+      'createdAt': FieldValue.serverTimestamp(),
       ...request.toFirestore(),
     };
 
@@ -319,8 +324,20 @@ class DonationService {
       if (!doc.exists) {
         throw const DonationException('Donation not found.');
       }
-      return _resolveDonationLocation(DonationModel.fromFirestore(doc));
+      final donation =
+          await _resolveDonationLocation(DonationModel.fromFirestore(doc));
+      await _cache.saveDonationList(
+        _cacheKeyForSingleDonation(donationId.trim()),
+        <DonationModel>[donation],
+      );
+      return donation;
     } on FirebaseException catch (error) {
+      final cached = await _cache.getDonationList(
+        _cacheKeyForSingleDonation(donationId.trim()),
+      );
+      if (cached.isNotEmpty) {
+        return cached.first;
+      }
       throw DonationException(_mapFirebaseError(error));
     }
   }
@@ -332,21 +349,33 @@ class DonationService {
       debugPrint(
         '[DonationService] getAllDonations(status: ${status?.value ?? 'all'})',
       );
-      final snapshot = await _donations.get();
+      Query<Map<String, dynamic>> query = _donations;
+      if (status != null) {
+        query = query.where('status', isEqualTo: status.value);
+      }
+      final snapshot = await query.get();
       final donations = await Future.wait(
         snapshot.docs
             .map(DonationModel.fromFirestore)
             .map(_resolveDonationLocation),
       );
-      final filtered = status == null
-          ? donations
-          : donations.where((donation) => donation.status == status.value).toList();
+      final filtered = donations.toList();
       filtered.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      await _cache.saveDonationList(
+        _cacheKeyForAllDonations(status: status),
+        filtered,
+      );
       debugPrint(
         '[DonationService] getAllDonations -> ${filtered.length} results',
       );
       return filtered;
     } on FirebaseException catch (error) {
+      final cached = await _cache.getDonationList(
+        _cacheKeyForAllDonations(status: status),
+      );
+      if (cached.isNotEmpty) {
+        return cached;
+      }
       debugPrint(
         '[DonationService] getAllDonations FirebaseException(${error.code}): ${error.message}',
       );
@@ -370,27 +399,36 @@ class DonationService {
       debugPrint(
         '[DonationService] getDonorDonations(donorId: $normalizedDonorId, status: ${status?.value ?? 'all'})',
       );
-      final snapshot = await _donations.get();
+      Query<Map<String, dynamic>> query = _donations.where(
+        'donorId',
+        isEqualTo: normalizedDonorId,
+      );
+      if (status != null) {
+        query = query.where('status', isEqualTo: status.value);
+      }
+      final snapshot = await query.get();
       final donations = await Future.wait(
         snapshot.docs
             .map(DonationModel.fromFirestore)
             .map(_resolveDonationLocation),
       );
-      final filtered = donations.where((donation) {
-        if (donation.donorId != normalizedDonorId) {
-          return false;
-        }
-        if (status != null && donation.status != status.value) {
-          return false;
-        }
-        return true;
-      }).toList()
+      final filtered = donations.toList()
         ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      await _cache.saveDonationList(
+        _cacheKeyForDonorDonations(donorId: normalizedDonorId, status: status),
+        filtered,
+      );
       debugPrint(
         '[DonationService] getDonorDonations -> ${filtered.length} results for donorId=$normalizedDonorId',
       );
       return filtered;
     } on FirebaseException catch (error) {
+      final cached = await _cache.getDonationList(
+        _cacheKeyForDonorDonations(donorId: donorId.trim(), status: status),
+      );
+      if (cached.isNotEmpty) {
+        return cached;
+      }
       debugPrint(
         '[DonationService] getDonorDonations FirebaseException(${error.code}): ${error.message}',
       );
@@ -407,7 +445,10 @@ class DonationService {
   }) async {
     try {
       debugPrint('[DonationService] getAvailableDonationsForNgo()');
-      final snapshot = await _donations.get();
+      final snapshot = await _donations
+          .where('status', isEqualTo: DonationStatus.active.value)
+          .where('acceptedByNgoId', isNull: true)
+          .get();
 
       final referenceTime = now ?? DateTime.now();
       final donations = await Future.wait(
@@ -419,7 +460,7 @@ class DonationService {
         if (donation.status != DonationStatus.active.value) {
           return false;
         }
-        if (donation.isAccepted) {
+        if (donation.hasAcceptedNgo) {
           return false;
         }
         if (ngoId != null &&
@@ -431,11 +472,21 @@ class DonationService {
         return expiryAt == null || !expiryAt.isBefore(referenceTime);
       }).toList()
         ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      await _cache.saveDonationList(
+        _cacheKeyForAvailableNgoDonations(ngoId: ngoId),
+        filtered,
+      );
       debugPrint(
         '[DonationService] getAvailableDonationsForNgo -> ${filtered.length} results',
       );
       return filtered;
     } on FirebaseException catch (error) {
+      final cached = await _cache.getDonationList(
+        _cacheKeyForAvailableNgoDonations(ngoId: ngoId),
+      );
+      if (cached.isNotEmpty) {
+        return cached;
+      }
       debugPrint(
         '[DonationService] getAvailableDonationsForNgo FirebaseException(${error.code}): ${error.message}',
       );
@@ -459,27 +510,36 @@ class DonationService {
       debugPrint(
         '[DonationService] getNgoAcceptedDonations(ngoId: $normalizedNgoId, status: ${status?.value ?? 'all'})',
       );
-      final snapshot = await _donations.get();
+      Query<Map<String, dynamic>> query = _donations.where(
+        'acceptedByNgoId',
+        isEqualTo: normalizedNgoId,
+      );
+      if (status != null) {
+        query = query.where('status', isEqualTo: status.value);
+      }
+      final snapshot = await query.get();
       final donations = await Future.wait(
         snapshot.docs
             .map(DonationModel.fromFirestore)
             .map(_resolveDonationLocation),
       );
-      final filtered = donations.where((donation) {
-        if (donation.acceptedByNgoId != normalizedNgoId) {
-          return false;
-        }
-        if (status != null && donation.status != status.value) {
-          return false;
-        }
-        return true;
-      }).toList()
+      final filtered = donations.toList()
         ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      await _cache.saveDonationList(
+        _cacheKeyForNgoAcceptedDonations(ngoId: normalizedNgoId, status: status),
+        filtered,
+      );
       debugPrint(
         '[DonationService] getNgoAcceptedDonations -> ${filtered.length} results for ngoId=$normalizedNgoId',
       );
       return filtered;
     } on FirebaseException catch (error) {
+      final cached = await _cache.getDonationList(
+        _cacheKeyForNgoAcceptedDonations(ngoId: ngoId.trim(), status: status),
+      );
+      if (cached.isNotEmpty) {
+        return cached;
+      }
       debugPrint(
         '[DonationService] getNgoAcceptedDonations FirebaseException(${error.code}): ${error.message}',
       );
@@ -515,11 +575,21 @@ class DonationService {
         return bTime.compareTo(aTime);
       });
       final recent = donations.take(limit).toList();
+      await _cache.saveDonationList(
+        _cacheKeyForRecentCompleted(limit: limit),
+        recent,
+      );
       debugPrint(
         '[DonationService] getRecentCompletedDonations -> ${recent.length} results',
       );
       return recent;
     } on FirebaseException catch (error) {
+      final cached = await _cache.getDonationList(
+        _cacheKeyForRecentCompleted(limit: limit),
+      );
+      if (cached.isNotEmpty) {
+        return cached;
+      }
       debugPrint(
         '[DonationService] getRecentCompletedDonations FirebaseException(${error.code}): ${error.message}',
       );
@@ -570,13 +640,14 @@ class DonationService {
           );
         }
 
-        if (donation.isAccepted) {
+        if (donation.hasAcceptedNgo) {
           throw const DonationException(
             'This donation has already been accepted by another NGO.',
           );
         }
 
         transaction.update(docRef, {
+          'status': DonationStatus.accepted.value,
           'acceptedByNgoId': ngo.uid,
           'acceptedByNgoName': ngo.displayName,
           'acceptedByNgoEmail': ngo.email.trim(),
@@ -586,7 +657,7 @@ class DonationService {
           'acceptedByNgoProfileImageUrl': _normalizeNullable(
             ngo.profileImageUrl,
           ),
-          'acceptedAt': Timestamp.fromDate(now),
+          'acceptedAt': FieldValue.serverTimestamp(),
         });
       });
 
@@ -656,17 +727,17 @@ class DonationService {
         }
 
         final donation = DonationModel.fromFirestore(snapshot);
-        if (donation.isCompleted) {
+        if (donation.status == DonationStatus.completed.value) {
           return;
         }
 
-        if (donation.isExpired) {
+        if (donation.status == DonationStatus.expired.value) {
           throw const DonationException(
             'Expired donations cannot be completed.',
           );
         }
 
-        if (!donation.isAccepted) {
+        if (donation.status != DonationStatus.accepted.value) {
           throw const DonationException(
             'Only accepted donations can be marked as completed.',
           );
@@ -674,7 +745,7 @@ class DonationService {
 
         transaction.update(docRef, {
           'status': DonationStatus.completed.value,
-          'completedAt': Timestamp.fromDate(DateTime.now()),
+          'completedAt': FieldValue.serverTimestamp(),
         });
       });
 
@@ -686,6 +757,10 @@ class DonationService {
     } on FirebaseException catch (error) {
       throw DonationException(_mapFirebaseError(error));
     }
+  }
+
+  Future<DonationModel> markDonationAsComplete(String donationId) {
+    return markDonationCompleted(donationId: donationId);
   }
 
   Future<DonationModel> markDonationExpired({
@@ -706,14 +781,20 @@ class DonationService {
         }
 
         final donation = DonationModel.fromFirestore(snapshot);
-        if (donation.isCompleted) {
+        if (donation.status == DonationStatus.completed.value) {
           throw const DonationException(
             'Completed donations cannot be marked as expired.',
           );
         }
 
-        if (donation.isExpired) {
+        if (donation.status == DonationStatus.expired.value) {
           return;
+        }
+
+        if (donation.status != DonationStatus.active.value) {
+          throw const DonationException(
+            'Only active donations can be marked as expired.',
+          );
         }
 
         final effectiveExpiry = expiredAt ?? donation.expiryAt ?? DateTime.now();
@@ -737,10 +818,17 @@ class DonationService {
     String? ngoId,
     bool onlyAvailableForNgo = false,
     bool orderByCreatedAt = true,
-  }) {
+  }) async* {
     Query<Map<String, dynamic>> query = _donations;
     final effectiveStatus =
         onlyAvailableForNgo ? DonationStatus.active : status;
+    final cacheKey = _cacheKeyForStatusStream(
+      status: effectiveStatus,
+      donorId: donorId,
+      ngoId: ngoId,
+      onlyAvailableForNgo: onlyAvailableForNgo,
+      orderByCreatedAt: orderByCreatedAt,
+    );
 
     if (donorId != null && donorId.trim().isNotEmpty) {
       query = query.where('donorId', isEqualTo: donorId.trim());
@@ -762,21 +850,100 @@ class DonationService {
         ? query.orderBy('createdAt', descending: true)
         : query;
 
-    return effectiveQuery.snapshots().map((snapshot) {
-      final now = DateTime.now();
-      final donations = snapshot.docs.map(DonationModel.fromFirestore).toList();
-      if (!onlyAvailableForNgo) {
-        return donations;
-      }
+    final cached = await _cache.getDonationList(cacheKey);
+    if (cached.isNotEmpty) {
+      yield cached;
+    }
 
-      return donations.where((donation) {
-        final expiryAt = donation.expiryAt;
-        return expiryAt == null || !expiryAt.isBefore(now);
-      }).toList();
-    });
+    try {
+      await for (final snapshot in effectiveQuery.snapshots()) {
+        final now = DateTime.now();
+        final donations = snapshot.docs.map(DonationModel.fromFirestore).toList();
+        final result = !onlyAvailableForNgo
+            ? donations
+            : donations.where((donation) {
+                final expiryAt = donation.expiryAt;
+                return expiryAt == null || !expiryAt.isBefore(now);
+              }).toList();
+        await _cache.saveDonationList(cacheKey, result);
+        yield result;
+      }
+    } on FirebaseException {
+      final fallback = await _cache.getDonationList(cacheKey);
+      if (fallback.isNotEmpty) {
+        yield fallback;
+      }
+    }
   }
 
-  String _mapFirebaseError(FirebaseException error) {
+  Stream<List<DonationModel>> streamRecentCompletedDonationsForDonor({
+    required String donorId,
+    int limit = 3,
+  }) async* {
+    final normalizedDonorId = donorId.trim();
+    if (normalizedDonorId.isEmpty || limit <= 0) {
+      yield const <DonationModel>[];
+      return;
+    }
+
+    final cacheKey =
+        'donation.donor.recent_completed.$normalizedDonorId.$limit';
+    final cached = await _cache.getDonationList(cacheKey);
+    if (cached.isNotEmpty) {
+      yield cached;
+    }
+
+    try {
+      await for (final snapshot in _donations
+          .where('donorId', isEqualTo: normalizedDonorId)
+          .where('status', isEqualTo: DonationStatus.completed.value)
+          .orderBy('completedAt', descending: true)
+          .limit(limit)
+          .snapshots()) {
+        final donations = await Future.wait(
+          snapshot.docs
+              .map(DonationModel.fromFirestore)
+              .map(_resolveDonationLocation),
+        );
+
+        var result = donations.toList()
+          ..sort((a, b) {
+            final aTime = a.completedAt ?? a.createdAt;
+            final bTime = b.completedAt ?? b.createdAt;
+            return bTime.compareTo(aTime);
+          });
+
+        if (result.length < limit) {
+          final fallbackSnapshot = await _donations
+              .where('donorId', isEqualTo: normalizedDonorId)
+              .where('status', isEqualTo: DonationStatus.completed.value)
+              .get();
+          final fallbackDonations = await Future.wait(
+            fallbackSnapshot.docs
+                .map(DonationModel.fromFirestore)
+                .map(_resolveDonationLocation),
+          );
+          result = fallbackDonations
+            ..sort((a, b) {
+              final aTime = a.completedAt ?? a.createdAt;
+              final bTime = b.completedAt ?? b.createdAt;
+              return bTime.compareTo(aTime);
+            });
+        }
+
+        final limited = result.take(limit).toList();
+        await _cache.saveDonationList(cacheKey, limited);
+        yield limited;
+      }
+    } on FirebaseException {
+      final fallback = await _cache.getDonationList(cacheKey);
+      if (fallback.isNotEmpty) {
+        yield fallback;
+      }
+    }
+  }
+
+String _mapFirebaseError(FirebaseException error) {
     switch (error.code) {
       case 'permission-denied':
         return 'You do not have permission to perform this donation action.';
@@ -858,7 +1025,51 @@ class DonationService {
       rejectedByNgoIds: donation.rejectedByNgoIds,
     );
   }
+
+  String _cacheKeyForSingleDonation(String donationId) =>
+      'donation.single.$donationId';
+
+  String _cacheKeyForAllDonations({DonationStatus? status}) =>
+      'donation.all.${status?.value ?? 'all'}';
+
+  String _cacheKeyForDonorDonations({
+    required String donorId,
+    DonationStatus? status,
+  }) =>
+      'donation.donor.$donorId.${status?.value ?? 'all'}';
+
+  String _cacheKeyForAvailableNgoDonations({String? ngoId}) =>
+      'donation.ngo.available.${ngoId?.trim().isNotEmpty == true ? ngoId!.trim() : 'all'}';
+
+  String _cacheKeyForNgoAcceptedDonations({
+    required String ngoId,
+    DonationStatus? status,
+  }) =>
+      'donation.ngo.accepted.$ngoId.${status?.value ?? 'all'}';
+
+  String _cacheKeyForRecentCompleted({required int limit}) =>
+      'donation.completed.recent.$limit';
+
+  String _cacheKeyForStatusStream({
+    DonationStatus? status,
+    String? donorId,
+    String? ngoId,
+    required bool onlyAvailableForNgo,
+    required bool orderByCreatedAt,
+  }) {
+    return [
+      'donation',
+      'stream',
+      status?.value ?? 'all',
+      donorId?.trim().isNotEmpty == true ? donorId!.trim() : 'nodonor',
+      ngoId?.trim().isNotEmpty == true ? ngoId!.trim() : 'nongo',
+      onlyAvailableForNgo ? 'available' : 'allitems',
+      orderByCreatedAt ? 'ordered' : 'unordered',
+    ].join('.');
+  }
 }
+
+int parseMealRangeValue(String range) => parseMealRange(range);
 
 class DonationException implements Exception {
   const DonationException(this.message);

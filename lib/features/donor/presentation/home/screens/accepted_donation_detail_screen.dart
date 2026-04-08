@@ -3,100 +3,294 @@ import 'package:wastenot/services/donation_services.dart';
 
 const Color mainGreen = Color(0xFF0E5E53);
 
-class AcceptedDonationDetailScreen extends StatelessWidget {
+class AcceptedDonationDetailScreen extends StatefulWidget {
   const AcceptedDonationDetailScreen({super.key, required this.donation});
 
   final DonationModel donation;
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7F9F9),
-      appBar: AppBar(
-        backgroundColor: mainGreen,
-        leading: const BackButton(color: Colors.white),
-        title: const Text(
-          'Donation Details',
-          style: TextStyle(color: Colors.white),
-        ),
+  State<AcceptedDonationDetailScreen> createState() =>
+      _AcceptedDonationDetailScreenState();
+}
+
+class _AcceptedDonationDetailScreenState extends State<AcceptedDonationDetailScreen> {
+  final DonationService _donationService = DonationService();
+  late DonationModel _donation;
+  bool _isCompleting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _donation = widget.donation;
+  }
+
+  Future<void> _markCompleted() async {
+    if (_isCompleting) {
+      return;
+    }
+
+    setState(() => _isCompleting = true);
+
+    try {
+      final updatedDonation = await _donationService.markDonationAsComplete(
+        _donation.donationId,
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _donation = updatedDonation;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Donation marked as completed.')),
+      );
+      Navigator.pop(context, true);
+    } on DonationException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isCompleting = false);
+      }
+    }
+  }
+
+  @override
+Widget build(BuildContext context) {
+  final donation = _donation;
+  final canComplete =
+      donation.status == DonationStatus.accepted.value;
+
+  return Scaffold(
+    backgroundColor: const Color(0xFFF5F7F6),
+    appBar: AppBar(
+      backgroundColor: mainGreen,
+      title: const Text(
+        'Donation Details',
+        style: TextStyle(color: Colors.white, fontSize: 18),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _info('Donor', donation.donorName),
-            _info('Accepted by', donation.acceptedByNgoName ?? 'Not available'),
-            _info('Location', donation.locationAddress ?? 'Location not set'),
-            const Divider(height: 30),
-            _info('Uploaded at', _formatDateTime(donation.createdAt)),
-            _info(
-              'Accepted at',
-              donation.acceptedAt == null
-                  ? 'Not available'
-                  : _formatDateTime(donation.acceptedAt!),
-            ),
-            if (donation.completedAt != null)
-              _info('Picked up at', _formatDateTime(donation.completedAt!)),
-            const Divider(height: 30),
-            const Text(
-              'Donation Description',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            _info(
-              'Food',
-              donation.foodItems.isEmpty
-                  ? 'Not provided'
-                  : donation.foodItems.join(', '),
-            ),
-            _info('Servings', donation.quantity),
-            if ((donation.description ?? '').isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Text(donation.description!),
-            ],
-            const SizedBox(height: 20),
-            const Text(
-              'Pictures',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            if (donation.imageUrls.isEmpty)
-              Container(
-                height: 110,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Text('No images uploaded'),
-              )
-            else
-              SizedBox(
-                height: 100,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: donation.imageUrls.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 10),
-                  itemBuilder: (context, index) => ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: SizedBox(
-                      width: 120,
-                      child: Image.network(
-                        donation.imageUrls[index],
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) =>
-                            const Icon(Icons.broken_image),
-                      ),
+      iconTheme: const IconThemeData(color: Colors.white),
+    ),
+    body: Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+
+                // 🔥 IMAGE + STATUS
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "Images",
+                      style: TextStyle(
+                          fontSize: 19,
+                          fontWeight: FontWeight.bold),
                     ),
+                    _statusChip(donation.status),
+                  ],
+                ),
+                const SizedBox(height: 10),
+
+                donation.imageUrls.isEmpty
+                    ? Container(
+                        height: 110,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Text('No images uploaded'),
+                      )
+                    : SizedBox(
+                        height: 100,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: donation.imageUrls.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(width: 10),
+                          itemBuilder: (context, index) =>
+                              ClipRRect(
+                            borderRadius:
+                                BorderRadius.circular(12),
+                            child: SizedBox(
+                              width: 120,
+                              child: Image.network(
+                                donation.imageUrls[index],
+                                fit: BoxFit.cover,
+                                errorBuilder:
+                                    (_, __, ___) =>
+                                        const Icon(
+                                            Icons.broken_image),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                const SizedBox(height: 20),
+
+                // 🔥 MERGED CARD
+                _sectionCard(
+                  child: Column(
+                    children: [
+                      _row("Donor", donation.donorName),
+                      _row(
+                        "Accepted by",
+                        donation.acceptedByNgoName ??
+                            'Not available',
+                      ),
+                      _row(
+                        "Uploaded at",
+                        _formatDateTime(donation.createdAt),
+                      ),
+                      _row(
+                        "Accepted at",
+                        donation.acceptedAt == null
+                            ? 'Not available'
+                            : _formatDateTime(
+                                donation.acceptedAt!),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-          ],
+
+                const SizedBox(height: 16),
+
+                // 🔥 DETAILS
+                const Text(
+                  "Details",
+                  style: TextStyle(
+                      fontSize: 19,
+                      fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 10),
+
+                _sectionCard(
+                  child: Column(
+                    children: [
+                      _row(
+                        "Food",
+                        donation.foodItems.isEmpty
+                            ? 'Not provided'
+                            : donation.foodItems.join(', '),
+                      ),
+                      _row("Servings", donation.quantity),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-      ),
-    );
-  }
+
+        // 🔥 BUTTON SAME POSITION
+        if (canComplete)
+          Padding(
+            padding: const EdgeInsets.all(14),
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: mainGreen,
+                minimumSize:
+                    const Size(double.infinity, 55),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+              ),
+              onPressed:
+                  _isCompleting ? null : _markCompleted,
+              child: _isCompleting
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(
+                                Colors.white),
+                      ),
+                    )
+                  : const Text(
+                      'Mark as Complete',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+            ),
+          ),
+      ],
+    ),
+  );
+}
+
+
+// 🔥 CARD
+Widget _sectionCard({required Widget child}) {
+  return Container(
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(14),
+      border: Border.all(color: Colors.grey.shade200),
+    ),
+    child: child,
+  );
+}
+
+
+// 🔥 ROW
+Widget _row(String title, String value) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 6),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 120,
+          child: Text(
+            title,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(fontSize: 15),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+
+// 🔥 STATUS CHIP
+Widget _statusChip(String status) {
+  return Container(
+    padding:
+        const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+    decoration: BoxDecoration(
+      color: mainGreen,
+      borderRadius: BorderRadius.circular(20),
+    ),
+    child: Text(
+      status.toUpperCase(),
+      style: const TextStyle(color: Colors.white),
+    ),
+  );
+}
 
   Widget _info(String title, String value) {
     return Padding(

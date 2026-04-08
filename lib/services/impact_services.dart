@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:wastenot/core/utils/meal_parser.dart';
 
 class NgoImpactMetric {
   const NgoImpactMetric({
@@ -24,13 +25,13 @@ class NgoWeeklyImpactPoint {
 
 class NgoImpactData {
   const NgoImpactData({
-    required this.totalAcceptedDonations,
+    required this.totalCompletedDonations,
     required this.totalMeals,
     required this.totalPeopleServed,
     required this.weeklyActivity,
   });
 
-  final int totalAcceptedDonations;
+  final int totalCompletedDonations;
   final int totalMeals;
   final int totalPeopleServed;
   final List<NgoWeeklyImpactPoint> weeklyActivity;
@@ -38,7 +39,7 @@ class NgoImpactData {
   List<NgoImpactMetric> get metrics => <NgoImpactMetric>[
         NgoImpactMetric(
           label: 'Accepted Donations',
-          value: totalAcceptedDonations,
+          value: totalCompletedDonations,
         ),
         NgoImpactMetric(
           label: 'Meals',
@@ -66,7 +67,7 @@ class ImpactServices {
     if (normalizedNgoId.isEmpty) {
       return Stream<NgoImpactData>.value(
         const NgoImpactData(
-          totalAcceptedDonations: 0,
+          totalCompletedDonations: 0,
           totalMeals: 0,
           totalPeopleServed: 0,
           weeklyActivity: <NgoWeeklyImpactPoint>[],
@@ -75,19 +76,19 @@ class ImpactServices {
     }
 
     return _donations.snapshots().map((snapshot) {
-      final acceptedDocs = snapshot.docs
-          .where((doc) => _isAcceptedDonationForNgo(doc.data(), normalizedNgoId))
+      final completedDocs = snapshot.docs
+          .where((doc) => _isCompletedDonationForNgo(doc.data(), normalizedNgoId))
           .toList();
 
-      final totalAcceptedDonations = acceptedDocs.length;
-      final totalMeals = acceptedDocs.fold<int>(
+      final totalCompletedDonations = completedDocs.length;
+      final totalMeals = completedDocs.fold<int>(
         0,
-        (sum, doc) => sum + quantityToMeals(doc.data()['quantity']),
+        (sum, doc) => sum + parseMealValue(doc.data()['quantity']),
       );
-      final weeklyActivity = _buildWeeklyActivity(acceptedDocs);
+      final weeklyActivity = _buildWeeklyActivity(completedDocs);
 
       return NgoImpactData(
-        totalAcceptedDonations: totalAcceptedDonations,
+        totalCompletedDonations: totalCompletedDonations,
         totalMeals: totalMeals,
         totalPeopleServed: totalMeals,
         weeklyActivity: weeklyActivity,
@@ -95,47 +96,17 @@ class ImpactServices {
     });
   }
 
-  int quantityToMeals(dynamic quantity) {
-    final text = quantity?.toString().trim() ?? '';
-    if (text.isEmpty) {
-      return 0;
-    }
-
-    final matches = RegExp(r'\d+').allMatches(text).toList();
-    if (matches.isEmpty) {
-      return 0;
-    }
-
-    if (matches.length >= 2 && text.contains('-')) {
-      final start = int.parse(matches.first.group(0)!);
-      final end = int.parse(matches[1].group(0)!);
-      return ((start + end) / 2).round();
-    }
-
-    return int.parse(matches.first.group(0)!);
-  }
-
-  bool _isAcceptedDonationForNgo(Map<String, dynamic> data, String ngoId) {
+  bool _isCompletedDonationForNgo(Map<String, dynamic> data, String ngoId) {
     final directNgoId = (data['ngoId'] as String?)?.trim();
     final acceptedByNgoId = (data['acceptedByNgoId'] as String?)?.trim();
     final status = (data['status'] as String?)?.trim().toLowerCase();
-    final hasAcceptedAt = _dateFromFirestore(data['acceptedAt']) != null;
 
     final matchesNgo = directNgoId == ngoId || acceptedByNgoId == ngoId;
     if (!matchesNgo) {
       return false;
     }
 
-    if (status == 'accepted') {
-      return true;
-    }
-
-    // Keep impact compatible with the current donation flow, where acceptance
-    // is represented by acceptedByNgoId + acceptedAt and completion may follow.
-    return acceptedByNgoId == ngoId &&
-        hasAcceptedAt &&
-        status != 'expired' &&
-        status != 'rejected';
+    return status == 'completed';
   }
 
   List<NgoWeeklyImpactPoint> _buildWeeklyActivity(
@@ -154,7 +125,7 @@ class ImpactServices {
     for (final doc in docs) {
       final data = doc.data();
       final activityDate =
-          _dateFromFirestore(data['acceptedAt']) ??
+          _dateFromFirestore(data['completedAt']) ??
           _dateFromFirestore(data['createdAt']);
       if (activityDate == null) {
         continue;

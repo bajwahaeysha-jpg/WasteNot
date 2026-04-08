@@ -1,13 +1,21 @@
+import 'dart:async';
+
 import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:wastenot/screens/splash_screen.dart';
 import 'package:wastenot/services/fcm_service.dart';
+import 'package:wastenot/services/session_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  await FcmService.instance.initialize();
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: true,
+  );
+  await SessionService.restorePersistedUser();
   runApp(const WasteNotApp());
+  unawaited(FcmService.instance.initialize());
 }
 
 class WasteNotApp extends StatelessWidget {

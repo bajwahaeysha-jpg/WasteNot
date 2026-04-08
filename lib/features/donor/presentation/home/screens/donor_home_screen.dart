@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:wastenot/features/goal/models/goal_model.dart';
 import 'package:wastenot/features/goal/services/goal_service.dart';
 import 'package:wastenot/features/goal/widgets/goal_widget.dart';
@@ -45,6 +44,7 @@ class _DonorHomeScreenState extends State<DonorHomeScreen>
   final LocalOpportunitiesService _localOpportunitiesService =
       LocalOpportunitiesService();
   final FirestoreService _firestoreService = FirestoreService();
+  final DonationService _donationService = DonationService();
   Timer? _goalMonthTimer;
   late final Future<List<NgoModel>> _localOpportunitiesFuture;
 
@@ -156,16 +156,10 @@ class _DonorHomeScreenState extends State<DonorHomeScreen>
   Stream<List<DonationModel>> _recentCompletedDonationsStream({
     required String donorId,
   }) {
-    return FirebaseFirestore.instance
-        .collection('donations')
-        .where('donorId', isEqualTo: donorId)
-        .where('status', isEqualTo: 'completed')
-        .orderBy('completedAt', descending: true)
-        .limit(_recentDonationsLimit)
-        .snapshots()
-        .map((snapshot) {
-      return snapshot.docs.map(DonationModel.fromFirestore).toList();
-    });
+    return _donationService.streamRecentCompletedDonationsForDonor(
+      donorId: donorId,
+      limit: _recentDonationsLimit,
+    );
   }
 
   void _ensureRecentDonorStream(String? uid) {
@@ -452,7 +446,15 @@ class _DonorHomeScreenState extends State<DonorHomeScreen>
               },
             ),
             const SizedBox(height: 24),
-            const _SectionHeader('Recent Donations'),
+            _SectionHeader(
+              'Recent Donations',
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const YourDonationsScreen(),
+                ),
+              ),
+            ),
             const SizedBox(height: 12),
             StreamBuilder<List<DonationModel>>(
               stream: _recentDonorStream,
@@ -547,7 +549,7 @@ class _DonorHomeScreenState extends State<DonorHomeScreen>
                 );
               },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             GoalWidget(
               achievedCount: _goalData?.achievedCount ?? 0,
               target: _goalData?.target ?? 0,
@@ -647,8 +649,9 @@ class _EmergencyConcernCard extends StatelessWidget {
 
 class _SectionHeader extends StatelessWidget {
   final String title;
+  final VoidCallback? onTap;
 
-  const _SectionHeader(this.title);
+  const _SectionHeader(this.title, {this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -659,7 +662,10 @@ class _SectionHeader extends StatelessWidget {
           title,
           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
-        const Text('View all >', style: TextStyle(color: Colors.grey)),
+        GestureDetector(
+          onTap: onTap,
+          child: const Text('View all >', style: TextStyle(color: Colors.grey)),
+        ),
       ],
     );
   }

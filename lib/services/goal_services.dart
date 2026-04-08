@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
+import 'package:wastenot/core/utils/meal_parser.dart';
 import 'package:wastenot/models/app_user_model.dart';
 import 'package:wastenot/services/donation_services.dart';
 
@@ -395,7 +396,9 @@ Future<GoalProgress> getCurrentUserMonthlyGoalProgressOnce({
     if (user.isNgo) {
       return donations.fold<int>(
         0,
-        (sum, donation) => sum + _parseMealsToInt(donation.quantity),
+        (sum, donation) => donation.status == DonationStatus.completed.value
+            ? sum + parseMealRange(donation.quantity)
+            : sum,
       );
     }
 
@@ -509,27 +512,4 @@ String _readRole(Map<String, dynamic> data, {required String fallback}) {
     return fallback;
   }
   return value;
-}
-
-int _parseMealsToInt(String rawValue) {
-  final value = rawValue.trim();
-  if (value.isEmpty) {
-    return 0;
-  }
-
-  final direct = int.tryParse(value);
-  if (direct != null) {
-    return direct;
-  }
-
-  final matches = RegExp(r'\d+').allMatches(value).toList();
-  if (matches.isEmpty) {
-    return 0;
-  }
-
-  if (matches.length == 1) {
-    return int.parse(matches.first.group(0)!);
-  }
-
-  return int.parse(matches.last.group(0)!);
 }

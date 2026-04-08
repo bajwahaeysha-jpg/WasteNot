@@ -5,14 +5,25 @@ import 'package:flutter/foundation.dart';
 import 'package:wastenot/core/state/app_user.dart';
 import 'package:wastenot/models/app_user_model.dart';
 import 'package:wastenot/services/firestore_service.dart';
+import 'package:wastenot/services/local_cache_service.dart';
 
 class SessionService {
   static final ValueNotifier<AppUserModel?> currentUser =
       ValueNotifier<AppUserModel?>(null);
+  static final LocalCacheService _cache = LocalCacheService();
   static StreamSubscription<AppUserModel?>? _userSubscription;
   static String? _syncedUid;
 
   static AppUserModel? get user => currentUser.value;
+
+  static Future<void> restorePersistedUser() async {
+    final cachedUser = await _cache.getSessionUser();
+    if (cachedUser == null) {
+      return;
+    }
+
+    setUser(cachedUser);
+  }
 
   static void setUser(
     AppUserModel? user, {
@@ -20,6 +31,7 @@ class SessionService {
     bool syncFromFirestore = true,
   }) {
     _applyUser(user);
+    _cache.saveSessionUser(user);
 
     if (user == null || user.isAdmin || !syncFromFirestore) {
       _stopSync();
@@ -60,6 +72,8 @@ class SessionService {
   static void clear() {
     _stopSync();
     currentUser.value = null;
+    _cache.clearSessionUser();
+    _cache.clearAuthSession();
     AppUser.clear();
   }
 

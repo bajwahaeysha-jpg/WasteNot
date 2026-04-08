@@ -255,9 +255,9 @@ class _NgoSignUpScreenState extends State<NgoSignUpScreen> {
       await showDialog<void>(
         context: context,
         builder: (dialogContext) => AlertDialog(
-          title: const Text('Registration Submitted'),
+          title: const Text('Verification Email Sent'),
           content: const Text(
-            'Your request has been submitted for admin approval.',
+            'Please verify your email first. After verification, your NGO request will wait for admin approval before you can log in.',
           ),
           actions: [
             TextButton(

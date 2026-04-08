@@ -6,6 +6,7 @@ import 'package:wastenot/models/app_location.dart';
 class NgoRequestModel {
   const NgoRequestModel({
     required this.id,
+    this.uid,
     required this.organizationName,
     required this.email,
     required this.pendingPassword,
@@ -17,9 +18,11 @@ class NgoRequestModel {
     required this.status,
     required this.createdAt,
     this.profileImageUrl,
+    this.emailVerified = false,
   });
 
   final String id;
+  final String? uid;
   final String organizationName;
   final String email;
   final String pendingPassword;
@@ -31,14 +34,17 @@ class NgoRequestModel {
   final String status;
   final DateTime createdAt;
   final String? profileImageUrl;
+  final bool emailVerified;
 
   bool get isPending => status == 'pending';
   bool get isRejected => status == 'rejected';
+  bool get isAwaitingEmailVerification => status == 'email_verification_pending';
 
   String decodePassword() => utf8.decode(base64Decode(pendingPassword));
 
   Map<String, dynamic> toFirestore() {
     return {
+      'uid': uid,
       'organizationName': organizationName,
       'email': email,
       'password': pendingPassword,
@@ -48,6 +54,7 @@ class NgoRequestModel {
       'registrationNumber': registrationNumber,
       'description': description,
       'profileImageUrl': profileImageUrl,
+      'emailVerified': emailVerified,
       'status': status,
       'createdAt': Timestamp.fromDate(createdAt),
     };
@@ -62,6 +69,7 @@ class NgoRequestModel {
 
     return NgoRequestModel(
       id: doc.id,
+      uid: data['uid'] as String?,
       organizationName: (data['organizationName'] as String?) ?? '',
       email: (data['email'] as String?) ?? '',
       pendingPassword: (data['password'] as String?) ?? '',
@@ -71,6 +79,7 @@ class NgoRequestModel {
       registrationNumber: (data['registrationNumber'] as String?) ?? '',
       description: (data['description'] as String?) ?? '',
       profileImageUrl: data['profileImageUrl'] as String?,
+      emailVerified: (data['emailVerified'] as bool?) ?? false,
       status: (data['status'] as String?) ?? 'pending',
       createdAt: createdAt is Timestamp ? createdAt.toDate() : DateTime.now(),
     );

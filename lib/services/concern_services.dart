@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:wastenot/features/admin/shared/services/admin_user_notification_service.dart';
+import 'package:wastenot/services/local_cache_service.dart';
 
 class ConcernModel {
   const ConcernModel({
@@ -90,6 +91,7 @@ class ConcernService {
   final FirebaseFirestore _firestore;
   final FirebaseStorage _storage;
   final AdminUserNotificationService _adminUserNotificationService;
+  final LocalCacheService _cache = LocalCacheService();
 
   CollectionReference<Map<String, dynamic>> get _concerns =>
       _firestore.collection('concerns');
@@ -148,67 +150,62 @@ class ConcernService {
   }
 
   Stream<List<ConcernModel>> getActiveConcerns() {
-    return _concerns.where('isActive', isEqualTo: true).snapshots().map((
-      snapshot,
-    ) {
-      try {
-        final now = DateTime.now();
-        final concerns = snapshot.docs
-            .map(ConcernModel.fromFirestore)
-            .where(
-              (concern) => concern.isActive && concern.expiryTime.isAfter(now),
-            )
-            .toList()
-          ..sort((a, b) => a.expiryTime.compareTo(b.expiryTime));
-        return concerns;
-      } catch (error, stackTrace) {
-        developer.log(
-          'Failed to map active concerns snapshot.',
-          name: 'ConcernService',
-          error: error,
-          stackTrace: stackTrace,
-        );
-        Error.throwWithStackTrace(error, stackTrace);
-      }
-    });
+    return _streamConcerns(
+      cacheKey: 'active',
+      stream: _concerns.where('isActive', isEqualTo: true).snapshots(),
+      sorter: (concerns) => concerns.sort((a, b) => a.expiryTime.compareTo(b.expiryTime)),
+      filter: (concern) => concern.isActive && concern.expiryTime.isAfter(DateTime.now()),
+    );
   }
 
   Stream<List<ConcernModel>> getAllConcerns() {
-    return _concerns.snapshots().map((snapshot) {
-      try {
-        final concerns = snapshot.docs.map(ConcernModel.fromFirestore).toList()
-          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-        return concerns;
-      } catch (error, stackTrace) {
-        developer.log(
-          'Failed to map all concerns snapshot.',
-          name: 'ConcernService',
-          error: error,
-          stackTrace: stackTrace,
-        );
-        Error.throwWithStackTrace(error, stackTrace);
-      }
-    });
+    return _streamConcerns(
+      cacheKey: 'all',
+      stream: _concerns.snapshots(),
+      sorter: (concerns) => concerns.sort((a, b) => b.createdAt.compareTo(a.createdAt)),
+    );
   }
 
   Stream<List<ConcernModel>> getNgoConcerns(String ngoId) {
-    return _concerns.where('ngoId', isEqualTo: ngoId).snapshots().map((
-      snapshot,
-    ) {
-      try {
-        final concerns = snapshot.docs.map(ConcernModel.fromFirestore).toList()
-          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-        return concerns;
-      } catch (error, stackTrace) {
-        developer.log(
-          'Failed to map NGO concerns snapshot.',
-          name: 'ConcernService',
-          error: error,
-          stackTrace: stackTrace,
-        );
-        Error.throwWithStackTrace(error, stackTrace);
+    return _streamConcerns(
+      cacheKey: 'ngo.${ngoId.trim()}',
+      stream: _concerns.where('ngoId', isEqualTo: ngoId).snapshots(),
+      sorter: (concerns) => concerns.sort((a, b) => b.createdAt.compareTo(a.createdAt)),
+    );
+  }
+
+  Stream<List<ConcernModel>> _streamConcerns({
+    required String cacheKey,
+    required Stream<QuerySnapshot<Map<String, dynamic>>> stream,
+    required void Function(List<ConcernModel> concerns) sorter,
+    bool Function(ConcernModel concern)? filter,
+  }) async* {
+    final cached = await _cache.getConcernList(cacheKey);
+    if (cached.isNotEmpty) {
+      yield cached;
+    }
+
+    try {
+      await for (final snapshot in stream) {
+        final concerns = snapshot.docs.map(ConcernModel.fromFirestore).where((concern) {
+          return filter == null ? true : filter(concern);
+        }).toList();
+        sorter(concerns);
+        await _cache.saveConcernList(cacheKey, concerns);
+        yield concerns;
       }
-    });
+    } catch (error, stackTrace) {
+      developer.log(
+        'Concern stream fallback to cache.',
+        name: 'ConcernService',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      final fallback = await _cache.getConcernList(cacheKey);
+      if (fallback.isNotEmpty) {
+        yield fallback;
+      }
+    }
   }
 
   Future<void> deleteConcern(

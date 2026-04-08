@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:wastenot/features/donor/presentation/home/screens/donation_detail_screen.dart';
+import 'package:wastenot/models/repository_state.dart';
+import 'package:wastenot/repositories/donation_repository.dart';
 import 'package:wastenot/services/donation_services.dart';
 import 'package:wastenot/services/session_service.dart';
 
@@ -14,36 +16,46 @@ class YourDonationsScreen extends StatefulWidget {
 }
 
 class _YourDonationsScreenState extends State<YourDonationsScreen> {
-  final DonationService _donationService = DonationService();
+  final DonationRepository _donationRepository = DonationRepository();
   DonationStatus? _selectedFilter;
 
-  Future<List<DonationModel>> _loadAllDonations() {
+  Stream<RepositoryState<List<DonationModel>>> _watchAllDonations() {
     final donor = SessionService.user;
     debugPrint(
       '[YourDonationsScreen] current donor uid=${donor?.uid} role=${donor?.role} all-donations',
     );
 
     if (donor == null) {
-      return Future<List<DonationModel>>.value(const <DonationModel>[]);
+      return Stream<RepositoryState<List<DonationModel>>>.value(
+        const RepositoryState<List<DonationModel>>(
+          data: <DonationModel>[],
+          isLoading: false,
+        ),
+      );
     }
 
-    return _donationService.getDonorDonations(
+    return _donationRepository.watchDonorDonations(
       donorId: donor.uid,
       status: null,
     );
   }
 
-  Future<List<DonationModel>> _loadFilteredDonations() {
+  Stream<RepositoryState<List<DonationModel>>> _watchFilteredDonations() {
     final donor = SessionService.user;
     debugPrint(
       '[YourDonationsScreen] current donor uid=${donor?.uid} role=${donor?.role} filter=${_selectedFilter?.value ?? 'all'}',
     );
 
     if (donor == null) {
-      return Future<List<DonationModel>>.value(const <DonationModel>[]);
+      return Stream<RepositoryState<List<DonationModel>>>.value(
+        const RepositoryState<List<DonationModel>>(
+          data: <DonationModel>[],
+          isLoading: false,
+        ),
+      );
     }
 
-    return _donationService.getDonorDonations(
+    return _donationRepository.watchDonorDonations(
       donorId: donor.uid,
       status: _selectedFilter,
     );
@@ -61,101 +73,151 @@ class _YourDonationsScreenState extends State<YourDonationsScreen> {
           style: TextStyle(color: Colors.white),
         ),
       ),
-      body: FutureBuilder<List<DonationModel>>(
-        future: _loadAllDonations(),
+      body: StreamBuilder<RepositoryState<List<DonationModel>>>(
+        stream: _watchAllDonations(),
+        initialData: const RepositoryState<List<DonationModel>>(
+          data: <DonationModel>[],
+          isLoading: true,
+        ),
         builder: (context, allSnapshot) {
-          if (allSnapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (allSnapshot.hasError) {
-            debugPrint(
-              '[YourDonationsScreen] load error for uid=${SessionService.user?.uid}: ${allSnapshot.error}',
-            );
-            return _ErrorState(
-              message: 'Unable to load donations.\n${allSnapshot.error}',
-              onRetry: () => setState(() {}),
-            );
-          }
-
-          final allDonations = allSnapshot.data ?? const <DonationModel>[];
+          final allState = allSnapshot.data ??
+              const RepositoryState<List<DonationModel>>(
+                data: <DonationModel>[],
+                isLoading: true,
+              );
+          final allDonations = allState.data
+              .where((donation) =>
+                  donation.status == DonationStatus.active.value ||
+                  donation.status == DonationStatus.completed.value)
+              .toList();
           final totalCount = allDonations.length;
           final activeCount = allDonations.where((e) => e.isActive).length;
           final completedCount = allDonations.where((e) => e.isCompleted).length;
 
-          return FutureBuilder<List<DonationModel>>(
-            future: _loadFilteredDonations(),
+          return StreamBuilder<RepositoryState<List<DonationModel>>>(
+            stream: _watchFilteredDonations(),
+            initialData: RepositoryState<List<DonationModel>>(
+              data: allDonations,
+              isLoading: true,
+              isFromCache: allState.isFromCache,
+              errorMessage: allState.errorMessage,
+            ),
             builder: (context, filteredSnapshot) {
-              if (filteredSnapshot.connectionState == ConnectionState.waiting) {
+              final state = filteredSnapshot.data ??
+                  const RepositoryState<List<DonationModel>>(
+                    data: <DonationModel>[],
+                    isLoading: true,
+                  );
+              final donations = state.data.where((donation) {
+                if (_selectedFilter == null) {
+                  return donation.status == DonationStatus.active.value ||
+                      donation.status == DonationStatus.completed.value;
+                }
+                return donation.status == _selectedFilter!.value;
+              }).toList();
+
+              if (state.isLoading && donations.isEmpty) {
                 return const Center(child: CircularProgressIndicator());
               }
 
-              if (filteredSnapshot.hasError) {
-                debugPrint(
-                  '[YourDonationsScreen] filtered load error for uid=${SessionService.user?.uid}: ${filteredSnapshot.error}',
-                );
-                return _ErrorState(
-                  message: 'Unable to load donations.\n${filteredSnapshot.error}',
-                  onRetry: () => setState(() {}),
-                );
-              }
-
-              final donations = filteredSnapshot.data ?? const <DonationModel>[];
-
-              return ListView(
-                padding: const EdgeInsets.all(16),
+              return Column(
                 children: [
-                  Row(
-                    children: [
-                      _StatCard(
-                        title: 'Total',
-                        value: totalCount,
-                        icon: Icons.volunteer_activism,
-                        color: Colors.blueGrey,
-                        isSelected: _selectedFilter == null,
-                        onTap: () => setState(() => _selectedFilter = null),
-                      ),
-                      const SizedBox(width: 10),
-                      _StatCard(
-                        title: 'Active',
-                        value: activeCount,
-                        icon: Icons.autorenew,
-                        color: YourDonationsScreen.mainGreen,
-                        isSelected: _selectedFilter == DonationStatus.active,
-                        onTap: () => setState(
-                          () => _selectedFilter = DonationStatus.active,
+                  if (state.isLoading) const LinearProgressIndicator(minHeight: 2),
+                  if (state.hasError && donations.isNotEmpty)
+                    _InlineInfoBanner(message: state.errorMessage!),
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.all(16),
+                      children: [
+                        Row(
+                          children: [
+                            _StatCard(
+                              title: 'Total',
+                              value: totalCount,
+                              icon: Icons.volunteer_activism,
+                              color: Colors.blueGrey,
+                              isSelected: _selectedFilter == null,
+                              onTap: () => setState(() => _selectedFilter = null),
+                            ),
+                            const SizedBox(width: 10),
+                            _StatCard(
+                              title: 'Active',
+                              value: activeCount,
+                              icon: Icons.autorenew,
+                              color: YourDonationsScreen.mainGreen,
+                              isSelected: _selectedFilter == DonationStatus.active,
+                              onTap: () => setState(
+                                () => _selectedFilter = DonationStatus.active,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            _StatCard(
+                              title: 'Completed',
+                              value: completedCount,
+                              icon: Icons.check_circle,
+                              color: Colors.teal,
+                              isSelected:
+                                  _selectedFilter == DonationStatus.completed,
+                              onTap: () => setState(
+                                () => _selectedFilter = DonationStatus.completed,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      _StatCard(
-                        title: 'Completed',
-                        value: completedCount,
-                        icon: Icons.check_circle,
-                        color: Colors.teal,
-                        isSelected: _selectedFilter == DonationStatus.completed,
-                        onTap: () => setState(
-                          () => _selectedFilter = DonationStatus.completed,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  if (donations.isEmpty)
-                    const _EmptyState(
-                      message: 'No donations found.',
-                    )
-                  else
-                    ...donations.map(
-                      (donation) => DonationCard(
-                        donation: donation,
-                        onUpdated: () => setState(() {}),
-                      ),
+                        const SizedBox(height: 16),
+                        if (state.isFromCache && donations.isNotEmpty)
+                          const _InlineInfoBanner(
+                            message: 'Showing cached donations while syncing.',
+                          ),
+                        if (donations.isEmpty)
+                          _EmptyState(
+                            message: state.hasError
+                                ? state.errorMessage!
+                                : 'No donations found.',
+                          )
+                        else
+                          ...donations.map(
+                            (donation) => DonationCard(
+                              donation: donation,
+                              onUpdated: () => setState(() {}),
+                            ),
+                          ),
+                      ],
                     ),
+                  ),
                 ],
               );
             },
           );
         },
+      ),
+    );
+  }
+}
+
+class _InlineInfoBanner extends StatelessWidget {
+  const _InlineInfoBanner({
+    required this.message,
+  });
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE9F4F1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        message,
+        style: const TextStyle(
+          color: Color(0xFF0E5E53),
+          fontSize: 13,
+        ),
       ),
     );
   }
@@ -342,36 +404,6 @@ class _EmptyState extends StatelessWidget {
         message,
         textAlign: TextAlign.center,
         style: const TextStyle(color: Colors.black54),
-      ),
-    );
-  }
-}
-
-class _ErrorState extends StatelessWidget {
-  const _ErrorState({
-    required this.message,
-    required this.onRetry,
-  });
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(message, textAlign: TextAlign.center),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: onRetry,
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
       ),
     );
   }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:wastenot/navigation/app_navigation_handler.dart';
+import 'package:wastenot/repositories/auth_repository.dart';
 import 'package:wastenot/screens/login_screen.dart';
-import 'package:wastenot/services/auth_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -11,7 +11,7 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
-  final AuthService _authService = AuthService();
+  final AuthRepository _authRepository = AuthRepository();
 
   @override
   void initState() {
@@ -20,19 +20,22 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _resolveSession() async {
-    final user = await _authService.checkUserSession();
+    final user = await _authRepository.resolveStartupSession(
+      timeout: const Duration(seconds: 23),
+    );
+
     if (!mounted) {
       return;
     }
 
-    if (user == null) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute<void>(builder: (_) => const LoginScreen()),
-      );
+    if (user != null) {
+      Navigator.of(context).pushReplacement(AppNavigationHandler.homeRoute(user));
       return;
     }
 
-    Navigator.of(context).pushReplacement(AppNavigationHandler.homeRoute(user));
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute<void>(builder: (_) => const LoginScreen()),
+    );
   }
 
   @override
