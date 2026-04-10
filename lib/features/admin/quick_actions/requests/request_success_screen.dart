@@ -30,7 +30,7 @@ class _RequestSuccessScreenState extends State<RequestSuccessScreen> {
           children: const [
             Icon(
               Icons.check_circle,
-              color: Color(0xFF0F4C45),
+              color: Color(0xFF0B4B3F),
               size: 90,
             ),
             SizedBox(height: 16),

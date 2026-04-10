@@ -6,6 +6,7 @@ import 'package:wastenot/features/admin/shared/services/admin_user_notification_
 import 'package:wastenot/models/app_user_model.dart';
 import 'package:wastenot/services/notification_service.dart';
 import 'package:wastenot/services/session_service.dart';
+import 'package:wastenot/services/user_account_lifecycle_service.dart';
 
 enum NgoStatusFilter { all, active, suspended }
 
@@ -42,14 +43,18 @@ class AdminNgoManagementService {
   AdminNgoManagementService({
     FirebaseFirestore? firestore,
     AdminUserNotificationService? notificationService,
+    UserAccountLifecycleService? userAccountLifecycleService,
   })  : _firestore = firestore ?? FirebaseFirestore.instance,
         _notificationService =
             notificationService ??
-                AdminUserNotificationService(firestore: firestore);
+                AdminUserNotificationService(firestore: firestore),
+        _userAccountLifecycleService =
+            userAccountLifecycleService ?? UserAccountLifecycleService();
 
   final FirebaseFirestore _firestore;
   final AdminUserNotificationService _notificationService;
   final NotificationService _notificationGate = NotificationService();
+  final UserAccountLifecycleService _userAccountLifecycleService;
 
   CollectionReference<Map<String, dynamic>> get _users =>
       _firestore.collection('users');
@@ -277,6 +282,32 @@ class AdminNgoManagementService {
     });
 
     await batch.commit();
+  }
+
+  Future<void> deleteNgoAccount({
+    required String ngoId,
+    required String ngoName,
+  }) async {
+    final admin = SessionService.user;
+    await _userAccountLifecycleService.adminDeleteUserAccount(
+      uid: ngoId,
+      role: 'ngo',
+    );
+
+    await _adminActivityLogs.doc().set(<String, dynamic>{
+      'actionType': 'admin_deleted_ngo',
+      'type': 'ngo_deletion',
+      'targetUserId': ngoId,
+      'targetUserRole': 'ngo',
+      'receiverName': ngoName,
+      'title': 'NGO Deleted',
+      'message': 'Admin permanently deleted the NGO account.',
+      'createdAt': FieldValue.serverTimestamp(),
+      'createdBy': admin?.uid ?? 'admin',
+      'adminId': admin?.uid ?? 'admin',
+      'adminName': admin?.displayName ?? 'System Admin',
+      'source': 'admin_ngo_management',
+    });
   }
 
   Future<void> sendNotificationToNgo({

@@ -37,7 +37,7 @@ class StatsSection extends StatelessWidget {
               ),
               child: Column(
                 children: alerts.isEmpty
-                    ? const [_AlertRow(text: 'No alerts 🎉')]
+                    ? const [_AlertRow(text: 'No alerts ðŸŽ‰')]
                     : alerts
                         .map((text) => _AlertRow(text: text))
                         .toList(growable: false),
@@ -57,7 +57,7 @@ class StatsSection extends StatelessWidget {
                   title: 'Donations',
                   value: _formatCompactNumber(stats.totalDonations),
                   icon: Icons.volunteer_activism,
-                  iconColor: Colors.green,
+                  iconColor: const Color(0xFF0B4B3F),
                 ),
                 _buildCard(
                   context,
@@ -125,22 +125,22 @@ class _AlertRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6), // 🔥 more spacing
+      padding: const EdgeInsets.symmetric(vertical: 6), // ðŸ”¥ more spacing
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Icon(
             Icons.warning_amber_rounded,
             color: Color(0xFFF39C12),
-            size: 20, // 🔥 bigger icon
+            size: 20, // ðŸ”¥ bigger icon
           ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               text,
               style: const TextStyle(
-                fontSize: 15, // 🔥 BIG FONT
-                fontWeight: FontWeight.w500, // 🔥 better readability
+                fontSize: 15, // ðŸ”¥ BIG FONT
+                fontWeight: FontWeight.w500, // ðŸ”¥ better readability
               ),
             ),
           ),

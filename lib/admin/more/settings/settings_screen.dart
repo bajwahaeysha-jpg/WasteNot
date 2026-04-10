@@ -5,27 +5,27 @@ import 'package:wastenot/features/admin/more/settings/contacts/contact_screen.da
 import 'package:wastenot/features/admin/more/settings/about/about_screen.dart';
 import 'package:wastenot/features/admin/more/settings/FAQ/faq_screen.dart';
 import 'package:wastenot/features/admin/more/settings/Privacy_Policy/privacy_policy_screen.dart';
-import '../../../../screens/login_screen.dart';
+import '../../../../screens/welcome_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
-  static const Color mainGreen = Color(0xFF0E5E53);
+  static const Color mainGreen = Color(0xFF0B4B3F);
 
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: true, // ✅ MUST be true
+      canPop: true, // âœ… MUST be true
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
 
-        /// 🔙 Always go back to Admin Home (root)
+        /// ðŸ”™ Always go back to Admin Home (root)
         Navigator.popUntil(context, (route) => route.isFirst);
       },
       child: Scaffold(
         backgroundColor: const Color(0xFFF7F9F8),
         appBar: AppBar(
-          backgroundColor: const Color(0xFF0F5F54),
+          backgroundColor: const Color(0xFF0B4B3F),
           elevation: 0,
           iconTheme: const IconThemeData(color: Colors.white),
           title: const Text(
@@ -45,7 +45,7 @@ class SettingsScreen extends StatelessWidget {
 
               const SizedBox(height: 12),
 
-              /// 🧑 PROFILE HEADER
+              /// ðŸ§‘ PROFILE HEADER
               Row(
                 children: [
                   const CircleAvatar(
@@ -100,7 +100,7 @@ class SettingsScreen extends StatelessWidget {
 
               const Spacer(),
 
-              /// 🚪 LOGOUT
+              /// ðŸšª LOGOUT
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.logout, color: Colors.red),
@@ -122,7 +122,7 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  /// 🔹 REUSABLE TILE
+  /// ðŸ”¹ REUSABLE TILE
   static Widget _tile(
     BuildContext context,
     IconData icon,
@@ -143,7 +143,7 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  /// 🚪 LOGOUT SHEET
+  /// ðŸšª LOGOUT SHEET
   static void _showLogoutSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -190,7 +190,7 @@ class SettingsScreen extends StatelessWidget {
               onPressed: () {
                 Navigator.pushAndRemoveUntil(
                   context,
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  MaterialPageRoute(builder: (_) => const WelcomeScreen()),
                   (route) => false,
                 );
               },

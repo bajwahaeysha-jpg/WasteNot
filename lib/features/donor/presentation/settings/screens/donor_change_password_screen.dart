@@ -75,7 +75,7 @@ class _DonorChangePasswordScreenState extends State<DonorChangePasswordScreen> {
       backgroundColor: const Color(0xFFF5F7F6),
 
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F4C45),
+        backgroundColor: const Color(0xFF0B4B3F),
         iconTheme: const IconThemeData(color: Colors.white),
         title: const Text(
           "Change Password",
@@ -118,7 +118,7 @@ class _DonorChangePasswordScreenState extends State<DonorChangePasswordScreen> {
                 padding: EdgeInsets.only(top: 6),
                 child: Text(
                   "Password updated successfully",
-                  style: TextStyle(color: Colors.green),
+                  style: TextStyle(color: const Color(0xFF0B4B3F)),
                 ),
               ),
             const SizedBox(height: 28),
@@ -127,7 +127,7 @@ class _DonorChangePasswordScreenState extends State<DonorChangePasswordScreen> {
               height: 48,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0F4C45),
+                  backgroundColor: const Color(0xFF0B4B3F),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -171,20 +171,20 @@ class _DonorChangePasswordScreenState extends State<DonorChangePasswordScreen> {
           controller: controller,
           obscureText: true,
           decoration: InputDecoration(
-            prefixIcon: Icon(icon, color: const Color(0xFF0F4C45)),
+            prefixIcon: Icon(icon, color: const Color(0xFF0B4B3F)),
             filled: true,
             fillColor: Colors.white,
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(
-                color: Color(0xFF0F4C45),
+                color: Color(0xFF0B4B3F),
                 width: 1.4,
               ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(
-                color: Color(0xFF0F4C45),
+                color: Color(0xFF0B4B3F),
                 width: 2,
               ),
             ),
@@ -201,7 +201,7 @@ class _DonorChangePasswordScreenState extends State<DonorChangePasswordScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? Colors.red : Colors.green,
+        backgroundColor: isError ? Colors.red : const Color(0xFF0B4B3F),
       ),
     );
   }

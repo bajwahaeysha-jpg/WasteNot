@@ -5,7 +5,7 @@ import 'package:wastenot/features/admin/alerts/alert_model.dart';
 class AlertScreen extends StatelessWidget {
   const AlertScreen({super.key});
 
-  static const Color mainGreen = Color(0xFF0F5F54);
+  static const Color mainGreen = Color(0xFF0B4B3F);
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +58,7 @@ class AlertScreen extends StatelessWidget {
     );
   }
 
-  // ───────────── ALERT CARD ─────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ ALERT CARD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _alertCard({
     required BuildContext context,
@@ -71,7 +71,7 @@ class AlertScreen extends StatelessWidget {
     return InkWell(
       borderRadius: BorderRadius.circular(18),
       onTap: () {
-        /// ✅ CREATE DUMMY ALERT MODEL
+        /// âœ… CREATE DUMMY ALERT MODEL
         final alert = AlertModel(
           title: title,
           description: subtitle,

@@ -5,11 +5,19 @@ import 'package:wastenot/features/ngo/presentation/screens/home/ngo_home_screen.
 import 'package:wastenot/models/app_user_model.dart';
 import 'package:wastenot/repositories/auth_repository.dart';
 import 'package:wastenot/screens/login_screen.dart';
+import 'package:wastenot/screens/welcome_screen.dart';
+import 'package:wastenot/services/session_service.dart';
 
 class AppNavigationHandler {
   static Route<void> loginRoute() {
     return MaterialPageRoute<void>(
       builder: (_) => const LoginScreen(),
+    );
+  }
+
+  static Route<void> welcomeRoute() {
+    return MaterialPageRoute<void>(
+      builder: (_) => const WelcomeScreen(),
     );
   }
 
@@ -29,6 +37,18 @@ class AppNavigationHandler {
     }
 
     await Navigator.of(context).push(loginRoute());
+  }
+
+  static Future<void> goToWelcome(
+    BuildContext context, {
+    bool clearStack = true,
+  }) async {
+    if (clearStack) {
+      Navigator.of(context).pushAndRemoveUntil(welcomeRoute(), (route) => false);
+      return;
+    }
+
+    await Navigator.of(context).push(welcomeRoute());
   }
 
   static Future<void> goToHome(
@@ -70,10 +90,12 @@ class _ProtectedHomeScreen extends StatefulWidget {
 
 class _ProtectedHomeScreenState extends State<_ProtectedHomeScreen> {
   final AuthRepository _authRepository = AuthRepository();
+  bool _redirecting = false;
 
   @override
   void initState() {
     super.initState();
+    SessionService.currentUser.addListener(_handleSessionStateChanged);
     _authRepository.refreshSessionInBackground(
       onResolved: (user) {
         if (!mounted || user != null) {
@@ -81,17 +103,43 @@ class _ProtectedHomeScreenState extends State<_ProtectedHomeScreen> {
         }
 
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) {
-            return;
-          }
-          AppNavigationHandler.goToLogin(context);
+          _navigateOut();
         });
       },
     );
   }
 
   @override
+  void dispose() {
+    SessionService.currentUser.removeListener(_handleSessionStateChanged);
+    super.dispose();
+  }
+
+  void _handleSessionStateChanged() {
+    final user = SessionService.user;
+    if (user != null && !user.isSuspended) {
+      return;
+    }
+
+    _navigateOut();
+  }
+
+  void _navigateOut() {
+    if (!mounted || _redirecting) {
+      return;
+    }
+
+    _redirecting = true;
+    AppNavigationHandler.goToWelcome(context);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return AppNavigationHandler.homeForUser(widget.initialUser);
+    return ValueListenableBuilder<AppUserModel?>(
+      valueListenable: SessionService.currentUser,
+      builder: (context, user, _) {
+        return AppNavigationHandler.homeForUser(user ?? widget.initialUser);
+      },
+    );
   }
 }

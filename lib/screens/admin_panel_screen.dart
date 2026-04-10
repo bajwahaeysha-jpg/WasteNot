@@ -155,7 +155,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                           child: ElevatedButton(
                             onPressed: _busy ? null : () => _approveRequest(request),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF0B8A5A),
+                              backgroundColor: const Color(0xFF0B4B3F),
                               foregroundColor: Colors.white,
                             ),
                             child: const Text('Approve'),
@@ -236,7 +236,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
       return;
     }
 
-    AppNavigationHandler.goToLogin(context);
+    AppNavigationHandler.goToWelcome(context);
   }
 
   void _showMessage(String message, {bool isError = false}) {

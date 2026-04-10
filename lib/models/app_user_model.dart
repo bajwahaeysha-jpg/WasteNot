@@ -156,7 +156,9 @@ class AppUserModel {
     final data = doc.data() ?? <String, dynamic>{};
     final createdAt = data['createdAt'];
     final suspendedAt = data['suspendedAt'];
-    final location = AppLocation.fromDynamic(data['location']);
+    final location =
+        AppLocation.fromDynamic(data['location']) ??
+        _locationFromFlatFields(data);
     final isSuspended = (data['isSuspended'] as bool?) ??
         ((data['status'] as String?)?.toLowerCase() == 'suspended');
 
@@ -184,5 +186,29 @@ class AppUserModel {
       suspendedBy: data['suspendedBy'] as String?,
       createdAt: createdAt is Timestamp ? createdAt.toDate() : DateTime.now(),
     );
+  }
+
+  static AppLocation? _locationFromFlatFields(Map<String, dynamic> data) {
+    final latitude = _toDouble(data['latitude'] ?? data['lat']);
+    final longitude = _toDouble(data['longitude'] ?? data['lng']);
+    if (latitude == null || longitude == null) {
+      return null;
+    }
+
+    return AppLocation(
+      latitude: latitude,
+      longitude: longitude,
+      address: (data['address'] as String?)?.trim() ?? '',
+    );
+  }
+
+  static double? _toDouble(dynamic value) {
+    if (value is num) {
+      return value.toDouble();
+    }
+    if (value is String) {
+      return double.tryParse(value);
+    }
+    return null;
   }
 }

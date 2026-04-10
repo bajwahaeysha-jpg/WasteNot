@@ -15,7 +15,7 @@ class _SuspendSuccessScreenState extends State<SuspendSuccessScreen> {
     Future.delayed(const Duration(seconds: 2), () {
       if (!mounted) return;
 
-      Navigator.pop(context); // ✅ bas ek screen band
+      Navigator.pop(context); // âœ… bas ek screen band
     });
   }
 
@@ -29,7 +29,7 @@ class _SuspendSuccessScreenState extends State<SuspendSuccessScreen> {
           children: const [
             Icon(
               Icons.check_circle,
-              color:  Color(0xFF0F4C45),
+              color:  Color(0xFF0B4B3F),
               size: 80,
             ),
             SizedBox(height: 16),

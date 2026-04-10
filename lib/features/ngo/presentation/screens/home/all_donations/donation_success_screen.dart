@@ -18,7 +18,7 @@ class DonationSuccessScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 decoration: const BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Color(0xFF0F4C45),
+                  color: Color(0xFF0B4B3F),
                 ),
                 child: const Icon(Icons.check, color: Colors.white, size: 40),
               ),
@@ -46,7 +46,7 @@ class DonationSuccessScreen extends StatelessWidget {
                 height: 46,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0F4C45),
+                    backgroundColor: const Color(0xFF0B4B3F),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),

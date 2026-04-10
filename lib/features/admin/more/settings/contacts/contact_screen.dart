@@ -5,7 +5,7 @@ import 'package:wastenot/services/contact_service.dart';
 class ContactScreen extends StatelessWidget {
   const ContactScreen({super.key});
 
-  static const Color primary = Color(0xFF0F4C45);
+  static const Color primary = Color(0xFF0B4B3F);
   static const Color background = Color(0xFFF5F7F6);
 
   @override

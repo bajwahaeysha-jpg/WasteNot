@@ -260,7 +260,7 @@ class _RaiseConcernScreenState extends State<RaiseConcernScreen> {
                                 decoration: BoxDecoration(
                                   color: expired
                                       ? Colors.red.withValues(alpha: 0.12)
-                                      : const Color(0xFF0F4C45).withValues(
+                                      : const Color(0xFF0B4B3F).withValues(
                                           alpha: 0.12,
                                         ),
                                   borderRadius: BorderRadius.circular(20),
@@ -270,7 +270,7 @@ class _RaiseConcernScreenState extends State<RaiseConcernScreen> {
                                   style: TextStyle(
                                     color: expired
                                         ? Colors.red.shade700
-                                        : const Color(0xFF0F4C45),
+                                        : const Color(0xFF0B4B3F),
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -316,7 +316,7 @@ class _RaiseConcernScreenState extends State<RaiseConcernScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7F6),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F4C45),
+        backgroundColor: const Color(0xFF0B4B3F),
         iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: false,
         title: const Text(
@@ -436,7 +436,7 @@ class _RaiseConcernScreenState extends State<RaiseConcernScreen> {
                 height: 44,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0F4C45),
+                    backgroundColor: const Color(0xFF0B4B3F),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),

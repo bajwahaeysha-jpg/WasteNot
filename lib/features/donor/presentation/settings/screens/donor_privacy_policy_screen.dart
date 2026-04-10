@@ -23,7 +23,7 @@ class DonorPrivacyPolicyScreen extends StatelessWidget {
   decoration: const BoxDecoration(
     gradient: LinearGradient(
       colors: [
-        Color(0xFF0F5D4E),
+        Color(0xFF0B4B3F),
         Color(0xFF2E7D6E),
       ],
       begin: Alignment.topLeft,

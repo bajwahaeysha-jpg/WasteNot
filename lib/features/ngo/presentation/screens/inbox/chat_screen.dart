@@ -314,7 +314,7 @@ class _ChatScreenState extends State<ChatScreen> {
           return Scaffold(
             backgroundColor: const Color(0xFFF5F7F6),
             appBar: AppBar(
-              backgroundColor: const Color(0xFF0F4C45),
+              backgroundColor: const Color(0xFF0B4B3F),
               iconTheme: const IconThemeData(color: Colors.white),
               title: Text(
                 widget.donorName.isEmpty ? 'Chat' : widget.donorName,
@@ -329,7 +329,7 @@ class _ChatScreenState extends State<ChatScreen> {
         if (peerUser == null) {
           return Scaffold(
             appBar: AppBar(
-              backgroundColor: const Color(0xFF0F4C45),
+              backgroundColor: const Color(0xFF0B4B3F),
               iconTheme: const IconThemeData(color: Colors.white),
               title: Text(
                 widget.donorName.isEmpty ? 'Chat' : widget.donorName,
@@ -362,7 +362,7 @@ class _ChatScreenState extends State<ChatScreen> {
             return Scaffold(
               backgroundColor: const Color(0xFFF5F7F6),
               appBar: AppBar(
-                backgroundColor: const Color(0xFF0F4C45),
+                backgroundColor: const Color(0xFF0B4B3F),
                 elevation: 1,
                 iconTheme: const IconThemeData(color: Colors.white),
                 title: _isSelecting
@@ -496,7 +496,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         ),
                         const SizedBox(width: 6),
                         CircleAvatar(
-                          backgroundColor: Colors.green,
+                          backgroundColor: const Color(0xFF0B4B3F),
                           child: IconButton(
                             icon: _isSending
                                 ? const SizedBox(

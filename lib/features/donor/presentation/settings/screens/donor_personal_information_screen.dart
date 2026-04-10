@@ -27,7 +27,7 @@ class _DonorPersonalInformationScreenState
   bool _saving = false;
   AppLocation? _selectedLocation;
 
-  static const Color mainGreen = Color(0xFF0E5E53);
+  static const Color mainGreen = Color(0xFF0B4B3F);
 
   @override
   void initState() {

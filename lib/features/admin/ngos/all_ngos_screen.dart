@@ -30,7 +30,7 @@ class _AllNGOsScreenState extends State<AllNGOsScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9F8),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F4C45),
+        backgroundColor: const Color(0xFF0B4B3F),
         elevation: 0,
         title: const Text(
           "All NGOs",
@@ -105,16 +105,16 @@ class _AllNGOsScreenState extends State<AllNGOsScreen> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFF0F4C45) : Colors.white,
+          color: selected ? const Color(0xFF0B4B3F) : Colors.white,
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: const Color(0xFF0F4C45)),
+          border: Border.all(color: const Color(0xFF0B4B3F)),
         ),
         child: Text(
           status,
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: selected ? Colors.white : const Color(0xFF0F4C45),
+            color: selected ? Colors.white : const Color(0xFF0B4B3F),
           ),
         ),
       ),
@@ -151,7 +151,7 @@ class _AllNGOsScreenState extends State<AllNGOsScreen> {
               height: 52,
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: const Color(0xFF0F5F54).withValues(alpha: 0.12),
+                color: const Color(0xFF0B4B3F).withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: ClipRRect(
@@ -162,12 +162,12 @@ class _AllNGOsScreenState extends State<AllNGOsScreen> {
                         fit: BoxFit.cover,
                         errorBuilder: (_, _, _) => const Icon(
                           Icons.apartment,
-                          color: Color(0xFF0F4C45),
+                          color: Color(0xFF0B4B3F),
                         ),
                       )
                     : const Icon(
                         Icons.apartment,
-                        color: Color(0xFF0F4C45),
+                        color: Color(0xFF0B4B3F),
                       ),
               ),
             ),
@@ -205,7 +205,7 @@ class _AllNGOsScreenState extends State<AllNGOsScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: approved ? Colors.green.shade100 : Colors.red.shade100,
+                color: approved ? const Color(0x1A0B4B3F) : Colors.red.shade100,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
@@ -213,7 +213,7 @@ class _AllNGOsScreenState extends State<AllNGOsScreen> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: approved ? Colors.green.shade700 : Colors.red.shade700,
+                  color: approved ? const Color(0xFF0B4B3F) : Colors.red.shade700,
                 ),
               ),
             ),

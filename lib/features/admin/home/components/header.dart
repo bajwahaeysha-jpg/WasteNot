@@ -43,7 +43,7 @@ class _HeaderState extends State<Header> {
       ),
 
       decoration: const BoxDecoration(
-        color: Color(0xFF0F5F54),
+        color: Color(0xFF0B4B3F),
         boxShadow: [
           BoxShadow(
             color: Colors.black26,

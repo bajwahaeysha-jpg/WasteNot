@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:wastenot/features/admin/donors/services/admin_donor_management_service.dart';
 
 import 'donor_profile_screen.dart';
@@ -19,7 +19,7 @@ class _AllDonorsScreenState extends State<AllDonorsScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9F8),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F4C45),
+        backgroundColor: const Color(0xFF0B4B3F),
         elevation: 0,
         title: const Text(
           "All Donors",
@@ -90,7 +90,7 @@ class _AllDonorsScreenState extends State<AllDonorsScreen> {
     final infoLine = <String>[
       if (donorType != null && donorType.isNotEmpty) donorType,
       donor.locationLabel,
-    ].join(" • ");
+    ].join(" â€¢ ");
 
     return InkWell(
       borderRadius: BorderRadius.circular(18),
@@ -120,7 +120,7 @@ class _AllDonorsScreenState extends State<AllDonorsScreen> {
               width: 52,
               height: 52,
               decoration: BoxDecoration(
-                color: const Color(0xFF0F4C45).withValues(alpha: 0.12),
+                color: const Color(0xFF0B4B3F).withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: ClipRRect(
@@ -131,12 +131,12 @@ class _AllDonorsScreenState extends State<AllDonorsScreen> {
                         fit: BoxFit.cover,
                         errorBuilder: (_, _, _) => const Icon(
                           Icons.person,
-                          color: Color(0xFF0F4C45),
+                          color: Color(0xFF0B4B3F),
                         ),
                       )
                     : const Icon(
                         Icons.person,
-                        color: Color(0xFF0F4C45),
+                        color: Color(0xFF0B4B3F),
                       ),
               ),
             ),
@@ -166,7 +166,7 @@ class _AllDonorsScreenState extends State<AllDonorsScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    "Meals: ${donor.totalMealsDonated} • Rating: ${donor.averageRating.toStringAsFixed(1)}",
+                    "Meals: ${donor.totalMealsDonated} â€¢ Rating: ${donor.averageRating.toStringAsFixed(1)}",
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -181,7 +181,7 @@ class _AllDonorsScreenState extends State<AllDonorsScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: active ? Colors.green.shade100 : Colors.red.shade100,
+                color: active ? const Color(0x1A0B4B3F) : Colors.red.shade100,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
@@ -189,7 +189,7 @@ class _AllDonorsScreenState extends State<AllDonorsScreen> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: active ? Colors.green.shade700 : Colors.red.shade700,
+                  color: active ? const Color(0xFF0B4B3F) : Colors.red.shade700,
                 ),
               ),
             ),
@@ -223,10 +223,10 @@ Widget statusFilterBar({
                 vertical: 9,
               ),
               decoration: BoxDecoration(
-                color: selected ? const Color(0xFF0F4C45) : Colors.white,
+                color: selected ? const Color(0xFF0B4B3F) : Colors.white,
                 borderRadius: BorderRadius.circular(22),
                 border: Border.all(
-                  color: const Color(0xFF0F5F54),
+                  color: const Color(0xFF0B4B3F),
                 ),
               ),
               child: Text(
@@ -235,7 +235,7 @@ Widget statusFilterBar({
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color:
-                      selected ? Colors.white : const Color(0xFF0F5F54),
+                      selected ? Colors.white : const Color(0xFF0B4B3F),
                 ),
               ),
             ),

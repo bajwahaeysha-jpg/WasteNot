@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:wastenot/shared/widgets/location_map_preview.dart';
 import 'package:wastenot/services/donation_services.dart';
 
-const Color mainGreen = Color(0xFF0E5E53);
+const Color mainGreen = Color(0xFF0B4B3F);
 
 class DonationProfileScreen extends StatefulWidget {
   const DonationProfileScreen({super.key, required this.donation});
@@ -48,7 +48,7 @@ class _DonationProfileScreenState extends State<DonationProfileScreen> {
             padding: const EdgeInsets.all(16),
             children: [
 
-              /// 🔥 PICTURES + STATUS SAME LINE
+              /// ðŸ”¥ PICTURES + STATUS SAME LINE
               if (d.imageUrls.isNotEmpty)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -60,13 +60,13 @@ class _DonationProfileScreenState extends State<DonationProfileScreen> {
 
               const SizedBox(height: 10),
 
-              /// 🔥 IMAGES (SMALLER)
+              /// ðŸ”¥ IMAGES (SMALLER)
               if (d.imageUrls.isNotEmpty) ...[
                 _images(d.imageUrls),
                 const SizedBox(height: 20),
               ],
 
-              /// 🔥 LOCATION
+              /// ðŸ”¥ LOCATION
               _heading("Location"),
               const SizedBox(height: 10),
 
@@ -88,14 +88,14 @@ class _DonationProfileScreenState extends State<DonationProfileScreen> {
 
               const Divider(height: 30),
 
-              /// 🔥 DONOR / NGO
+              /// ðŸ”¥ DONOR / NGO
               _info("Donated by", d.donorName),
               if (d.acceptedByNgoName != null)
                 _info("Accepted by", d.acceptedByNgoName!),
 
               const SizedBox(height: 10),
 
-              /// 🔥 TIMES
+              /// ðŸ”¥ TIMES
               _info("Donated at", _formatDateTime(d.createdAt)),
               if (d.acceptedAt != null)
                 _info("Accepted at", _formatDateTime(d.acceptedAt!)),
@@ -105,7 +105,7 @@ class _DonationProfileScreenState extends State<DonationProfileScreen> {
 
               const SizedBox(height: 20),
 
-              /// 🔥 FOOD INLINE
+              /// ðŸ”¥ FOOD INLINE
               if (d.foodItems.isNotEmpty)
                 Row(
                   children: [
@@ -124,7 +124,7 @@ class _DonationProfileScreenState extends State<DonationProfileScreen> {
 
               const SizedBox(height: 12),
 
-              /// 🔥 SERVINGS NEXT LINE
+              /// ðŸ”¥ SERVINGS NEXT LINE
               Row(
                 children: [
                   const SizedBox(
@@ -142,7 +142,7 @@ class _DonationProfileScreenState extends State<DonationProfileScreen> {
 
               const SizedBox(height: 20),
 
-              /// 🔥 DESCRIPTION
+              /// ðŸ”¥ DESCRIPTION
               if ((d.description ?? '').isNotEmpty) ...[
                 _heading("Description"),
                 const SizedBox(height: 8),
@@ -163,7 +163,7 @@ class _DonationProfileScreenState extends State<DonationProfileScreen> {
     );
   }
 
-  /// 🔥 HELPERS
+  /// ðŸ”¥ HELPERS
 
   Widget _heading(String text) {
     return Text(
@@ -195,7 +195,7 @@ class _DonationProfileScreenState extends State<DonationProfileScreen> {
 
   Widget _images(List<String> urls) {
     return SizedBox(
-      height: 90, // 🔥 reduced size
+      height: 90, // ðŸ”¥ reduced size
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: urls.length,
@@ -204,7 +204,7 @@ class _DonationProfileScreenState extends State<DonationProfileScreen> {
           borderRadius: BorderRadius.circular(12),
           child: Image.network(
             urls[i],
-            width: 90, // 🔥 reduced
+            width: 90, // ðŸ”¥ reduced
             fit: BoxFit.cover,
           ),
         ),

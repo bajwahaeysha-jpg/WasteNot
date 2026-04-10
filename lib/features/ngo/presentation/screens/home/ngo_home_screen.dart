@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:wastenot/core/constants/app_colors.dart';
 import 'package:wastenot/features/goal/models/goal_model.dart';
@@ -131,25 +130,12 @@ class _NgoHomeScreenState extends State<NgoHomeScreen>
   }
 
   Stream<List<DonationModel>> _availableDonationsStream(String? ngoId) {
-    return FirebaseFirestore.instance
-        .collection('donations')
-        .where('status', isEqualTo: 'active')
-        .where('acceptedByNgoId', isNull: true)
-        .orderBy('createdAt', descending: true)
-        .limit(3)
-        .snapshots()
-        .map((snapshot) {
-      final donations =
-          snapshot.docs.map(DonationModel.fromFirestore).toList();
-      final trimmedNgoId = ngoId?.trim();
-      if (trimmedNgoId == null || trimmedNgoId.isEmpty) {
-        return donations;
-      }
-      return donations
-          .where((donation) =>
-              !donation.rejectedByNgoIds.contains(trimmedNgoId))
-          .toList();
-    });
+    return DonationService()
+        .streamDonationsByStatus(
+          ngoId: ngoId,
+          onlyAvailableForNgo: true,
+        )
+        .map((donations) => donations.take(3).toList());
   }
 
   Widget _getBody() {
@@ -248,6 +234,14 @@ class _NgoHomeScreenState extends State<NgoHomeScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const SizedBox(height: 3),
+                    GoalWidget(
+                      achievedCount: _goalData?.achievedCount ?? 0,
+                      target: _goalData?.target ?? 0,
+                      isLoading: _isLoadingGoal,
+                      title: 'Meals Goal This Month',
+                      unitLabel: 'meals',
+                    ),
                     const SizedBox(height: 24),
                     Container(
                       padding: const EdgeInsets.all(14),
@@ -405,14 +399,6 @@ class _NgoHomeScreenState extends State<NgoHomeScreen>
                           }).toList(),
                         );
                       },
-                    ),
-                    const SizedBox(height: 24),
-                    GoalWidget(
-                      achievedCount: _goalData?.achievedCount ?? 0,
-                      target: _goalData?.target ?? 0,
-                      isLoading: _isLoadingGoal,
-                      title: 'Meals Goal This Month',
-                      unitLabel: 'meals',
                     ),
                   ],
                 ),

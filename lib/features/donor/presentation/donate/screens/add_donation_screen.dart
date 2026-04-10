@@ -7,7 +7,7 @@ import 'package:wastenot/services/firestore_service.dart';
 import 'package:wastenot/services/location_service.dart';
 import 'package:wastenot/services/session_service.dart';
 
-const Color mainGreen = Color(0xFF0E5E53);
+const Color mainGreen = Color(0xFF0B4B3F);
 
 class AddDonationScreen extends StatefulWidget {
   const AddDonationScreen({super.key});
@@ -264,7 +264,7 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
               Row(
                 children: [
 
-                  // 🔥 HIDE BUTTON WHEN IMAGES EXIST
+                  // ðŸ”¥ HIDE BUTTON WHEN IMAGES EXIST
                   if (pickedImages.isEmpty)
                     GestureDetector(
                       onTap: pickImages,
@@ -460,7 +460,7 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
   Widget _servingDropdown() {
   return DropdownButtonFormField<String>(
     value: selectedServing,
-    dropdownColor: Colors.white, // 🔥 dropdown bg fix
+    dropdownColor: Colors.white, // ðŸ”¥ dropdown bg fix
 
     hint: const Text(
       "Servings",
@@ -469,7 +469,7 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
 
     style: const TextStyle(
       fontSize: 15,
-      color: Colors.black, // 🔥 selected text visible
+      color: Colors.black, // ðŸ”¥ selected text visible
     ),
 
     items: servingOptions.map((e) {
@@ -478,7 +478,7 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
         child: Text(
           e,
           style: const TextStyle(
-            color: Colors.black, // 🔥 list items visible
+            color: Colors.black, // ðŸ”¥ list items visible
             fontSize: 15,
           ),
         ),
@@ -488,7 +488,7 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
     onChanged: (val) => setState(() => selectedServing = val),
 
     icon: const Icon(Icons.keyboard_arrow_down,
-        color: Colors.black), // 🔥 arrow visible
+        color: Colors.black), // ðŸ”¥ arrow visible
 
     decoration: InputDecoration(
       filled: true,

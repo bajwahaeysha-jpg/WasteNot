@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:wastenot/services/donation_services.dart';
 
-const Color mainGreen = Color(0xFF0E5E53);
+const Color mainGreen = Color(0xFF0B4B3F);
 
 class DonationDetailScreen extends StatefulWidget {
   const DonationDetailScreen({
@@ -111,7 +111,7 @@ Widget build(BuildContext context) {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
 
-                    // 🔥 IMAGE HEADING + STATUS SAME LINE
+                    // ðŸ”¥ IMAGE HEADING + STATUS SAME LINE
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -130,7 +130,7 @@ Widget build(BuildContext context) {
 
                     const SizedBox(height: 20),
 
-                    // 🔥 MERGED INFO CARD
+                    // ðŸ”¥ MERGED INFO CARD
                     _sectionCard(
                       child: Column(
                         children: [
@@ -157,7 +157,7 @@ Widget build(BuildContext context) {
 
                     const SizedBox(height: 16),
 
-                    // 🔥 ONLY FOOD + SERVINGS
+                    // ðŸ”¥ ONLY FOOD + SERVINGS
                     const Text(
                       "Details",
                       style: TextStyle(
@@ -225,7 +225,7 @@ Widget build(BuildContext context) {
 }
 
 
-// 🔥 CARD
+// ðŸ”¥ CARD
 Widget _sectionCard({required Widget child}) {
   return Container(
     padding: const EdgeInsets.all(14),
@@ -239,7 +239,7 @@ Widget _sectionCard({required Widget child}) {
 }
 
 
-// 🔥 ROW
+// ðŸ”¥ ROW
 Widget _row(String title, String value) {
   return Padding(
     padding: const EdgeInsets.symmetric(vertical: 6),

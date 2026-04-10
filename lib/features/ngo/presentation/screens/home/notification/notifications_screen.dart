@@ -19,7 +19,7 @@ class NotificationsScreen extends StatelessWidget {
       backgroundColor: const Color(0xFFF5F7F6),
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: const Color(0xFF0F4C45),
+        backgroundColor: const Color(0xFF0B4B3F),
         iconTheme: const IconThemeData(color: Colors.white),
         title: const Text(
           "Notifications",
@@ -135,12 +135,12 @@ class NotificationsScreen extends StatelessWidget {
 
   Color _resolveColor(String title) {
     if (title.toLowerCase().contains('approved')) {
-      return const Color(0xFF0F4C45);
+      return const Color(0xFF0B4B3F);
     }
     if (title.toLowerCase().contains('rejected')) {
       return Colors.red;
     }
-    return const Color(0xFF0F4C45);
+    return const Color(0xFF0B4B3F);
   }
 }
 
@@ -242,7 +242,7 @@ class NotificationDetailScreen extends StatelessWidget {
       backgroundColor: const Color(0xFFF5F7F6),
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: const Color(0xFF0F4C45),
+        backgroundColor: const Color(0xFF0B4B3F),
         iconTheme: const IconThemeData(color: Colors.white),
         title: const Text(
           'Notification Detail',

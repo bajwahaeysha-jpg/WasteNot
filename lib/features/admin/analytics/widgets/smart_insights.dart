@@ -8,15 +8,15 @@ class SmartInsights extends StatelessWidget {
   List<String> _generateInsights() {
     if (range == "Week") {
       return [
-        "🔥 Donations peaked on Thursday",
-        "📦 Highest activity occurred between 4–6 PM",
-        "📈 This week performed 12% better than last week",
+        "ðŸ”¥ Donations peaked on Thursday",
+        "ðŸ“¦ Highest activity occurred between 4â€“6 PM",
+        "ðŸ“ˆ This week performed 12% better than last week",
       ];
     } else if (range == "Year") {
       return [
-        "📊 Best month was September",
-        "🚀 Annual growth increased by 28%",
-        "🎯 Donation goal exceeded in Q3",
+        "ðŸ“Š Best month was September",
+        "ðŸš€ Annual growth increased by 28%",
+        "ðŸŽ¯ Donation goal exceeded in Q3",
       ];
     } else {
       return [
@@ -48,7 +48,7 @@ class SmartInsights extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
 
-          /// 🧠 HEADER
+          /// ðŸ§  HEADER
           const Text(
             "Smart Insights",
             style: TextStyle(
@@ -60,7 +60,7 @@ class SmartInsights extends StatelessWidget {
 
           const SizedBox(height: 12),
 
-          /// 🔹 INSIGHTS LIST
+          /// ðŸ”¹ INSIGHTS LIST
           ...insights.map(
             (text) => Padding(
               padding: const EdgeInsets.only(bottom: 10),
@@ -71,13 +71,13 @@ class SmartInsights extends StatelessWidget {
                     margin: const EdgeInsets.only(top: 2),
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF0F5F54).withValues(alpha:0.12),
+                      color: const Color(0xFF0B4B3F).withValues(alpha:0.12),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
                       Icons.lightbulb_outline,
                       size: 16,
-                      color: Color(0xFF0F5F54),
+                      color: Color(0xFF0B4B3F),
                     ),
                   ),
                   const SizedBox(width: 10),

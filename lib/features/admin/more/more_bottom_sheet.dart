@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'feedback/admin_feedback_screen.dart';
 import 'profile/admin_profile_screen.dart';
 import 'settings/settings_screen.dart';
-import 'package:wastenot/screens/login_screen.dart';
+import 'package:wastenot/screens/welcome_screen.dart';
+import 'package:wastenot/services/auth_service.dart';
 
 class AdminMoreSheet extends StatelessWidget {
 
@@ -13,7 +14,7 @@ class AdminMoreSheet extends StatelessWidget {
     required this.user,
   });
 
-  static const Color mainGreen = Color(0xFF0F5F54);
+  static const Color mainGreen = Color(0xFF0B4B3F);
 
   @override
   Widget build(BuildContext context) {
@@ -135,12 +136,13 @@ class AdminMoreSheet extends StatelessWidget {
                 backgroundColor: Colors.red,
               ),
 
-              onPressed: () {
+              onPressed: () async {
+                await AuthService().logout();
 
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => const LoginScreen(),
+                    builder: (_) => const WelcomeScreen(),
                   ),
                   (route) => false,
                 );

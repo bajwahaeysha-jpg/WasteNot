@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:wastenot/core/constants/app_colors.dart';
 import 'package:wastenot/screens/login_screen.dart';
 import 'package:wastenot/screens/role_selection_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
 
-  static const Color mainGreen = Color(0xFF0B4B3F);
+  static const Color mainGreen = AppColors.primaryGreen;
   static const Color sponsorBlue = Color(0xFF1E88E5);
 
   @override

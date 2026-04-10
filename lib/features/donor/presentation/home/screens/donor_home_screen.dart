@@ -5,6 +5,7 @@ import 'package:wastenot/features/goal/models/goal_model.dart';
 import 'package:wastenot/features/goal/services/goal_service.dart';
 import 'package:wastenot/features/goal/widgets/goal_widget.dart';
 import 'package:wastenot/models/ngo_model.dart';
+import 'package:wastenot/features/donor/presentation/search/screens/donor_global_search_screen.dart';
 import 'package:wastenot/services/concern_services.dart';
 import 'package:wastenot/services/donation_services.dart';
 import 'package:wastenot/services/firestore_service.dart';
@@ -27,7 +28,7 @@ class DonorHomeScreen extends StatefulWidget {
     required this.user,
   });
 
-  static const Color mainGreen = Color(0xFF0E5E53);
+  static const Color mainGreen = Color(0xFF0B4B3F);
 
   @override
   State<DonorHomeScreen> createState() => _DonorHomeScreenState();
@@ -246,9 +247,18 @@ class _DonorHomeScreenState extends State<DonorHomeScreen>
                   ),
                 ],
               ),
-              child: const TextField(
-                decoration: InputDecoration(
-                  hintText: 'Search donations, locations, features...',
+              child: TextField(
+                readOnly: true,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const DonorGlobalSearchScreen(),
+                    ),
+                  );
+                },
+                decoration: const InputDecoration(
+                  hintText: 'Search donations, NGOs, food items...',
                   border: InputBorder.none,
                   icon: Icon(Icons.search),
                 ),
@@ -261,7 +271,15 @@ class _DonorHomeScreenState extends State<DonorHomeScreen>
             ),
             const SizedBox(height: 6),
             Text('$donorName, ready to make a difference?'),
-            const SizedBox(height: 16),
+            const SizedBox(height: 3),
+            GoalWidget(
+              achievedCount: _goalData?.achievedCount ?? 0,
+              target: _goalData?.target ?? 0,
+              isLoading: _isLoadingGoal,
+              title: 'Your Goal This Month',
+              unitLabel: 'donations',
+            ),
+            const SizedBox(height: 24),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -300,7 +318,7 @@ class _DonorHomeScreenState extends State<DonorHomeScreen>
                       child: const _SummaryCard(
                         'Accepted Donations',
                         Icons.check_circle,
-                        Colors.green,
+                        const Color(0xFF0B4B3F),
                       ),
                     ),
                   ),
@@ -549,14 +567,6 @@ class _DonorHomeScreenState extends State<DonorHomeScreen>
                 );
               },
             ),
-            const SizedBox(height: 24),
-            GoalWidget(
-              achievedCount: _goalData?.achievedCount ?? 0,
-              target: _goalData?.target ?? 0,
-              isLoading: _isLoadingGoal,
-              title: 'Your Goal This Month',
-              unitLabel: 'donations',
-            ),
           ],
         ),
       ),
@@ -781,7 +791,7 @@ class _NgoImageFallback extends StatelessWidget {
       height: 90,
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.green.shade50,
+        color: const Color(0x0D0B4B3F),
         borderRadius: BorderRadius.circular(12),
       ),
       alignment: Alignment.center,
@@ -790,7 +800,7 @@ class _NgoImageFallback extends StatelessWidget {
         style: const TextStyle(
           fontSize: 28,
           fontWeight: FontWeight.bold,
-          color: Colors.green,
+          color: const Color(0xFF0B4B3F),
         ),
       ),
     );

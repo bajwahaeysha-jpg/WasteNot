@@ -16,7 +16,7 @@ class GoalScreen extends StatefulWidget {
     return const GoalScreen(
       unitLabel: 'donations',
       quickTargets: <int>[5, 10, 15, 20],
-      themeColor: Color(0xFF0E5E53),
+      themeColor: Color(0xFF0B4B3F),
     );
   }
 
@@ -24,7 +24,7 @@ class GoalScreen extends StatefulWidget {
     return const GoalScreen(
       unitLabel: 'meals',
       quickTargets: <int>[250, 450, 750, 1000],
-      themeColor: Color(0xFF0E5E53),
+      themeColor: Color(0xFF0B4B3F),
     );
   }
 

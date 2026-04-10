@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:wastenot/core/constants/app_colors.dart';
 import '../../services/local_auth_service.dart';
 import 'login_screen.dart';
 
@@ -24,7 +25,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   File? profileImage;
   final ImagePicker picker = ImagePicker();
 
-  static const mainGreen = Color(0xFF0B4B3F);
+  static const mainGreen = AppColors.primaryGreen;
   static const sponsorBlue = Color(0xFF1E88E5);
 
   Future pickImage() async {

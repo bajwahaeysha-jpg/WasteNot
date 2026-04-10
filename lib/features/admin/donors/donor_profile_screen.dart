@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:wastenot/features/admin/donors/services/admin_donor_management_service.dart';
+import 'package:wastenot/services/user_account_lifecycle_service.dart';
 
 import 'send_notification_screen.dart';
 import 'suspend_donor_screen.dart';
@@ -13,7 +14,7 @@ class DonorProfileScreen extends StatelessWidget {
 
   final String donorId;
 
-  static const Color primary = Color(0xFF0F4C45);
+  static const Color primary = Color(0xFF0B4B3F);
 
   @override
   Widget build(BuildContext context) {
@@ -222,7 +223,7 @@ class DonorProfileScreen extends StatelessWidget {
                     ListTile(
                       leading: Icon(
                         donor.isSuspended ? Icons.check_circle : Icons.block,
-                        color: donor.isSuspended ? Colors.green : Colors.red,
+                        color: donor.isSuspended ? const Color(0xFF0B4B3F) : Colors.red,
                       ),
                       title: Text(
                         donor.isSuspended
@@ -230,7 +231,7 @@ class DonorProfileScreen extends StatelessWidget {
                             : "Suspend Donor",
                         style: TextStyle(
                           color:
-                              donor.isSuspended ? Colors.green : Colors.red,
+                              donor.isSuspended ? const Color(0xFF0B4B3F) : Colors.red,
                         ),
                       ),
                       onTap: () async {
@@ -259,6 +260,21 @@ class DonorProfileScreen extends StatelessWidget {
                           ),
                         );
                       },
+                    ),
+                    ListTile(
+                      leading: const Icon(
+                        Icons.delete_forever,
+                        color: Colors.red,
+                      ),
+                      title: const Text(
+                        "Delete Account",
+                        style: TextStyle(color: Colors.red),
+                      ),
+                      onTap: () => _confirmDeleteDonor(
+                        context,
+                        service,
+                        donor,
+                      ),
                     ),
                     const SizedBox(height: 20),
                   ],
@@ -341,6 +357,83 @@ class DonorProfileScreen extends StatelessWidget {
       const SnackBar(
         content: Text("Unable to open dialer"),
       ),
+    );
+  }
+
+  Future<void> _confirmDeleteDonor(
+    BuildContext context,
+    AdminDonorManagementService service,
+    AdminManagedDonor donor,
+  ) async {
+    final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Delete donor account'),
+            content: const Text(
+              'This deletes the donor auth account and profile only. Donations and past records will remain.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                onPressed: () => Navigator.pop(dialogContext, true),
+                child: const Text('Delete'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!confirmed || !context.mounted) {
+      return;
+    }
+
+    final messenger = ScaffoldMessenger.of(context);
+    _showBlockingLoader(context);
+    try {
+      await service.deleteDonorAccount(
+        donorId: donor.id,
+        donorName: donor.name,
+      );
+
+      if (!context.mounted) {
+        return;
+      }
+
+      Navigator.of(context, rootNavigator: true).pop();
+      Navigator.of(context).pop();
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Donor account deleted successfully')),
+      );
+    } on UserAccountLifecycleFailure catch (error) {
+      if (!context.mounted) {
+        return;
+      }
+
+      Navigator.of(context, rootNavigator: true).pop();
+      messenger.showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+    } catch (_) {
+      if (!context.mounted) {
+        return;
+      }
+
+      Navigator.of(context, rootNavigator: true).pop();
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Failed to delete donor account')),
+      );
+    }
+  }
+
+  void _showBlockingLoader(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
     );
   }
 }

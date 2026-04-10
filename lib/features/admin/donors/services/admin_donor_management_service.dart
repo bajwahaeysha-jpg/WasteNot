@@ -5,6 +5,7 @@ import 'package:wastenot/core/utils/meal_parser.dart';
 import 'package:wastenot/models/app_user_model.dart';
 import 'package:wastenot/services/notification_service.dart';
 import 'package:wastenot/services/session_service.dart';
+import 'package:wastenot/services/user_account_lifecycle_service.dart';
 
 enum DonorStatusFilter { all, active, suspended }
 
@@ -73,11 +74,16 @@ class AdminActivityLogEntry {
 }
 
 class AdminDonorManagementService {
-  AdminDonorManagementService({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+  AdminDonorManagementService({
+    FirebaseFirestore? firestore,
+    UserAccountLifecycleService? userAccountLifecycleService,
+  })  : _firestore = firestore ?? FirebaseFirestore.instance,
+        _userAccountLifecycleService =
+            userAccountLifecycleService ?? UserAccountLifecycleService();
 
   final FirebaseFirestore _firestore;
   final NotificationService _notificationService = NotificationService();
+  final UserAccountLifecycleService _userAccountLifecycleService;
 
   CollectionReference<Map<String, dynamic>> get _users =>
       _firestore.collection('users');
@@ -345,6 +351,28 @@ class AdminDonorManagementService {
     });
 
     await batch.commit();
+  }
+
+  Future<void> deleteDonorAccount({
+    required String donorId,
+    required String donorName,
+  }) async {
+    final admin = SessionService.user;
+    await _userAccountLifecycleService.adminDeleteUserAccount(
+      uid: donorId,
+      role: 'donor',
+    );
+
+    await _adminActivityLogs.doc().set({
+      'actionType': 'admin_deleted_donor',
+      'targetUserId': donorId,
+      'receiverName': donorName,
+      'title': 'Donor Deleted',
+      'message': 'Admin permanently deleted the donor account.',
+      'createdAt': FieldValue.serverTimestamp(),
+      'adminId': admin?.uid ?? 'admin',
+      'adminName': admin?.displayName ?? 'System Admin',
+    });
   }
 
   Future<void> sendNotificationToDonor({

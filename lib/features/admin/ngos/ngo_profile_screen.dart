@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:wastenot/features/admin/ngos/services/admin_ngo_management_service.dart';
+import 'package:wastenot/services/user_account_lifecycle_service.dart';
 
 import 'suspend_ngo_screen.dart';
 
@@ -12,7 +13,7 @@ class NGOProfileScreen extends StatelessWidget {
 
   final String ngoId;
 
-  static const primary = Color(0xFF0F4C45);
+  static const primary = Color(0xFF0B4B3F);
 
   @override
   Widget build(BuildContext context) {
@@ -189,12 +190,12 @@ class NGOProfileScreen extends StatelessWidget {
                     ListTile(
                       leading: Icon(
                         ngo.isSuspended ? Icons.check_circle : Icons.block,
-                        color: ngo.isSuspended ? Colors.green : Colors.red,
+                        color: ngo.isSuspended ? const Color(0xFF0B4B3F) : Colors.red,
                       ),
                       title: Text(
                         ngo.isSuspended ? "Unsuspend NGO" : "Suspend NGO",
                         style: TextStyle(
-                          color: ngo.isSuspended ? Colors.green : Colors.red,
+                          color: ngo.isSuspended ? const Color(0xFF0B4B3F) : Colors.red,
                         ),
                       ),
                       onTap: () async {
@@ -220,6 +221,17 @@ class NGOProfileScreen extends StatelessWidget {
                           ),
                         );
                       },
+                    ),
+                    ListTile(
+                      leading: const Icon(
+                        Icons.delete_forever,
+                        color: Colors.red,
+                      ),
+                      title: const Text(
+                        "Delete Account",
+                        style: TextStyle(color: Colors.red),
+                      ),
+                      onTap: () => _confirmDeleteNgo(context, service, ngo),
                     ),
                     const SizedBox(height: 20),
                   ],
@@ -367,6 +379,83 @@ class NGOProfileScreen extends StatelessWidget {
       const SnackBar(
         content: Text("Unable to open dialer"),
       ),
+    );
+  }
+
+  Future<void> _confirmDeleteNgo(
+    BuildContext context,
+    AdminNgoManagementService service,
+    AdminManagedNgo ngo,
+  ) async {
+    final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Delete NGO account'),
+            content: const Text(
+              'This deletes the NGO auth account and profile only. Donations and historical records will remain.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                onPressed: () => Navigator.pop(dialogContext, true),
+                child: const Text('Delete'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!confirmed || !context.mounted) {
+      return;
+    }
+
+    final messenger = ScaffoldMessenger.of(context);
+    _showBlockingLoader(context);
+    try {
+      await service.deleteNgoAccount(
+        ngoId: ngo.id,
+        ngoName: ngo.name,
+      );
+
+      if (!context.mounted) {
+        return;
+      }
+
+      Navigator.of(context, rootNavigator: true).pop();
+      Navigator.of(context).pop();
+      messenger.showSnackBar(
+        const SnackBar(content: Text('NGO account deleted successfully')),
+      );
+    } on UserAccountLifecycleFailure catch (error) {
+      if (!context.mounted) {
+        return;
+      }
+
+      Navigator.of(context, rootNavigator: true).pop();
+      messenger.showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+    } catch (_) {
+      if (!context.mounted) {
+        return;
+      }
+
+      Navigator.of(context, rootNavigator: true).pop();
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Failed to delete NGO account')),
+      );
+    }
+  }
+
+  void _showBlockingLoader(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
     );
   }
 }

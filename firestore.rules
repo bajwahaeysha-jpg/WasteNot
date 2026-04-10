@@ -10,6 +10,20 @@ service cloud.firestore {
           request.auth.token.email == 'wastenotapplication@gmail.com';
     }
 
+    function currentUserDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function isSuspendedSelf() {
+      return signedIn() &&
+          currentUserDoc().exists() &&
+          currentUserDoc().data.isSuspended == true;
+    }
+
+    function isActiveUser() {
+      return signedIn() && !isSuspendedSelf();
+    }
+
     function isOwner(uid) {
       return signedIn() && request.auth.uid == uid;
     }
@@ -22,35 +36,37 @@ service cloud.firestore {
     }
 
     match /users/{uid} {
-      allow read, update, delete: if isOwner(uid) || isAdmin();
+      allow read: if isOwner(uid) || isAdmin();
       allow create: if isOwner(uid) || isAdmin();
+      allow update, delete: if isAdmin() || (isOwner(uid) && !isSuspendedSelf());
 
       match /fcm_tokens/{tokenId} {
-        allow read, create, update, delete: if isOwner(uid) || isAdmin();
+        allow read: if isOwner(uid) || isAdmin();
+        allow create, update, delete: if isAdmin() || (isOwner(uid) && !isSuspendedSelf());
       }
     }
 
     match /ngo_requests/{requestId} {
       allow create: if true;
-      allow read: if isAdmin() || isNgoRequestOwner();
-      allow update: if isAdmin() || isNgoRequestOwner();
+      allow read: if isAdmin() || (isActiveUser() && isNgoRequestOwner());
+      allow update: if isAdmin() || (isActiveUser() && isNgoRequestOwner());
       allow delete: if isAdmin();
     }
 
     match /feedback/{feedbackId} {
       allow read: if true;
-      allow create: if signedIn();
+      allow create: if isActiveUser() || isAdmin();
     }
 
     match /notifications/{notificationId} {
-      allow read: if signedIn() && (
+      allow read: if (isActiveUser() || isAdmin()) && (
           resource.data.receiverId == request.auth.uid ||
           resource.data.uid == request.auth.uid ||
           resource.data.userId == request.auth.uid ||
           isAdmin()
       );
-      allow create: if signedIn();
-      allow update: if signedIn() && (
+      allow create: if isActiveUser() || isAdmin();
+      allow update: if (isActiveUser() || isAdmin()) && (
           resource.data.receiverId == request.auth.uid ||
           resource.data.uid == request.auth.uid ||
           resource.data.userId == request.auth.uid ||
@@ -60,20 +76,21 @@ service cloud.firestore {
     }
 
     match /goals/{goalId} {
-      allow read: if signedIn() &&
+      allow read: if (isActiveUser() || isAdmin()) &&
           (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if signedIn() &&
+      allow create: if isActiveUser() &&
           request.resource.data.userId == request.auth.uid;
       allow update, delete: if false;
     }
 
     match /conversations/{conversationId} {
-      allow read, create, update: if signedIn() &&
+      allow read, create, update: if (isActiveUser() || isAdmin()) && (
           request.auth.uid in resource.data.participants ||
-          request.auth.uid in request.resource.data.participants;
+          request.auth.uid in request.resource.data.participants
+      );
 
       match /messages/{messageId} {
-        allow read, create, update, delete: if signedIn() &&
+        allow read, create, update, delete: if (isActiveUser() || isAdmin()) &&
             get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants.hasAny([request.auth.uid]);
       }
     }

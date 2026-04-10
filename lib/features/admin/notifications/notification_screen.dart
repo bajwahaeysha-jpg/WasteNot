@@ -8,8 +8,8 @@ import 'package:wastenot/models/admin_registration_notification_model.dart';
 import 'package:wastenot/services/admin_registration_notification_service.dart';
 import '../../../core/constants/app_colors.dart';
 
-/// 🔑 SHARED COLOR (FIX)
-const Color mainGreen = Color(0xFF0F5F54);
+/// ðŸ”‘ SHARED COLOR (FIX)
+const Color mainGreen = Color(0xFF0B4B3F);
 
 class NotificationScreen extends StatelessWidget {
   const NotificationScreen({super.key});
@@ -21,7 +21,7 @@ class NotificationScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
 
-      /// 🟢 APP BAR
+      /// ðŸŸ¢ APP BAR
       appBar: AppBar(
         backgroundColor: mainGreen,
         elevation: 0,
@@ -36,7 +36,7 @@ class NotificationScreen extends StatelessWidget {
         ),
       ),
 
-      /// 🔔 NOTIFICATIONS LIST
+      /// ðŸ”” NOTIFICATIONS LIST
       body: StreamBuilder<List<AdminRegistrationNotification>>(
         stream: service.streamAdminRegistrationNotifications(),
         builder: (context, snapshot) {
@@ -180,7 +180,7 @@ class NotificationScreen extends StatelessWidget {
   }
 }
 
-/// ───────────── NOTIFICATION TILE ─────────────
+/// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ NOTIFICATION TILE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _NotificationTile extends StatelessWidget {
   final IconData icon;
@@ -211,7 +211,7 @@ class _NotificationTile extends StatelessWidget {
       ),
       child: Row(
         children: [
-          /// 🔔 ICON
+          /// ðŸ”” ICON
           Container(
             width: 44,
             height: 44,
@@ -227,7 +227,7 @@ class _NotificationTile extends StatelessWidget {
 
           const SizedBox(width: 12),
 
-          /// 📝 TEXT
+          /// ðŸ“ TEXT
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

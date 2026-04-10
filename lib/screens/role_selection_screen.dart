@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:wastenot/core/constants/app_colors.dart';
 import 'package:wastenot/screens/donor_signup_screen.dart';
 import 'package:wastenot/screens/ngo_signup_screen.dart';
 
@@ -12,7 +13,7 @@ class RoleSelectionScreen extends StatefulWidget {
 }
 
 class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
-  static const Color mainGreen = Color(0xFF0B4B3F);
+  static const Color mainGreen = AppColors.primaryGreen;
   String? selectedRole;
 
   @override

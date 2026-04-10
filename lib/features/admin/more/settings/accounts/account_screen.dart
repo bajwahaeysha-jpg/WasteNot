@@ -12,7 +12,7 @@ class AccountScreen extends StatelessWidget {
 
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: const Color(0xFF0F4C45),
+        backgroundColor: const Color(0xFF0B4B3F),
         iconTheme: const IconThemeData(color: Colors.white),
         title: Row(
           children: const [

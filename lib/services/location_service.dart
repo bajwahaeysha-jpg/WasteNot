@@ -165,17 +165,62 @@ class LocationService {
   }
 
   String _buildAddress(Placemark place) {
-    final parts = <String>{
-      if ((place.name ?? '').trim().isNotEmpty) place.name!.trim(),
-      if ((place.street ?? '').trim().isNotEmpty) place.street!.trim(),
-      if ((place.subLocality ?? '').trim().isNotEmpty)
-        place.subLocality!.trim(),
-      if ((place.locality ?? '').trim().isNotEmpty) place.locality!.trim(),
-      if ((place.administrativeArea ?? '').trim().isNotEmpty)
-        place.administrativeArea!.trim(),
-      if ((place.country ?? '').trim().isNotEmpty) place.country!.trim(),
-    };
+    final parts = <String>[];
+
+    void addPart(String? value) {
+      final cleaned = _cleanAddressPart(value);
+      if (cleaned == null) {
+        return;
+      }
+      if (!parts.any((part) => part.toLowerCase() == cleaned.toLowerCase())) {
+        parts.add(cleaned);
+      }
+    }
+
+    final streetParts = <String>[
+      if (_cleanAddressPart(place.subThoroughfare) != null)
+        _cleanAddressPart(place.subThoroughfare)!,
+      if (_cleanAddressPart(place.thoroughfare) != null)
+        _cleanAddressPart(place.thoroughfare)!,
+    ];
+
+    if (streetParts.isNotEmpty) {
+      addPart(streetParts.join(' '));
+    } else {
+      addPart(place.street);
+    }
+
+    addPart(place.subLocality);
+    addPart(place.locality);
+    addPart(place.subAdministrativeArea);
+    addPart(place.administrativeArea);
+
+    if (parts.length < 3) {
+      addPart(place.country);
+    }
 
     return parts.join(', ');
+  }
+
+  String? _cleanAddressPart(String? value) {
+    final trimmed = value?.trim();
+    if (trimmed == null ||
+        trimmed.isEmpty ||
+        _looksLikePlusCode(trimmed) ||
+        _looksLikeCoordinatePair(trimmed)) {
+      return null;
+    }
+    return trimmed;
+  }
+
+  bool _looksLikePlusCode(String value) {
+    final normalized = value.trim().toUpperCase();
+    return RegExp(r'^[A-Z0-9]{2,}\+[A-Z0-9]{2,}$').hasMatch(normalized);
+  }
+
+  bool _looksLikeCoordinatePair(String value) {
+    return RegExp(
+      r'^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$',
+    ).hasMatch(value.trim());
   }
 }

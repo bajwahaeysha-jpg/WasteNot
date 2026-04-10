@@ -9,7 +9,7 @@ import 'package:wastenot/services/session_service.dart';
 class YourDonationsScreen extends StatefulWidget {
   const YourDonationsScreen({super.key});
 
-  static const Color mainGreen = Color(0xFF0E5E53);
+  static const Color mainGreen = Color(0xFF0B4B3F);
 
   @override
   State<YourDonationsScreen> createState() => _YourDonationsScreenState();
@@ -215,7 +215,7 @@ class _InlineInfoBanner extends StatelessWidget {
       child: Text(
         message,
         style: const TextStyle(
-          color: Color(0xFF0E5E53),
+          color: Color(0xFF0B4B3F),
           fontSize: 13,
         ),
       ),

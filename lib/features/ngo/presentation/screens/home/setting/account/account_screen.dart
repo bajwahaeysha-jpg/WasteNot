@@ -13,7 +13,7 @@ class AccountScreen extends StatelessWidget {
       backgroundColor: Colors.white,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: const Color(0xFF0F4C45),
+        backgroundColor: const Color(0xFF0B4B3F),
         iconTheme: const IconThemeData(color: Colors.white),
         title: Row(
           children: const [
@@ -76,7 +76,7 @@ class AccountScreen extends StatelessWidget {
           builder: (dialogContext) => AlertDialog(
             title: const Text('Delete account'),
             content: const Text(
-              'This will delete your NGO profile and Firebase Authentication account.',
+              'This will delete only your auth account and NGO profile. Donations and historical activity will remain.',
             ),
             actions: [
               TextButton(
@@ -97,12 +97,14 @@ class AccountScreen extends StatelessWidget {
       return;
     }
 
+    _showBlockingLoader(context);
     try {
       await AccountService().deleteAccount();
       if (!context.mounted) {
         return;
       }
 
+      Navigator.of(context, rootNavigator: true).pop();
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => const WelcomeScreen()),
@@ -112,9 +114,18 @@ class AccountScreen extends StatelessWidget {
       if (!context.mounted) {
         return;
       }
+      Navigator.of(context, rootNavigator: true).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(error.message), backgroundColor: Colors.red),
       );
     }
+  }
+
+  void _showBlockingLoader(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
   }
 }

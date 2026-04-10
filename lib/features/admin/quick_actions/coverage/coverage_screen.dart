@@ -8,7 +8,7 @@ class CoverageScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final coverageData = [
       {"area": "Johar Town", "percent": 45.0, "color": Colors.blue},
-      {"area": "Cantt", "percent": 30.0, "color": Colors.green},
+      {"area": "Cantt", "percent": 30.0, "color": const Color(0xFF0B4B3F)},
       {"area": "Gulberg", "percent": 15.0, "color": Colors.orange},
       {"area": "DHA", "percent": 10.0, "color": Colors.red},
     ];
@@ -22,7 +22,7 @@ class CoverageScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F5),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F4C45),
+        backgroundColor: const Color(0xFF0B4B3F),
         title: const Text(
           "Coverage Analytics",
           style: TextStyle(color: Colors.white),

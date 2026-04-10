@@ -37,7 +37,7 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7F6),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F4C45),
+        backgroundColor: const Color(0xFF0B4B3F),
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
         titleSpacing: 16,
@@ -93,11 +93,11 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 13),
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? const Color(0xFF0F4C45)
+                              ? const Color(0xFF0B4B3F)
                               : Colors.white,
                           borderRadius: BorderRadius.circular(30),
                           border: Border.all(
-                            color: const Color(0xFF0F4C45),
+                            color: const Color(0xFF0B4B3F),
                             width: 1.3,
                           ),
                           boxShadow: [
@@ -117,7 +117,7 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
                             style: TextStyle(
                               color: isSelected
                                   ? Colors.white
-                                  : const Color(0xFF0F4C45),
+                                  : const Color(0xFF0B4B3F),
                               fontWeight: FontWeight.w600,
                               fontSize: 13.5,
                             ),
@@ -199,7 +199,7 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(18),
                         border: Border.all(
-                          color: const Color(0xFF0F4C45).withValues(alpha:0.06),
+                          color: const Color(0xFF0B4B3F).withValues(alpha:0.06),
                         ),
                         boxShadow: [
                           BoxShadow(
@@ -216,12 +216,12 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
                             height: 46,
                             width: 46,
                             decoration: BoxDecoration(
-                              color: const Color(0xFF0F4C45).withValues(alpha:0.10),
+                              color: const Color(0xFF0B4B3F).withValues(alpha:0.10),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
                               Icons.notifications_active_rounded,
-                              color: Color(0xFF0F4C45),
+                              color: Color(0xFF0B4B3F),
                               size: 22,
                             ),
                           ),
@@ -255,7 +255,7 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
                                     vertical: 6,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF0F4C45)
+                                    color: const Color(0xFF0B4B3F)
                                         .withValues(alpha: .08),
                                     borderRadius: BorderRadius.circular(20),
                                   ),
@@ -263,7 +263,7 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
                                     "Sent to: ${log.receiver}",
                                     style: const TextStyle(
                                       fontSize: 12,
-                                      color: Color(0xFF0F4C45),
+                                      color: Color(0xFF0B4B3F),
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),

@@ -41,7 +41,7 @@ class SettingsScreen extends StatelessWidget {
                   children: [
                     CircleAvatar(
                       radius: 30,
-                      backgroundColor: const Color(0xFF0F4C45),
+                      backgroundColor: const Color(0xFF0B4B3F),
                       backgroundImage: profileImageUrl != null &&
                               profileImageUrl.isNotEmpty
                           ? NetworkImage(profileImageUrl)
@@ -153,6 +153,6 @@ class SettingsScreen extends StatelessWidget {
       return;
     }
 
-    AppNavigationHandler.goToLogin(context);
+    AppNavigationHandler.goToWelcome(context);
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:wastenot/core/constants/app_colors.dart';
 import 'package:wastenot/models/app_user_model.dart';
 import 'package:wastenot/navigation/app_navigation_handler.dart';
 import 'package:wastenot/repositories/auth_repository.dart';
@@ -23,7 +24,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscure = true;
   bool _loading = false;
 
-  static const Color mainGreen = Color(0xFF0B4B3F);
+  static const Color mainGreen = AppColors.primaryGreen;
 
   @override
   void dispose() {

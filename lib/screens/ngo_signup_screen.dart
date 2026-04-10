@@ -32,7 +32,7 @@ class _NgoSignUpScreenState extends State<NgoSignUpScreen> {
   bool _obscurePassword = true;
   bool _loading = false;
 
-  static const primary = Color(0xFF0F4C45);
+  static const primary = Color(0xFF0B4B3F);
 
   @override
   void dispose() {

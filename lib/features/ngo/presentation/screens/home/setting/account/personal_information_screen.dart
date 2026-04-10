@@ -183,7 +183,7 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? Colors.red : const Color(0xFF0F4C45),
+        backgroundColor: isError ? Colors.red : const Color(0xFF0B4B3F),
       ),
     );
   }
@@ -221,7 +221,7 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
                 color: _isEditing
-                    ? const Color(0xFF0F4C45)
+                    ? const Color(0xFF0B4B3F)
                     : Colors.grey.shade300,
                 width: _isEditing ? 1.6 : 1,
               ),
@@ -229,7 +229,7 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(
-                color: Color(0xFF0F4C45),
+                color: Color(0xFF0B4B3F),
                 width: 1.8,
               ),
             ),
@@ -257,7 +257,7 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
         return Scaffold(
           backgroundColor: const Color(0xFFF5F7F6),
           appBar: AppBar(
-            backgroundColor: const Color(0xFF0F4C45),
+            backgroundColor: const Color(0xFF0B4B3F),
             iconTheme: const IconThemeData(color: Colors.white),
             title: const Text(
               'Personal Information',
@@ -302,7 +302,7 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
                             child: CircleAvatar(
                               radius: 50,
                               backgroundColor:
-                                  const Color(0xFF0F4C45).withValues(alpha: .15),
+                                  const Color(0xFF0B4B3F).withValues(alpha: .15),
                               backgroundImage: profileImage as ImageProvider?,
                               child: profileImage == null
                                   ? Text(
@@ -310,7 +310,7 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
                                       style: const TextStyle(
                                         fontSize: 26,
                                         fontWeight: FontWeight.bold,
-                                        color: Color(0xFF0F4C45),
+                                        color: Color(0xFF0B4B3F),
                                       ),
                                     )
                                   : null,
@@ -324,7 +324,7 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
                                 height: 28,
                                 width: 28,
                                 decoration: const BoxDecoration(
-                                  color: Color(0xFF0F4C45),
+                                  color: Color(0xFF0B4B3F),
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Icon(

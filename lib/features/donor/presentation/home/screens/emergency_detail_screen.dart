@@ -17,7 +17,7 @@ class EmergencyDetailScreen extends StatefulWidget {
 
   final ConcernModel concern;
 
-  static const Color mainGreen = Color(0xFF0E5E53);
+  static const Color mainGreen = Color(0xFF0B4B3F);
 
   @override
   State<EmergencyDetailScreen> createState() => _EmergencyDetailScreenState();

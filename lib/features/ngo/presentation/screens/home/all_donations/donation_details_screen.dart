@@ -29,7 +29,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen> {
         _donationService.getDonationById(widget.donation.donationId);
   }
 
-  /// 📸 OPEN IMAGE
+  /// ðŸ“¸ OPEN IMAGE
   void _openImage(String url) {
     showDialog(
       context: context,
@@ -51,7 +51,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen> {
     );
   }
 
-  /// ✅ ACCEPT DONATION
+  /// âœ… ACCEPT DONATION
   Future<void> _accept(DonationModel donation) async {
     setState(() => _isAccepting = true);
 
@@ -63,7 +63,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen> {
 
       if (!mounted) return;
 
-      _showSuccessPopup(); // ✅ popup
+      _showSuccessPopup(); // âœ… popup
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to accept donation')),
@@ -75,7 +75,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen> {
     }
   }
 
-  /// ✅ SUCCESS POPUP
+  /// âœ… SUCCESS POPUP
   void _showSuccessPopup() {
     showModalBottomSheet(
       context: context,
@@ -108,7 +108,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen> {
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: const BoxDecoration(
-                  color: Color(0xFF0F4C45),
+                  color: Color(0xFF0B4B3F),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.check,
@@ -145,7 +145,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen> {
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor:
-                        const Color(0xFF0F4C45),
+                        const Color(0xFF0B4B3F),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius:
@@ -167,7 +167,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen> {
     );
   }
 
-  /// 📏 ADDRESS SHORTENER
+  /// ðŸ“ ADDRESS SHORTENER
   String _truncate(String text) {
     if (text.length > 40) return "${text.substring(0, 40)}...";
     return text;
@@ -178,9 +178,9 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF2F2F2),
 
-      /// 🔥 APPBAR
+      /// ðŸ”¥ APPBAR
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F4C45),
+        backgroundColor: const Color(0xFF0B4B3F),
         iconTheme: const IconThemeData(color: Colors.white),
         title: const Text(
           "Donation Details",
@@ -218,7 +218,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen> {
                     crossAxisAlignment:
                         CrossAxisAlignment.start,
                     children: [
-                      /// 📸 IMAGES
+                      /// ðŸ“¸ IMAGES
                       const Text("Pictures",
                           style: TextStyle(
                               fontWeight: FontWeight.bold,
@@ -252,7 +252,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen> {
 
                       const SizedBox(height: 22),
 
-                      /// 📍 LOCATION
+                      /// ðŸ“ LOCATION
                       const Text("Location",
                           style: TextStyle(
                               fontWeight: FontWeight.bold,
@@ -356,7 +356,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen> {
                 ),
               ),
 
-              /// 🔻 BUTTONS
+              /// ðŸ”» BUTTONS
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
@@ -380,7 +380,7 @@ class _DonationDetailsScreenState extends State<DonationDetailsScreen> {
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           backgroundColor:
-                              const Color(0xFF0F4C45),
+                              const Color(0xFF0B4B3F),
                           foregroundColor: Colors.white,
                           padding:
                               const EdgeInsets.symmetric(

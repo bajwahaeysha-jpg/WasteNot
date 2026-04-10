@@ -1,16 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:wastenot/services/session_service.dart';
+import 'package:wastenot/services/user_account_lifecycle_service.dart';
 
 class AccountService {
   AccountService({
     FirebaseAuth? auth,
-    FirebaseFirestore? firestore,
+    UserAccountLifecycleService? userAccountLifecycleService,
   })  : _auth = auth ?? FirebaseAuth.instance,
-        _firestore = firestore ?? FirebaseFirestore.instance;
+        _userAccountLifecycleService =
+            userAccountLifecycleService ?? UserAccountLifecycleService();
 
   final FirebaseAuth _auth;
-  final FirebaseFirestore _firestore;
+  final UserAccountLifecycleService _userAccountLifecycleService;
 
   Future<void> changePassword({
     required String currentPassword,
@@ -59,68 +61,16 @@ class AccountService {
         );
       }
 
-      final uid = user.uid;
-      await _deleteRelatedData(uid);
-      await _firestore.collection('users').doc(uid).delete();
-      await user.delete();
+      await _userAccountLifecycleService.deleteOwnAccount();
       SessionService.clear();
-    } on FirebaseAuthException catch (error) {
-      throw AccountFailure(_mapFirebaseAuthError(error));
+    } on UserAccountLifecycleFailure catch (error) {
+      throw AccountFailure(error.message);
     } on FirebaseException catch (error) {
       throw AccountFailure(_mapFirebaseError(error));
     } catch (_) {
       throw const AccountFailure(
         'Failed to delete account. Please try again.',
       );
-    }
-  }
-
-  Future<void> _deleteRelatedData(String uid) async {
-    await Future.wait([
-      _safeDeleteWhere(collection: 'donations', field: 'donorId', uid: uid),
-      _safeDeleteWhere(
-        collection: 'donations',
-        field: 'acceptedByNgoId',
-        uid: uid,
-      ),
-      _safeDeleteWhere(collection: 'feedback', field: 'donorId', uid: uid),
-      _safeDeleteWhere(collection: 'feedback', field: 'ngoId', uid: uid),
-      _safeDeleteWhere(collection: 'notifications', field: 'uid', uid: uid),
-      _safeDeleteWhere(collection: 'concerns', field: 'ngoId', uid: uid),
-    ]);
-  }
-
-  Future<void> _safeDeleteWhere({
-    required String collection,
-    required String field,
-    required String uid,
-  }) async {
-    try {
-      await _deleteWhere(collection: collection, field: field, uid: uid);
-    } catch (_) {}
-  }
-
-  Future<void> _deleteWhere({
-    required String collection,
-    required String field,
-    required String uid,
-  }) async {
-    final query = _firestore
-        .collection(collection)
-        .where(field, isEqualTo: uid)
-        .limit(200);
-
-    while (true) {
-      final snapshot = await query.get();
-      if (snapshot.docs.isEmpty) {
-        return;
-      }
-
-      final batch = _firestore.batch();
-      for (final doc in snapshot.docs) {
-        batch.delete(doc.reference);
-      }
-      await batch.commit();
     }
   }
 

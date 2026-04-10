@@ -17,7 +17,7 @@ class ActiveScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F6),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F4C45),
+        backgroundColor: const Color(0xFF0B4B3F),
         title: const Text(
           "Active Operations",
           style: TextStyle(color: Colors.white),
@@ -156,7 +156,7 @@ class DonationDetailsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6F7),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF145A50),
+        backgroundColor: const Color(0xFF0B4B3F),
         title: const Text(
           "Donation Details",
           style: TextStyle(color: Colors.white),

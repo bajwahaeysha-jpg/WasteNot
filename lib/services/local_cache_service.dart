@@ -325,6 +325,7 @@ class LocalCacheService {
       'acceptedAt': donation.acceptedAt?.toIso8601String(),
       'completedAt': donation.completedAt?.toIso8601String(),
       'expiryAt': donation.expiryAt?.toIso8601String(),
+      'expired': donation.expired,
       'rejectedByNgoIds': donation.rejectedByNgoIds,
     };
   }
@@ -358,6 +359,7 @@ class LocalCacheService {
       acceptedAt: DateTime.tryParse(_asString(json['acceptedAt']) ?? ''),
       completedAt: DateTime.tryParse(_asString(json['completedAt']) ?? ''),
       expiryAt: DateTime.tryParse(_asString(json['expiryAt']) ?? ''),
+      expired: json['expired'] as bool? ?? false,
       rejectedByNgoIds: _stringList(json['rejectedByNgoIds']),
     );
   }

@@ -5,7 +5,7 @@ import 'package:wastenot/features/admin/analytics/services/admin_analytics_servi
 class AnalyticsScreen extends StatelessWidget {
   const AnalyticsScreen({super.key});
 
-  static const Color _primary = Color(0xFF0F4C45);
+  static const Color _primary = Color(0xFF0B4B3F);
   static const Color _donorColor = Color(0xFF2E8B57);
   static const Color _ngoColor = Color(0xFF2F6BFF);
 
@@ -42,7 +42,7 @@ class AnalyticsScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
 
-                /// 🔹 PERFORMANCE
+                /// ðŸ”¹ PERFORMANCE
                 const Text(
                   'Performance',
                   style: TextStyle(
@@ -52,7 +52,7 @@ class AnalyticsScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 14),
 
-                /// ✅ SAME SIZE CARDS
+                /// âœ… SAME SIZE CARDS
                 Row(
                   children: analytics.metrics.map((metric) {
                     return Expanded(
@@ -66,7 +66,7 @@ class AnalyticsScreen extends StatelessWidget {
 
                 const SizedBox(height: 20),
 
-                /// 🔹 ACTIVITY
+                /// ðŸ”¹ ACTIVITY
                 const Text(
                   'Activity',
                   style: TextStyle(
@@ -87,7 +87,7 @@ class AnalyticsScreen extends StatelessWidget {
 
                 const SizedBox(height: 12),
 
-                /// 🔹 GRAPH CARD
+                /// ðŸ”¹ GRAPH CARD
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -208,7 +208,7 @@ class _WeeklyGrowthChart extends StatelessWidget {
       },
     );
 
-    /// 🔥 SMART 3,6,9 SCALING
+    /// ðŸ”¥ SMART 3,6,9 SCALING
     double maxY;
     double interval = 3;
 

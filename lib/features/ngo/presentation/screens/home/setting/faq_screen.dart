@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class FaqScreen extends StatelessWidget {
   const FaqScreen({super.key});
 
-  static const Color primary = Color(0xFF0F4C45);
+  static const Color primary = Color(0xFF0B4B3F);
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +20,7 @@ class FaqScreen extends StatelessWidget {
             decoration: const BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  Color(0xFF0F4C45),
+                  Color(0xFF0B4B3F),
                   Color(0xFF2E7D72),
                 ],
                 begin: Alignment.topLeft,

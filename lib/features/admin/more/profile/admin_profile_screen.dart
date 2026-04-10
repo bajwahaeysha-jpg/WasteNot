@@ -25,7 +25,7 @@ class _AdminProfileScreenState extends State<AdminProfileScreen> {
 
   File? selectedImage;
 
-  static const Color mainGreen = Color(0xFF0F5F54);
+  static const Color mainGreen = Color(0xFF0B4B3F);
 
   @override
   void initState() {

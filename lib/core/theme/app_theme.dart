@@ -4,10 +4,10 @@ import '../constants/app_colors.dart';
 class AppTheme {
   static ThemeData lightTheme = ThemeData(
     scaffoldBackgroundColor: const Color(0xFFF7F7F7),
-    primaryColor: AppColors.primary,
+    primaryColor: AppColors.primaryGreen,
     fontFamily: 'Roboto',
     appBarTheme: const AppBarTheme(
-      backgroundColor: AppColors.primary,
+      backgroundColor: AppColors.primaryGreen,
       elevation: 0,
       centerTitle: true,
     ),

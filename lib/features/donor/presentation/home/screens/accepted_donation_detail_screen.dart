@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:wastenot/services/donation_services.dart';
 
-const Color mainGreen = Color(0xFF0E5E53);
+const Color mainGreen = Color(0xFF0B4B3F);
 
 class AcceptedDonationDetailScreen extends StatefulWidget {
   const AcceptedDonationDetailScreen({super.key, required this.donation});
@@ -84,7 +84,7 @@ Widget build(BuildContext context) {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
 
-                // 🔥 IMAGE + STATUS
+                // ðŸ”¥ IMAGE + STATUS
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -137,7 +137,7 @@ Widget build(BuildContext context) {
 
                 const SizedBox(height: 20),
 
-                // 🔥 MERGED CARD
+                // ðŸ”¥ MERGED CARD
                 _sectionCard(
                   child: Column(
                     children: [
@@ -164,7 +164,7 @@ Widget build(BuildContext context) {
 
                 const SizedBox(height: 16),
 
-                // 🔥 DETAILS
+                // ðŸ”¥ DETAILS
                 const Text(
                   "Details",
                   style: TextStyle(
@@ -191,7 +191,7 @@ Widget build(BuildContext context) {
           ),
         ),
 
-        // 🔥 BUTTON SAME POSITION
+        // ðŸ”¥ BUTTON SAME POSITION
         if (canComplete)
           Padding(
             padding: const EdgeInsets.all(14),
@@ -233,7 +233,7 @@ Widget build(BuildContext context) {
 }
 
 
-// 🔥 CARD
+// ðŸ”¥ CARD
 Widget _sectionCard({required Widget child}) {
   return Container(
     padding: const EdgeInsets.all(14),
@@ -247,7 +247,7 @@ Widget _sectionCard({required Widget child}) {
 }
 
 
-// 🔥 ROW
+// ðŸ”¥ ROW
 Widget _row(String title, String value) {
   return Padding(
     padding: const EdgeInsets.symmetric(vertical: 6),
@@ -276,7 +276,7 @@ Widget _row(String title, String value) {
 }
 
 
-// 🔥 STATUS CHIP
+// ðŸ”¥ STATUS CHIP
 Widget _statusChip(String status) {
   return Container(
     padding:

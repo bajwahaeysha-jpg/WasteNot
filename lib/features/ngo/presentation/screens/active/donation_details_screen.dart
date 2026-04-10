@@ -29,7 +29,7 @@ class _DonationDetailsScreenState
         _donationService.getDonationById(widget.donation.donationId);
   }
 
-  /// 📸 IMAGE VIEW
+  /// ðŸ“¸ IMAGE VIEW
   void _openImage(String url) {
     showDialog(
       context: context,
@@ -61,9 +61,9 @@ class _DonationDetailsScreenState
     return Scaffold(
       backgroundColor: const Color(0xFFF2F2F2),
 
-      /// 🔥 APPBAR
+      /// ðŸ”¥ APPBAR
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F4C45),
+        backgroundColor: const Color(0xFF0B4B3F),
         iconTheme: const IconThemeData(color: Colors.white),
         title: const Text(
           "Donation Details",
@@ -100,7 +100,7 @@ class _DonationDetailsScreenState
                     crossAxisAlignment:
                         CrossAxisAlignment.start,
                     children: [
-                      /// 📸 IMAGES
+                      /// ðŸ“¸ IMAGES
                       const Text("Pictures",
                           style: TextStyle(
                               fontWeight: FontWeight.bold,
@@ -134,7 +134,7 @@ class _DonationDetailsScreenState
 
                       const SizedBox(height: 22),
 
-                      /// 📍 LOCATION
+                      /// ðŸ“ LOCATION
                       const Text("Location",
                           style: TextStyle(
                               fontWeight: FontWeight.bold,
@@ -203,14 +203,14 @@ class _DonationDetailsScreenState
 
                       const Divider(height: 25),
 
-                      /// 🔥 INFO (CLEANED)
+                      /// ðŸ”¥ INFO (CLEANED)
                       _info("Donor", donation.donorName),
                       _info("Servings",
                           "${donation.quantity} Persons"),
                       _info("Contact",
                           donation.donorPhone ?? "-"),
 
-                      /// ✅ STATUS (GREEN)
+                      /// âœ… STATUS (GREEN)
                       Padding(
                         padding:
                             const EdgeInsets.symmetric(vertical: 6),
@@ -223,7 +223,7 @@ class _DonationDetailsScreenState
                             Text(
                               "Accepted",
                               style: TextStyle(
-                                color: Color(0xFF0F4C45),
+                                color: Color(0xFF0B4B3F),
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -231,7 +231,7 @@ class _DonationDetailsScreenState
                         ),
                       ),
 
-                      /// ✅ ACCEPTED TIME
+                      /// âœ… ACCEPTED TIME
                       if (donation.acceptedAt != null)
                         _info(
                           "Accepted At",
@@ -266,8 +266,8 @@ class _DonationDetailsScreenState
                 ),
               ),
 
-              /// ❌ NO ACCEPT BUTTON
-              /// ✅ ONLY RETURN BUTTON
+              /// âŒ NO ACCEPT BUTTON
+              /// âœ… ONLY RETURN BUTTON
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: ElevatedButton(

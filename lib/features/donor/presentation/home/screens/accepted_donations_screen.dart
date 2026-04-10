@@ -4,7 +4,7 @@ import 'package:wastenot/features/donor/presentation/home/screens/accepted_donat
 import 'package:wastenot/services/donation_services.dart';
 import 'package:wastenot/services/session_service.dart';
 
-const Color mainGreen = Color(0xFF0E5E53);
+const Color mainGreen = Color(0xFF0B4B3F);
 
 class AcceptedDonationsScreen extends StatelessWidget {
   const AcceptedDonationsScreen({super.key});

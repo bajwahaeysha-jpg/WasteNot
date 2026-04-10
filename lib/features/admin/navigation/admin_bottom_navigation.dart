@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:wastenot/screens/login_screen.dart';
+import 'package:wastenot/screens/welcome_screen.dart';
 
 import '../analytics/analytics_screen.dart';
 import '../home/admin_home_screen.dart';
@@ -37,14 +37,14 @@ class _AdminBottomNavigationState extends State<AdminBottomNavigation> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      // ✅ Only allow system back when already on Home
+      // âœ… Only allow system back when already on Home
       canPop: false,
 
-      // ✅ NEW API (Flutter 3.22+)
+      // âœ… NEW API (Flutter 3.22+)
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
 
-        // 🔁 If user is NOT on Home → go to Home
+        // ðŸ” If user is NOT on Home â†’ go to Home
         if (_currentIndex != 0) {
           setState(() => _currentIndex = 0);
           return;
@@ -52,7 +52,7 @@ class _AdminBottomNavigationState extends State<AdminBottomNavigation> {
 
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          MaterialPageRoute(builder: (_) => const WelcomeScreen()),
           (route) => false,
         );
       },
@@ -62,7 +62,7 @@ class _AdminBottomNavigationState extends State<AdminBottomNavigation> {
 
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: _currentIndex,
-          selectedItemColor: const Color(0xFF0F5F54),
+          selectedItemColor: const Color(0xFF0B4B3F),
           unselectedItemColor: Colors.grey,
           type: BottomNavigationBarType.fixed,
           items: const [
@@ -84,7 +84,7 @@ class _AdminBottomNavigationState extends State<AdminBottomNavigation> {
             ),
           ],
           onTap: (index) {
-            // 🔹 MORE → bottom sheet
+            // ðŸ”¹ MORE â†’ bottom sheet
             if (index == 3) {
               showModalBottomSheet(
                 context: context,

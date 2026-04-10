@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class AllMealsScreen extends StatelessWidget {
   const AllMealsScreen({super.key});
 
-  static const Color mainGreen =  Color(0xFF0F4C45);
+  static const Color mainGreen =  Color(0xFF0B4B3F);
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +24,7 @@ class AllMealsScreen extends StatelessWidget {
       body: ListView(
         children: [
 
-          /// ───── HERO IMAGE ─────
+          /// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ HERO IMAGE Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
           Container(
             height: 200,
             margin: const EdgeInsets.all(16),
@@ -37,7 +37,7 @@ class AllMealsScreen extends StatelessWidget {
             ),
           ),
 
-          /// ───── MAIN TITLE ─────
+          /// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ MAIN TITLE Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16),
             child: Text(
@@ -64,7 +64,7 @@ class AllMealsScreen extends StatelessWidget {
 
           const SizedBox(height: 20),
 
-          /// ───── TOTAL STATS ─────
+          /// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ TOTAL STATS Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Container(
@@ -108,7 +108,7 @@ class AllMealsScreen extends StatelessWidget {
 
           const SizedBox(height: 26),
 
-          /// ───── FOOD DISTRIBUTION ─────
+          /// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ FOOD DISTRIBUTION Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Container(
@@ -138,7 +138,7 @@ class AllMealsScreen extends StatelessWidget {
 
                   const SizedBox(height: 16),
 
-                  /// ─── SINGLE SEGMENT BAR ───
+                  /// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ SINGLE SEGMENT BAR Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
                   ClipRRect(
                     borderRadius: BorderRadius.circular(10),
                     child: Row(
@@ -147,7 +147,7 @@ class AllMealsScreen extends StatelessWidget {
                           flex: 80,
                           child: Container(
                             height: 12,
-                            color: Colors.green,
+                            color: const Color(0xFF0B4B3F),
                           ),
                         ),
                         Expanded(
@@ -163,11 +163,11 @@ class AllMealsScreen extends StatelessWidget {
 
                   const SizedBox(height: 14),
 
-                  /// ─── LEGEND ───
+                  /// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ LEGEND Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
                   Row(
                     children: const [
                       _LegendDot(
-                        color: Colors.green,
+                        color: const Color(0xFF0B4B3F),
                         text: "Orphans 80%",
                       ),
                       SizedBox(width: 18),
@@ -188,7 +188,7 @@ class AllMealsScreen extends StatelessWidget {
     );
   }
 
-  // ───────── IMPACT ROW ─────────
+  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ IMPACT ROW Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
   Widget _impactRow({
     required String value,
@@ -224,7 +224,7 @@ class AllMealsScreen extends StatelessWidget {
           style: const TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: Colors.green,
+            color: const Color(0xFF0B4B3F),
           ),
         ),
       ],
@@ -232,7 +232,7 @@ class AllMealsScreen extends StatelessWidget {
   }
 }
 
-/// ───────── LEGEND DOT ─────────
+/// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ LEGEND DOT Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
 class _LegendDot extends StatelessWidget {
   final Color color;

@@ -16,7 +16,7 @@ class _SendNotificationScreenState extends State<SendNotificationScreen> {
   final messageController = TextEditingController();
   final _notificationService = ActivityLogNotificationService();
 
-  static const primary = Color(0xFF0F4C45);
+  static const primary = Color(0xFF0B4B3F);
 
   String _audienceFromGroupLabel(String label) {
     final normalized = label.trim().toLowerCase();

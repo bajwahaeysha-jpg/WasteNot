@@ -13,7 +13,7 @@ import 'package:wastenot/services/session_service.dart';
 class DonorSettingsScreen extends StatelessWidget {
   const DonorSettingsScreen({super.key});
 
-  static const Color mainGreen = Color(0xFF0E5E53);
+  static const Color mainGreen = Color(0xFF0B4B3F);
 
   @override
   Widget build(BuildContext context) {
@@ -122,6 +122,6 @@ class DonorSettingsScreen extends StatelessWidget {
       return;
     }
 
-    AppNavigationHandler.goToLogin(context);
+    AppNavigationHandler.goToWelcome(context);
   }
 }

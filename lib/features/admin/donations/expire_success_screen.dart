@@ -14,7 +14,7 @@ class _ExpireSuccessScreenState extends State<ExpireSuccessScreen> {
 
     Future.delayed(const Duration(seconds: 5), () {
       if (!mounted) return;
-      Navigator.pop(context); // ✅ back to previous screen
+      Navigator.pop(context); // âœ… back to previous screen
     });
   }
 
@@ -29,7 +29,7 @@ class _ExpireSuccessScreenState extends State<ExpireSuccessScreen> {
             Icon(
               Icons.check_circle,
               size: 80,
-              color: Color(0xFF0F4C45),
+              color: Color(0xFF0B4B3F),
             ),
             SizedBox(height: 16),
             Text(

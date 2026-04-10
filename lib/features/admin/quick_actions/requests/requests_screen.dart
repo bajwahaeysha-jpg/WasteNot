@@ -8,7 +8,7 @@ import 'request_detail_screen.dart';
 class RequestsScreen extends StatelessWidget {
   const RequestsScreen({super.key});
 
-  static const Color mainGreen = Color(0xFF0F4C45);
+  static const Color mainGreen = Color(0xFF0B4B3F);
 
   @override
   Widget build(BuildContext context) {

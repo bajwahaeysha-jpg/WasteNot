@@ -32,7 +32,7 @@ class _DonorSignupScreenState extends State<DonorSignupScreen> {
   bool _obscurePassword = true;
   bool _loading = false;
 
-  static const Color mainGreen = Color(0xFF0E5E53);
+  static const Color mainGreen = Color(0xFF0B4B3F);
 
   @override
   void dispose() {

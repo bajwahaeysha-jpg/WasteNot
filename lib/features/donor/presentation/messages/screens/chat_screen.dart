@@ -228,7 +228,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   'Contacting regarding this concern',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Color(0xFF0E5E53),
+                    color: Color(0xFF0B4B3F),
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -392,7 +392,7 @@ class _ChatScreenState extends State<ChatScreen> {
           return Scaffold(
             backgroundColor: const Color(0xFFF5F7F6),
             appBar: AppBar(
-              backgroundColor: const Color(0xFF0E5E53),
+              backgroundColor: const Color(0xFF0B4B3F),
               iconTheme: const IconThemeData(color: Colors.white),
               title: Text(
                 widget.ngoName.isEmpty ? 'Chat' : widget.ngoName,
@@ -407,7 +407,7 @@ class _ChatScreenState extends State<ChatScreen> {
         if (peerUser == null) {
           return Scaffold(
             appBar: AppBar(
-              backgroundColor: const Color(0xFF0E5E53),
+              backgroundColor: const Color(0xFF0B4B3F),
               iconTheme: const IconThemeData(color: Colors.white),
               title: Text(
                 widget.ngoName.isEmpty ? 'Chat' : widget.ngoName,
@@ -441,7 +441,7 @@ class _ChatScreenState extends State<ChatScreen> {
             return Scaffold(
               backgroundColor: const Color(0xFFF5F7F6),
               appBar: AppBar(
-                backgroundColor: const Color(0xFF0E5E53),
+                backgroundColor: const Color(0xFF0B4B3F),
                 iconTheme: const IconThemeData(color: Colors.white),
                 title: _isSelecting
                     ? Text(
@@ -508,7 +508,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                   padding: const EdgeInsets.all(10),
                                   decoration: BoxDecoration(
                                     color: selected
-                                        ? Colors.green.withValues(alpha: 0.35)
+                                        ? const Color(0xFF0B4B3F).withValues(alpha: 0.35)
                                         : fromPeer
                                             ? Colors.white
                                             : const Color(0xFFDCF8C6),
@@ -572,7 +572,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         ),
                         const SizedBox(width: 8),
                         CircleAvatar(
-                          backgroundColor: const Color(0xFF0E5E53),
+                          backgroundColor: const Color(0xFF0B4B3F),
                           child: IconButton(
                             icon: _isSending
                                 ? const SizedBox(

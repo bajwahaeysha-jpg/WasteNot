@@ -9,7 +9,7 @@ import 'package:wastenot/services/session_service.dart';
 class NotificationScreen extends StatelessWidget {
   const NotificationScreen({super.key});
 
-  static const Color mainGreen = Color(0xFF0E5E53);
+  static const Color mainGreen = Color(0xFF0B4B3F);
 
   @override
   Widget build(BuildContext context) {
@@ -201,7 +201,7 @@ class NotificationScreen extends StatelessWidget {
       case 'donor_suspension':
         return Colors.red;
       case 'donor_unsuspension':
-        return Colors.green;
+        return const Color(0xFF0B4B3F);
       default:
         return Colors.blue;
     }
@@ -242,7 +242,7 @@ class NotificationDetailScreen extends StatelessWidget {
     required this.time,
   });
 
-  static const Color mainGreen = Color(0xFF0E5E53);
+  static const Color mainGreen = Color(0xFF0B4B3F);
 
   @override
   Widget build(BuildContext context) {

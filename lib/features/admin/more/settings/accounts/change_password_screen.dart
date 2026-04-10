@@ -77,7 +77,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     }
   }
 
-  /// 🔹 MODERN INPUT FIELD
+  /// Ã°Å¸â€Â¹ MODERN INPUT FIELD
   Widget _field(String label, TextEditingController controller,
       {bool enabled = true, Function(String)? onChanged}) {
 
@@ -100,7 +100,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             color: Colors.grey.shade50,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: enabled ? const Color(0xFF0F4C45) : Colors.grey.shade300,
+              color: enabled ? const Color(0xFF0B4B3F) : Colors.grey.shade300,
               width: enabled ? 1.4 : 1,
             ),
           ),
@@ -132,10 +132,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       resizeToAvoidBottomInset: true,
       backgroundColor: Colors.white,
 
-      /// 🟢 GREEN APP BAR
+      /// Ã°Å¸Å¸Â¢ GREEN APP BAR
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: const Color(0xFF0F4C45),
+        backgroundColor: const Color(0xFF0B4B3F),
         iconTheme: const IconThemeData(color: Colors.white),
 
         title: Row(
@@ -197,7 +197,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 padding: EdgeInsets.only(top: 6),
                 child: Text(
                   "Password updated successfully",
-                  style: TextStyle(color: Colors.green),
+                  style: TextStyle(color: const Color(0xFF0B4B3F)),
                 ),
               ),
 
@@ -212,7 +212,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 onPressed: _isSubmitting ? null : _updatePassword,
 
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0F4C45),
+                  backgroundColor: const Color(0xFF0B4B3F),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
@@ -238,7 +238,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? Colors.red : Colors.green,
+        backgroundColor: isError ? Colors.red : const Color(0xFF0B4B3F),
       ),
     );
   }

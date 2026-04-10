@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:wastenot/models/app_location.dart';
 import 'package:wastenot/services/location_service.dart';
 
@@ -19,6 +20,7 @@ class LocationPickerScreen extends StatefulWidget {
 
 class _LocationPickerScreenState extends State<LocationPickerScreen> {
   static const LatLng _fallbackCenter = LatLng(24.8607, 67.0011);
+  static const double _resolvedCoordinatePrecision = 0.00005;
 
   final LocationService _locationService = const LocationService();
   final TextEditingController _searchController = TextEditingController();
@@ -27,10 +29,12 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   AppLocation? _selectedLocation;
   AppLocation? _currentLocation;
   LatLng? _cameraTarget;
+  LatLng? _lastResolvedTarget;
   List<AppLocation> _searchResults = const <AppLocation>[];
   bool _isInitializing = true;
   bool _isResolvingSelection = false;
   bool _isSearching = false;
+  int _selectionRequestId = 0;
   String? _statusMessage;
 
   @override
@@ -96,7 +100,15 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   }
 
   Future<void> _selectLatLng(LatLng latLng) async {
+    final requestId = ++_selectionRequestId;
+
     setState(() {
+      _cameraTarget = latLng;
+      _selectedLocation = AppLocation(
+        latitude: latLng.latitude,
+        longitude: latLng.longitude,
+        address: _selectedLocation?.address ?? '',
+      );
       _isResolvingSelection = true;
       _statusMessage = null;
     });
@@ -111,12 +123,19 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         return;
       }
 
+      if (requestId != _selectionRequestId) {
+        return;
+      }
+
       setState(() {
         _selectedLocation = location;
-        _cameraTarget = latLng;
+        _lastResolvedTarget = latLng;
       });
     } catch (_) {
       if (!mounted) {
+        return;
+      }
+      if (requestId != _selectionRequestId) {
         return;
       }
       setState(() {
@@ -124,7 +143,9 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       });
     } finally {
       if (mounted) {
-        setState(() => _isResolvingSelection = false);
+        if (requestId == _selectionRequestId) {
+          setState(() => _isResolvingSelection = false);
+        }
       }
     }
   }
@@ -159,6 +180,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
     setState(() {
       _selectedLocation = location;
       _cameraTarget = LatLng(location.latitude, location.longitude);
+      _lastResolvedTarget = _cameraTarget;
       _searchResults = const <AppLocation>[];
       _searchController.text = location.address;
     });
@@ -194,6 +216,42 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
     _confirmCameraLocation();
   }
 
+  Future<void> _openExternalMaps() async {
+    final target = _cameraTarget;
+    if (target == null) {
+      return;
+    }
+
+    final uri = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=${target.latitude},${target.longitude}',
+    );
+    final launched = await launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication,
+    );
+
+    if (!mounted || launched) {
+      return;
+    }
+
+    setState(() {
+      _statusMessage =
+          'Google Maps could not be opened. Keep using the in-app map or search.';
+    });
+  }
+
+  bool _shouldResolveCameraTarget(LatLng target) {
+    final last = _lastResolvedTarget;
+    if (last == null) {
+      return true;
+    }
+
+    return (last.latitude - target.latitude).abs() >
+            _resolvedCoordinatePrecision ||
+        (last.longitude - target.longitude).abs() >
+            _resolvedCoordinatePrecision;
+  }
+
   Future<void> _confirmCameraLocation() async {
     final target = _cameraTarget;
     if (target == null) {
@@ -211,6 +269,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       }
       setState(() {
         _selectedLocation = location;
+        _lastResolvedTarget = target;
       });
       Navigator.of(context).pop(location);
     } catch (_) {
@@ -238,7 +297,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F4C45),
+        backgroundColor: const Color(0xFF0B4B3F),
         iconTheme: const IconThemeData(color: Colors.white),
         title: Text(
           widget.title,
@@ -347,7 +406,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                   },
                   onCameraIdle: () {
                     final target = _cameraTarget;
-                    if (target != null) {
+                    if (target != null && _shouldResolveCameraTarget(target)) {
                       _selectLatLng(target);
                     }
                   },
@@ -373,8 +432,11 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                       ),
                   },
                   onTap: _selectLatLng,
+                  mapType: MapType.normal,
                   myLocationEnabled: _currentLocation != null,
                   myLocationButtonEnabled: false,
+                  compassEnabled: true,
+                  mapToolbarEnabled: true,
                   zoomControlsEnabled: false,
                 ),
                 const IgnorePointer(
@@ -428,10 +490,19 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                 const SizedBox(height: 14),
                 SizedBox(
                   width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _cameraTarget == null ? null : _openExternalMaps,
+                    icon: const Icon(Icons.open_in_new),
+                    label: const Text('Open in Google Maps'),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
                   child: ElevatedButton(
                     onPressed: _saveSelection,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0F4C45),
+                      backgroundColor: const Color(0xFF0B4B3F),
                       foregroundColor: Colors.white,
                     ),
                     child: const Text('Use this location'),

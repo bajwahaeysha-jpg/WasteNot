@@ -45,7 +45,7 @@ class AlertDetailsScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
 
-              /// 🔔 TITLE
+              /// ðŸ”” TITLE
               Text(
                 alert.title,
                 style: const TextStyle(
@@ -57,7 +57,7 @@ class AlertDetailsScreen extends StatelessWidget {
 
               const SizedBox(height: 12),
 
-              /// 📝 DESCRIPTION
+              /// ðŸ“ DESCRIPTION
               Text(
                 alert.description,
                 style: const TextStyle(
@@ -73,7 +73,7 @@ class AlertDetailsScreen extends StatelessWidget {
 
               const SizedBox(height: 12),
 
-              /// 📅 CREATED DATE
+              /// ðŸ“… CREATED DATE
               _infoRow(
                 icon: Icons.calendar_today,
                 label: "Created",
@@ -82,7 +82,7 @@ class AlertDetailsScreen extends StatelessWidget {
 
               const SizedBox(height: 10),
 
-              /// 📌 STATUS
+              /// ðŸ“Œ STATUS
               _statusRow(alert.isResolved),
             ],
           ),
@@ -91,7 +91,7 @@ class AlertDetailsScreen extends StatelessWidget {
     );
   }
 
-  // ───────────── INFO ROW ─────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ INFO ROW â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _infoRow({
     required IconData icon,
@@ -123,10 +123,10 @@ class AlertDetailsScreen extends StatelessWidget {
     );
   }
 
-  // ───────────── STATUS ROW ─────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ STATUS ROW â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _statusRow(bool resolved) {
-    final Color color = resolved ? Colors.green : Colors.orange;
+    final Color color = resolved ? const Color(0xFF0B4B3F) : Colors.orange;
 
     return Row(
       children: [
@@ -163,7 +163,7 @@ class AlertDetailsScreen extends StatelessWidget {
     );
   }
 
-  // ───────────── DATE FORMAT ─────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ DATE FORMAT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   String _formatDate(DateTime date) {
     return "${date.day}/${date.month}/${date.year}";

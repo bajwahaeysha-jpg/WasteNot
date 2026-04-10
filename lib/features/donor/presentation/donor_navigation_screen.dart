@@ -30,7 +30,7 @@ class _DonorNavigationScreenState extends State<DonorNavigationScreen> {
 
   int _currentIndex = 0;
 
-  static const Color mainGreen = Color(0xFF0E5E53);
+  static const Color mainGreen = Color(0xFF0B4B3F);
 
   late final List<Widget> pages;
 
@@ -224,7 +224,7 @@ class _DonorNavigationScreenState extends State<DonorNavigationScreen> {
       return;
     }
 
-    await AppNavigationHandler.goToLogin(context);
+    await AppNavigationHandler.goToWelcome(context);
   }
 
   void _openMoreSheet(BuildContext context) {

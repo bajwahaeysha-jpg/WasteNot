@@ -7,7 +7,7 @@ import 'package:wastenot/services/session_service.dart';
 class ImpactScreen extends StatelessWidget {
   const ImpactScreen({super.key});
 
-  static const Color primary = Color(0xFF0F4C45);
+  static const Color primary = Color(0xFF0B4B3F);
 
   @override
   Widget build(BuildContext context) {
@@ -189,7 +189,7 @@ class ImpactScreen extends StatelessWidget {
                                     const Text(
                                       "+ Today",
                                       style: TextStyle(
-                                        color: Colors.green,
+                                        color: const Color(0xFF0B4B3F),
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),

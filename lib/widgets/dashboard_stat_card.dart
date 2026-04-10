@@ -24,7 +24,7 @@ class DashboardStatCard extends StatelessWidget {
         change != null && change!.trim().isNotEmpty && isUp != null;
 
     return Container(
-      padding: const EdgeInsets.all(14), // 🔥 thora bigger
+      padding: const EdgeInsets.all(14), // ðŸ”¥ thora bigger
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -41,7 +41,7 @@ class DashboardStatCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
 
-          /// 🔝 TOP ROW (ICON LEFT + VALUE RIGHT)
+          /// ðŸ” TOP ROW (ICON LEFT + VALUE RIGHT)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -60,7 +60,7 @@ class DashboardStatCard extends StatelessWidget {
               Text(
                 value,
                 style: const TextStyle(
-                  fontSize: 20, // 🔥 bigger number
+                  fontSize: 20, // ðŸ”¥ bigger number
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -69,16 +69,16 @@ class DashboardStatCard extends StatelessWidget {
 
           const SizedBox(height: 10),
 
-          /// 🔽 TITLE (BOTTOM)
+          /// ðŸ”½ TITLE (BOTTOM)
           Text(
             title,
             style: const TextStyle(
-              fontSize: 13, // 🔥 bigger text
+              fontSize: 13, // ðŸ”¥ bigger text
               color: Colors.grey,
             ),
           ),
 
-          /// 📈 CHANGE (optional)
+          /// ðŸ“ˆ CHANGE (optional)
           if (hasChange) ...[
             const SizedBox(height: 4),
             Row(
@@ -86,14 +86,14 @@ class DashboardStatCard extends StatelessWidget {
                 Icon(
                   isUp! ? Icons.arrow_upward : Icons.arrow_downward,
                   size: 13,
-                  color: isUp! ? Colors.green : Colors.red,
+                  color: isUp! ? const Color(0xFF0B4B3F) : Colors.red,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   change!,
                   style: TextStyle(
                     fontSize: 11,
-                    color: isUp! ? Colors.green : Colors.red,
+                    color: isUp! ? const Color(0xFF0B4B3F) : Colors.red,
                   ),
                 ),
               ],

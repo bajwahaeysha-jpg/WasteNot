@@ -72,6 +72,6 @@ class _DonorLogoutScreenState extends State<DonorLogoutScreen> {
     if (!mounted) {
       return;
     }
-    AppNavigationHandler.goToLogin(context);
+    AppNavigationHandler.goToWelcome(context);
   }
 }

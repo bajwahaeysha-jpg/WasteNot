@@ -9,7 +9,7 @@ class ConcernsScreen extends StatefulWidget {
 }
 
 class _ConcernsScreenState extends State<ConcernsScreen> {
-  static const Color mainGreen = Color(0xFF0F4C45);
+  static const Color mainGreen = Color(0xFF0B4B3F);
 
   final ConcernService _concernService = ConcernService();
   String? _deletingConcernId;

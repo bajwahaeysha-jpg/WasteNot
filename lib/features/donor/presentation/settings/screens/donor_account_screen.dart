@@ -7,7 +7,7 @@ import 'package:wastenot/services/account_service.dart';
 class DonorAccountScreen extends StatelessWidget {
   const DonorAccountScreen({super.key});
 
-  static const Color mainGreen = Color(0xFF0E5E53);
+  static const Color mainGreen = Color(0xFF0B4B3F);
 
   @override
   Widget build(BuildContext context) {
@@ -63,9 +63,9 @@ class DonorAccountScreen extends StatelessWidget {
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.cancel, color: Colors.red),
-              title: const Text('Delete account', style: TextStyle(color: Colors.red)),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => _confirmDelete(context),
+            title: const Text('Delete account', style: TextStyle(color: Colors.red)),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => _confirmDelete(context),
             ),
           ],
         ),
@@ -79,7 +79,7 @@ class DonorAccountScreen extends StatelessWidget {
           builder: (dialogContext) => AlertDialog(
             title: const Text('Delete account'),
             content: const Text(
-              'This will remove your Firestore profile and Firebase Authentication account.',
+              'This will delete only your auth account and profile. Donations and historical activity will remain.',
             ),
             actions: [
               TextButton(
@@ -100,12 +100,14 @@ class DonorAccountScreen extends StatelessWidget {
       return;
     }
 
+    _showBlockingLoader(context);
     try {
       await AccountService().deleteAccount();
       if (!context.mounted) {
         return;
       }
 
+      Navigator.of(context, rootNavigator: true).pop();
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => const WelcomeScreen()),
@@ -115,9 +117,18 @@ class DonorAccountScreen extends StatelessWidget {
       if (!context.mounted) {
         return;
       }
+      Navigator.of(context, rootNavigator: true).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(error.message), backgroundColor: Colors.red),
       );
     }
+  }
+
+  void _showBlockingLoader(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
   }
 }

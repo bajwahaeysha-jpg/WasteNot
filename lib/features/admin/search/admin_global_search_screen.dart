@@ -97,8 +97,8 @@ class _AdminGlobalSearchScreenState extends State<AdminGlobalSearchScreen> {
                     ),
                     leading: CircleAvatar(
                       backgroundColor:
-                          const Color(0xFF0F4C45).withValues(alpha: 0.10),
-                      child: Icon(item.icon, color: const Color(0xFF0F4C45)),
+                          const Color(0xFF0B4B3F).withValues(alpha: 0.10),
+                      child: Icon(item.icon, color: const Color(0xFF0B4B3F)),
                     ),
                     title: Text(
                       item.title,

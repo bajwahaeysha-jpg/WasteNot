@@ -67,7 +67,7 @@ class _DonorNotificationsScreenState extends State<DonorNotificationsScreen> {
       backgroundColor: Colors.grey.shade100,
 
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F5D4E),
+        backgroundColor: const Color(0xFF0B4B3F),
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
         title: const Text(

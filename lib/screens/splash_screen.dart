@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:wastenot/navigation/app_navigation_handler.dart';
 import 'package:wastenot/repositories/auth_repository.dart';
-import 'package:wastenot/screens/login_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -33,9 +32,7 @@ class _SplashScreenState extends State<SplashScreen> {
       return;
     }
 
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute<void>(builder: (_) => const LoginScreen()),
-    );
+    Navigator.of(context).pushReplacement(AppNavigationHandler.welcomeRoute());
   }
 
   @override

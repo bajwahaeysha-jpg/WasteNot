@@ -13,7 +13,7 @@ class AcceptedDonationDetailScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xffF4F4F4),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F4C45),
+        backgroundColor: const Color(0xFF0B4B3F),
         iconTheme: const IconThemeData(color: Colors.white),
         title: const Text(
           'Donation Details',
@@ -53,7 +53,7 @@ class AcceptedDonationDetailScreen extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: (isCompleted ? Colors.green : Colors.orange)
+                      color: (isCompleted ? const Color(0xFF0B4B3F) : Colors.orange)
                           .withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
                     ),
@@ -61,7 +61,7 @@ class AcceptedDonationDetailScreen extends StatelessWidget {
                       donation.status.toUpperCase(),
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
-                        color: isCompleted ? Colors.green : Colors.orange,
+                        color: isCompleted ? const Color(0xFF0B4B3F) : Colors.orange,
                       ),
                     ),
                   ),

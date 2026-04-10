@@ -13,7 +13,7 @@ class RequestDetailScreen extends StatefulWidget {
 
   final NgoRequestModel request;
 
-  static const Color mainGreen = Color(0xFF0F4C45);
+  static const Color mainGreen = Color(0xFF0B4B3F);
 
   @override
   State<RequestDetailScreen> createState() => _RequestDetailScreenState();

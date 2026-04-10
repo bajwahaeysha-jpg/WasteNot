@@ -38,7 +38,7 @@ class _AcceptedDonationsScreenState extends State<AcceptedDonationsScreen> {
     return Scaffold(
       backgroundColor: const Color(0xffF4F4F4),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F4C45),
+        backgroundColor: const Color(0xFF0B4B3F),
         iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
         titleSpacing: 0,
@@ -217,7 +217,7 @@ class _AcceptedDonationsScreenState extends State<AcceptedDonationsScreen> {
                                 Text(
                                   _timeOnly(d.completedAt ?? d.createdAt),
                                   style: const TextStyle(
-                                    color: Color(0xFF0F4C45),
+                                    color: Color(0xFF0B4B3F),
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),

@@ -53,8 +53,8 @@ class AppLocation {
 
   static AppLocation? fromDynamic(dynamic value) {
     if (value is Map<String, dynamic>) {
-      final latitude = _toDouble(value['latitude']);
-      final longitude = _toDouble(value['longitude']);
+      final latitude = _toDouble(value['latitude'] ?? value['lat']);
+      final longitude = _toDouble(value['longitude'] ?? value['lng']);
       if (latitude == null || longitude == null) {
         return null;
       }

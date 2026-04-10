@@ -18,7 +18,7 @@ class _AssignDriverScreenState extends State<AssignDriverScreen> {
     {"name": "Sara Malik", "vehicle": "Van"},
   ];
 
-  static const Color mainGreen = Color(0xFF0F5F54);
+  static const Color mainGreen = Color(0xFF0B4B3F);
 
   @override
   Widget build(BuildContext context) {
@@ -75,7 +75,7 @@ class _AssignDriverScreenState extends State<AssignDriverScreen> {
     );
   }
 
-  // ───────────── DRIVER TILE ─────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ DRIVER TILE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _driverTile(Map driver) {
     final isSelected = selectedDriver == driver;
@@ -110,7 +110,7 @@ class _AssignDriverScreenState extends State<AssignDriverScreen> {
     );
   }
 
-  // ───────────── DATE & TIME PICKER ─────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ DATE & TIME PICKER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Widget _dateTimePicker() {
     return Column(
@@ -164,7 +164,7 @@ class _AssignDriverScreenState extends State<AssignDriverScreen> {
     );
   }
 
-  // ───────────── PICKERS WITH THEME ─────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ PICKERS WITH THEME â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   void _pickDate() async {
     final date = await showDatePicker(
@@ -208,7 +208,7 @@ class _AssignDriverScreenState extends State<AssignDriverScreen> {
     if (time != null) setState(() => pickupTime = time);
   }
 
-  // ───────────── CONFIRM ASSIGNMENT ─────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ CONFIRM ASSIGNMENT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   void _confirmAssignment() {
     if (selectedDriver == null || pickupDate == null || pickupTime == null) {
@@ -229,7 +229,7 @@ class _AssignDriverScreenState extends State<AssignDriverScreen> {
           ),
         ),
         content: Text(
-          "🚚 ${selectedDriver!['name']} has been successfully assigned for pickup.",
+          "ðŸšš ${selectedDriver!['name']} has been successfully assigned for pickup.",
         ),
         actions: [
           ElevatedButton(

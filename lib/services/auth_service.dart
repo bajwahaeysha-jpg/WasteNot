@@ -24,6 +24,8 @@ class AuthService {
       'Waiting for admin approval. Your NGO account will be activated after review.';
   static const ngoRejectedMessage =
       'Your registration request was rejected by admin.';
+  static const suspendedMessage =
+      'Your account is suspended for some reason.';
 
   final FirebaseAuth _auth;
   final FirestoreService _firestoreService;
@@ -115,7 +117,7 @@ class AuthService {
     if (profile.isSuspended) {
       await _auth.signOut();
       SessionService.clear();
-      throw AuthFailure('Your account is suspended. Please contact support.');
+      throw AuthFailure(suspendedMessage);
     }
 
     final refreshedProfile = profile.copyWith(emailVerified: refreshedUser.emailVerified);
@@ -194,7 +196,7 @@ class AuthService {
       if (profile.isSuspended) {
         await _auth.signOut();
         SessionService.clear();
-        throw AuthFailure('Your account is suspended. Please contact support.');
+        throw AuthFailure(suspendedMessage);
       }
 
       final refreshedProfile = profile.copyWith(emailVerified: refreshedUser.emailVerified);
@@ -376,7 +378,7 @@ class AuthService {
       }
       throw AuthFailure(_mapFirebaseError(error));
     } on AuthFailure {
-      throw;
+      rethrow;
     } catch (_) {
       if (firebaseUser != null) {
         try {
@@ -479,12 +481,15 @@ class AuthService {
       }
 
       final profile = await _firestoreService.getUserByUid(sessionUser.uid);
-      if (profile != null) {
-        SessionService.setUser(
-          profile.copyWith(emailVerified: refreshedUser.emailVerified),
-          firestoreService: _firestoreService,
-        );
+      if (profile == null || profile.isSuspended) {
+        await signOut();
+        return;
       }
+
+      SessionService.setUser(
+        profile.copyWith(emailVerified: refreshedUser.emailVerified),
+        firestoreService: _firestoreService,
+      );
     } catch (_) {}
   }
 

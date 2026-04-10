@@ -16,7 +16,7 @@ class StatsSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
 
-        /// 🔔 ALERT CARD
+        /// ðŸ”” ALERT CARD
         GestureDetector(
           onTap: () {
             Navigator.push(
@@ -52,7 +52,7 @@ class StatsSection extends StatelessWidget {
           ),
         ),
 
-        /// 📊 STATS GRID
+        /// ðŸ“Š STATS GRID
         GridView.count(
           crossAxisCount: 2,
           shrinkWrap: true,
@@ -85,7 +85,7 @@ class StatsSection extends StatelessWidget {
             change: "+2.5%",
             isUp: true,
             icon: Icons.group,
-            iconColor: Colors.green,
+            iconColor: const Color(0xFF0B4B3F),
           ),
         );
 
@@ -149,7 +149,7 @@ class StatsSection extends StatelessWidget {
   }
 }
 
-/// 🔸 ALERT ROW
+/// ðŸ”¸ ALERT ROW
 class _AlertRow extends StatelessWidget {
   final String text;
   const _AlertRow({required this.text});

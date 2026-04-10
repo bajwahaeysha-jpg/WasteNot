@@ -15,7 +15,7 @@ class _SuspendDonorScreenState extends State<SuspendDonorScreen> {
   final TextEditingController detailCtrl = TextEditingController();
   final _service = AdminDonorManagementService();
 
-  static const primary = Color(0xFF0F5F54);
+  static const primary = Color(0xFF0B4B3F);
   bool _saving = false;
 
   @override

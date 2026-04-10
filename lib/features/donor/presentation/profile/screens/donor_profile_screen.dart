@@ -16,7 +16,7 @@ class DonorProfileScreen extends StatefulWidget {
 }
 
 class _DonorProfileScreenState extends State<DonorProfileScreen> {
-  static const Color mainGreen = Color(0xFF0F5D4E);
+  static const Color mainGreen = Color(0xFF0B4B3F);
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
@@ -226,7 +226,7 @@ class _DonorProfileScreenState extends State<DonorProfileScreen> {
                       onTap: _pickImage,
                       child: CircleAvatar(
                         radius: 50,
-                        backgroundColor: Colors.green.shade100,
+                        backgroundColor: const Color(0x1A0B4B3F),
                         backgroundImage: _selectedImage != null
                             ? FileImage(_selectedImage!)
                             : (networkImage != null && networkImage.isNotEmpty)
