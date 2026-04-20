@@ -30,6 +30,7 @@ class AdminManagedDonor {
 
   String get id => user.uid;
   String get name => user.displayName;
+  String get email => user.email;
   String get phone => user.phone ?? '';
   String get imageUrl => user.profileImageUrl ?? '';
   String get statusLabel => user.isSuspended ? 'Suspended' : 'Active';
@@ -95,6 +96,13 @@ class AdminDonorManagementService {
       _firestore.collection('admin_activity_logs');
   CollectionReference<Map<String, dynamic>> get _donations =>
       _firestore.collection('donations');
+
+  Stream<AdminDonorStats> getDonorStats(String donorId) {
+    return _donations
+        .where('donorId', isEqualTo: donorId)
+        .snapshots()
+        .map((snapshot) => _calculateDonorStats(snapshot.docs));
+  }
 
   Stream<List<AdminManagedDonor>> streamDonors({
     DonorStatusFilter filter = DonorStatusFilter.all,
@@ -447,22 +455,7 @@ class AdminDonorManagementService {
         ? 0.0
         : ratings.reduce((a, b) => a + b) / ratings.length;
 
-    var totalMeals = 0;
-    var completed = 0;
-    final totalDonations = donationDocs.length;
-
-    for (final donationDoc in donationDocs) {
-      final donation = donationDoc.data();
-      totalMeals += _mealCountFromDonation(donation);
-
-      if (_isCompletedDonation(donation['status'])) {
-        completed += 1;
-      }
-    }
-
-    final successRate = totalDonations == 0
-        ? 0
-        : ((completed / totalDonations) * 100).round();
+    final stats = _calculateDonorStats(donationDocs);
 
     final status = (data['status'] as String?)?.toLowerCase();
     final suspended = (data['isSuspended'] as bool?) ?? status == 'suspended';
@@ -474,8 +467,8 @@ class AdminDonorManagementService {
 
     return AdminManagedDonor(
       user: normalizedUser,
-      totalMealsDonated: totalMeals,
-      successRate: successRate,
+      totalMealsDonated: stats.totalMeals,
+      successRate: stats.successRate,
       averageRating: averageRating,
       donorType: _stringValue(data, const [
         'donorType',
@@ -505,7 +498,13 @@ class AdminDonorManagementService {
   }
 
   int _mealCountFromDonation(Map<String, dynamic> donation) {
-    for (final key in const ['servings', 'meals', 'mealCount', 'totalMeals']) {
+    for (final key in const [
+      'servings',
+      'quantity',
+      'meals',
+      'mealCount',
+      'totalMeals',
+    ]) {
       final parsed = parseMealValue(donation[key]);
       if (parsed > 0) {
         return parsed;
@@ -523,6 +522,44 @@ class AdminDonorManagementService {
         normalized == 'success';
   }
 
+  bool _isAcceptedDonationForSuccess(Object? value) {
+    final normalized = value?.toString().trim().toLowerCase() ?? '';
+    return normalized == 'accepted' ||
+        normalized == 'completed' ||
+        normalized == 'not_completed';
+  }
+
+  AdminDonorStats _calculateDonorStats(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> donationDocs,
+  ) {
+    var totalMeals = 0;
+    var acceptedCount = 0;
+    var completedCount = 0;
+
+    for (final donationDoc in donationDocs) {
+      final donation = donationDoc.data();
+      totalMeals += _mealCountFromDonation(donation);
+
+      if (_isAcceptedDonationForSuccess(donation['status'])) {
+        acceptedCount += 1;
+      }
+      if (_isCompletedDonation(donation['status'])) {
+        completedCount += 1;
+      }
+    }
+
+    final successRate = acceptedCount == 0
+        ? 0
+        : ((completedCount / acceptedCount) * 100).round();
+
+    return AdminDonorStats(
+      totalMeals: totalMeals,
+      acceptedCount: acceptedCount,
+      completedCount: completedCount,
+      successRate: successRate,
+    );
+  }
+
   String? _stringValue(Map<String, dynamic> data, List<String> keys) {
     for (final key in keys) {
       final value = data[key];
@@ -532,4 +569,18 @@ class AdminDonorManagementService {
     }
     return null;
   }
+}
+
+class AdminDonorStats {
+  const AdminDonorStats({
+    required this.totalMeals,
+    required this.acceptedCount,
+    required this.completedCount,
+    required this.successRate,
+  });
+
+  final int totalMeals;
+  final int acceptedCount;
+  final int completedCount;
+  final int successRate;
 }

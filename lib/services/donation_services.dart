@@ -8,12 +8,14 @@ import 'package:wastenot/models/app_location.dart';
 import 'package:wastenot/models/app_user_model.dart';
 import 'package:wastenot/services/local_cache_service.dart';
 import 'package:wastenot/services/location_service.dart';
+import 'package:wastenot/services/notification_service.dart';
 
 enum DonationStatus {
   active('active'),
   accepted('accepted'),
   expired('expired'),
-  completed('completed');
+  completed('completed'),
+  notCompleted('not_completed');
 
   const DonationStatus(this.value);
 
@@ -134,6 +136,7 @@ class DonationModel {
 
   bool get isActive => status == DonationStatus.active.value;
   bool get isAccepted => status == DonationStatus.accepted.value;
+  bool get isNotCompleted => status == DonationStatus.notCompleted.value;
   bool get isExpired =>
       expired ||
       status == DonationStatus.expired.value ||
@@ -144,6 +147,15 @@ class DonationModel {
         expiryAt: expiryAt,
       );
   bool get isCompleted => status == DonationStatus.completed.value;
+  bool get isAwaitingClosure =>
+      (isAccepted || isActive) && acceptedAt != null && !isCompleted && !isNotCompleted;
+  bool get isOverdueForClosureReminder {
+    final acceptedTime = acceptedAt;
+    if (!isAwaitingClosure || acceptedTime == null) {
+      return false;
+    }
+    return DateTime.now().difference(acceptedTime).inHours >= 2;
+  }
   bool get hasAcceptedNgo =>
       acceptedByNgoId != null && acceptedByNgoId!.trim().isNotEmpty;
 
@@ -345,11 +357,14 @@ class DonationService {
   DonationService({
     FirebaseFirestore? firestore,
     LocationService? locationService,
+    NotificationService? notificationService,
   })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _locationService = locationService ?? const LocationService();
+        _locationService = locationService ?? const LocationService(),
+        _notificationService = notificationService ?? NotificationService();
 
   final FirebaseFirestore _firestore;
   final LocationService _locationService;
+  final NotificationService _notificationService;
   final LocalCacheService _cache = LocalCacheService();
 
   CollectionReference<Map<String, dynamic>> get _donations =>
@@ -828,6 +843,44 @@ class DonationService {
   Future<DonationModel> markDonationCompleted({
     required String donationId,
   }) async {
+    return _markDonationClosed(
+      donationId: donationId,
+      nextStatus: DonationStatus.completed,
+    );
+  }
+
+  Future<DonationModel> markDonationNotCompleted({
+    required String donationId,
+  }) async {
+    final donation = await _markDonationClosed(
+      donationId: donationId,
+      nextStatus: DonationStatus.notCompleted,
+    );
+
+    final ngoId = donation.acceptedByNgoId?.trim() ?? '';
+    if (ngoId.isNotEmpty) {
+      await _notificationService.sendNotification(
+        receiverId: ngoId,
+        title: 'Donation Not Picked',
+        body: 'You did not pick the donation.',
+        type: 'DONATION_NOT_COMPLETED',
+        navigation: 'ngo_dashboard',
+        userRole: 'ngo',
+        extraData: <String, dynamic>{
+          'donationId': donation.donationId,
+          'donorId': donation.donorId,
+          'ngoId': ngoId,
+        },
+      );
+    }
+
+    return donation;
+  }
+
+  Future<DonationModel> _markDonationClosed({
+    required String donationId,
+    required DonationStatus nextStatus,
+  }) async {
     if (donationId.trim().isEmpty) {
       throw const DonationException('Donation id is required.');
     }
@@ -842,24 +895,24 @@ class DonationService {
         }
 
         final donation = DonationModel.fromFirestore(snapshot);
-        if (donation.status == DonationStatus.completed.value) {
+        if (donation.status == nextStatus.value) {
           return;
         }
 
         if (donation.status == DonationStatus.expired.value) {
           throw const DonationException(
-            'Expired donations cannot be completed.',
+            'Expired donations cannot be updated.',
           );
         }
 
-        if (donation.status != DonationStatus.accepted.value) {
+        if (!donation.isAwaitingClosure) {
           throw const DonationException(
-            'Only accepted donations can be marked as completed.',
+            'Only picked-up donations can be closed.',
           );
         }
 
         transaction.update(docRef, {
-          'status': DonationStatus.completed.value,
+          'status': nextStatus.value,
           'expired': false,
           'completedAt': FieldValue.serverTimestamp(),
         });

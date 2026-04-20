@@ -6,13 +6,57 @@ import 'package:wastenot/services/session_service.dart';
 
 const Color mainGreen = Color(0xFF0B4B3F);
 
-class AcceptedDonationsScreen extends StatelessWidget {
+class AcceptedDonationsScreen extends StatefulWidget {
   const AcceptedDonationsScreen({super.key});
+
+  @override
+  State<AcceptedDonationsScreen> createState() => _AcceptedDonationsScreenState();
+}
+
+class _AcceptedDonationsScreenState extends State<AcceptedDonationsScreen> {
+  final DonationService _service = DonationService();
+  Future<List<DonationModel>>? _donationsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshDonations();
+  }
+
+  void _refreshDonations() {
+    final donor = SessionService.user;
+    if (donor == null) {
+      _donationsFuture = Future<List<DonationModel>>.value(const <DonationModel>[]);
+      return;
+    }
+
+    _donationsFuture = _service.getDonorDonations(donorId: donor.uid);
+  }
+
+  Future<void> _markNotCompleted(DonationModel donation) async {
+    final messenger = ScaffoldMessenger.of(context);
+
+    try {
+      await _service.markDonationNotCompleted(donationId: donation.donationId);
+      if (!mounted) {
+        return;
+      }
+
+      setState(_refreshDonations);
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Donation marked as not completed.')),
+      );
+    } on DonationException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      messenger.showSnackBar(SnackBar(content: Text(error.message)));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final donor = SessionService.user;
-    final service = DonationService();
     debugPrint(
       '[DonorAcceptedDonationsScreen] current donor uid=${donor?.uid} role=${donor?.role}',
     );
@@ -30,7 +74,7 @@ class AcceptedDonationsScreen extends StatelessWidget {
       body: donor == null
           ? const Center(child: Text('Please log in to view donations.'))
           : FutureBuilder<List<DonationModel>>(
-              future: service.getDonorDonations(donorId: donor.uid),
+              future: _donationsFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -48,7 +92,7 @@ class AcceptedDonationsScreen extends StatelessWidget {
                 }
 
                 final donations = (snapshot.data ?? const <DonationModel>[])
-                    .where((d) => d.isAccepted)
+                    .where((d) => d.isAwaitingClosure)
                     .toList()
                   ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
@@ -84,14 +128,22 @@ class AcceptedDonationsScreen extends StatelessWidget {
                             ),
                           ),
                         GestureDetector(
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  AcceptedDonationDetailScreen(donation: donation),
-                            ),
+                          onTap: () async {
+                            final changed = await Navigator.push<bool>(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    AcceptedDonationDetailScreen(donation: donation),
+                              ),
+                            );
+                            if (changed == true && mounted) {
+                              setState(_refreshDonations);
+                            }
+                          },
+                          child: _donationCard(
+                            donation,
+                            onNotCompleted: () => _markNotCompleted(donation),
                           ),
-                          child: _donationCard(donation),
                         ),
                       ],
                     );
@@ -102,7 +154,10 @@ class AcceptedDonationsScreen extends StatelessWidget {
     );
   }
 
-  Widget _donationCard(DonationModel donation) {
+  Widget _donationCard(
+    DonationModel donation, {
+    required VoidCallback onNotCompleted,
+  }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
@@ -113,39 +168,55 @@ class AcceptedDonationsScreen extends StatelessWidget {
           BoxShadow(color: Colors.black.withValues(alpha: .04), blurRadius: 6),
         ],
       ),
-      child: Row(
+      child: Column(
         children: [
-          Container(
-            height: 48,
-            width: 48,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade200,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(Icons.fastfood),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  donation.foodItems.join(', '),
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+          Row(
+            children: [
+              Container(
+                height: 48,
+                width: 48,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  donation.acceptedByNgoName ?? 'Accepted NGO',
-                  style: const TextStyle(color: Colors.grey),
+                child: const Icon(Icons.fastfood),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      donation.foodItems.join(', '),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      donation.acceptedByNgoName ?? 'Accepted NGO',
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              Text(
+                _timeOnly(donation.acceptedAt ?? donation.createdAt),
+                style: const TextStyle(
+                  color: mainGreen,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ),
-          Text(
-            _timeOnly(donation.acceptedAt ?? donation.createdAt),
-            style: const TextStyle(
-              color: mainGreen,
-              fontWeight: FontWeight.bold,
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: onNotCompleted,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.redAccent,
+                side: const BorderSide(color: Colors.redAccent),
+              ),
+              child: const Text('Not Completed'),
             ),
           ),
         ],

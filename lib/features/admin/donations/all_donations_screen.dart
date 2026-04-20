@@ -11,10 +11,21 @@ class AllDonationsScreen extends StatefulWidget {
 
 class _AllDonationsScreenState extends State<AllDonationsScreen> {
   final DonationService _donationService = DonationService();
+
   DonationStatus? _selectedFilter;
 
-  Future<List<DonationModel>> _loadDonations() {
-    return _donationService.getAllDonations(status: _selectedFilter);
+  Future<List<DonationModel>> _loadDonations() async {
+    final data =
+        await _donationService.getAllDonations(status: _selectedFilter);
+
+    /// 🔥 IMPORTANT FILTER FIX
+    return data.where((item) {
+      // ✅ ACTIVE = accepted but NOT completed
+      if (_selectedFilter == DonationStatus.accepted) {
+        return item.isCompleted != true;
+      }
+      return true;
+    }).toList();
   }
 
   @override
@@ -41,24 +52,17 @@ class _AllDonationsScreenState extends State<AllDonationsScreen> {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                if (snapshot.hasError) {
-                  return Center(
-                    child: ElevatedButton(
-                      onPressed: () => setState(() {}),
-                      child: const Text('Retry'),
-                    ),
-                  );
-                }
+                final donations = snapshot.data ?? [];
 
-                final donations = snapshot.data ?? const <DonationModel>[];
                 if (donations.isEmpty) {
                   return const Center(child: Text('No donations found.'));
                 }
 
                 return ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
+                  padding: const EdgeInsets.all(16),
                   itemCount: donations.length,
-                  itemBuilder: (_, i) => _donationCard(context, donations[i]),
+                  itemBuilder: (_, i) =>
+                      _donationCard(context, donations[i]),
                 );
               },
             ),
@@ -68,6 +72,7 @@ class _AllDonationsScreenState extends State<AllDonationsScreen> {
     );
   }
 
+  /// 🔥 FILTER BAR
   Widget _statusFilterBar() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
@@ -77,9 +82,10 @@ class _AllDonationsScreenState extends State<AllDonationsScreen> {
           children: [
             _filterChip('All', null),
             const SizedBox(width: 10),
-            _filterChip('Active', DonationStatus.active),
-            const SizedBox(width: 10),
-            _filterChip('Accepted', DonationStatus.accepted),
+
+            /// ✅ ACTIVE FIXED
+            _filterChip('Active', DonationStatus.accepted),
+
             const SizedBox(width: 10),
             _filterChip('Expired', DonationStatus.expired),
             const SizedBox(width: 10),
@@ -95,20 +101,18 @@ class _AllDonationsScreenState extends State<AllDonationsScreen> {
 
     return GestureDetector(
       onTap: () => setState(() => _selectedFilter = status),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: selected ? const Color(0xFF0B4B3F) : Colors.white,
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(color: const Color(0xFF0B4B3F)),
         ),
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
             color: selected ? Colors.white : const Color(0xFF0B4B3F),
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
@@ -118,11 +122,15 @@ class _AllDonationsScreenState extends State<AllDonationsScreen> {
   Widget _donationCard(BuildContext context, DonationModel donation) {
     final status = donation.status;
     final statusColor = _statusColor(status);
-    final statusBg = statusColor.withValues(alpha: .12);
+
+    final imageUrl =
+        (donation.imageUrls != null && donation.imageUrls!.isNotEmpty)
+            ? donation.imageUrls!.first
+            : null;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
@@ -139,67 +147,107 @@ class _AllDonationsScreenState extends State<AllDonationsScreen> {
               builder: (_) => DonationProfileScreen(donation: donation),
             ),
           );
-          if (mounted) {
-            setState(() {});
-          }
+          if (mounted) setState(() {});
         },
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            Text(
-              '${donation.donorName} -> ${donation.acceptedByNgoName ?? 'Unassigned'}',
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+            /// 🍲 IMAGE
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: imageUrl != null
+                  ? Image.network(
+                      imageUrl,
+                      width: 60,
+                      height: 60,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _fallbackImage(),
+                    )
+                  : _fallbackImage(),
             ),
-            const SizedBox(height: 6),
-            Text(
-              '${donation.foodItems.join(', ')} Ã¢â‚¬Â¢ ${donation.quantity}',
-              style: const TextStyle(fontSize: 13, color: Colors.black87),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Date: ${_formatDate(donation.createdAt)}',
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-            const SizedBox(height: 10),
-            Align(
-              alignment: Alignment.centerRight,
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: statusBg,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  status.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: statusColor,
+
+            const SizedBox(width: 12),
+
+            /// 📝 TEXT + STATUS ROW
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    donation.foodItems.join(', '),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 4),
+                  Text(
+                    donation.donorName,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  /// 🔥 SERVINGS LEFT + STATUS RIGHT
+                  Row(
+                    children: [
+                      Text(
+                        "Servings: ${donation.quantity}",
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: statusColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          status.toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: statusColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
+
+            const Icon(Icons.chevron_right, color: Colors.grey),
           ],
         ),
       ),
     );
   }
 
+  Widget _fallbackImage() {
+    return Container(
+      width: 60,
+      height: 60,
+      color: Colors.grey.shade200,
+      child: const Icon(Icons.fastfood),
+    );
+  }
+
   Color _statusColor(String status) {
     switch (status) {
       case 'completed':
-        return const Color(0xFF0B4B3F);
-      case 'active':
-        return Colors.orange.shade700;
+        return Colors.green;
       case 'accepted':
-        return Colors.blue.shade700;
+        return Colors.orange; // active look
+      case 'expired':
+        return Colors.red;
       default:
-        return Colors.red.shade700;
+        return Colors.grey;
     }
   }
-}
-
-String _formatDate(DateTime value) {
-  return '${value.day}/${value.month}/${value.year}';
 }

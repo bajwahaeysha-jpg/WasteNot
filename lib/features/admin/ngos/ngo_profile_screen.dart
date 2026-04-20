@@ -150,7 +150,7 @@ class NGOProfileScreen extends StatelessWidget {
                           ),
                           const SizedBox(width: 10),
                           _statBox(
-                            ngo.statusLabel,
+                            ngo.isSuspended ? "Suspended" : "Active",
                             "Status",
                           ),
                         ],
@@ -302,6 +302,15 @@ class NGOProfileScreen extends StatelessWidget {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              Text(
+  "To: ${ngo.name}",
+  style: const TextStyle(
+    fontWeight: FontWeight.bold,
+    fontSize: 21,
+    color: Colors.black87,
+  ),
+),
+const SizedBox(height: 10),
               TextField(
                 controller: titleCtrl,
                 decoration: const InputDecoration(

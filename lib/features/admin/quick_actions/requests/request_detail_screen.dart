@@ -110,8 +110,40 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
                             widget.request.createdAt,
                           ),
                         ),
-                        _infoRow('Description', widget.request.description),
-                      ],
+if (widget.request.description.isNotEmpty) ...[
+  const SizedBox(height: 16),
+
+  Align(
+    alignment: Alignment.centerLeft,
+    child: Text(
+      'About',
+      style: TextStyle(
+        fontWeight: FontWeight.bold,
+        color: Colors.black54,
+      ),
+    ),
+  ),
+
+  const SizedBox(height: 8),
+
+  Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: Colors.grey.shade100,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: Colors.grey.shade300),
+    ),
+    child: Text(
+      widget.request.description,
+      maxLines: 4,
+      overflow: TextOverflow.ellipsis,
+      style: const TextStyle(
+        fontWeight: FontWeight.w500,
+      ),
+    ),
+  ),
+],                      ],
                     ),
                   ),
                 ),

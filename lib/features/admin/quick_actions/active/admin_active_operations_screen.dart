@@ -25,11 +25,14 @@ class ActiveScreen extends StatelessWidget {
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: StreamBuilder<List<DonationModel>>(
-        stream: donationService.streamDonationsByStatus(
-          status: DonationStatus.accepted,
-          donorId: donorId,
-          ngoId: ngoId,
-        ),
+        stream: donationService
+    .streamDonationsByStatus(
+      status: DonationStatus.accepted,
+      donorId: donorId,
+      ngoId: ngoId,
+    )
+    .map((list) =>
+        list.where((item) => item.isCompleted != true).toList()),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -135,6 +138,7 @@ class ActiveScreen extends StatelessWidget {
 /// DONATION DETAILS SCREEN
 ////////////////////////////////////////////////////////
 
+
 class DonationDetailsScreen extends StatelessWidget {
   final DonationModel donation;
 
@@ -151,7 +155,6 @@ class DonationDetailsScreen extends StatelessWidget {
         : 'Not assigned';
     final location = donation.locationAddress ?? '';
     final description = donation.description?.trim() ?? '';
-    final precaution = donation.precaution?.trim() ?? '';
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6F7),
@@ -163,61 +166,44 @@ class DonationDetailsScreen extends StatelessWidget {
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
+
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Pictures section
+
+            /// 🔹 Pictures
             const Text(
               "Pictures",
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             ),
             const SizedBox(height: 12),
+
             SizedBox(
-              height: 100,
+              height: 95,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: images.isEmpty ? 1 : images.length,
                 separatorBuilder: (_, _) => const SizedBox(width: 10),
                 itemBuilder: (context, index) {
                   if (images.isEmpty) {
-                    return ClipRRect(
-                      borderRadius: BorderRadius.circular(14),
-                      child: Container(
-                        width: 90,
-                        height: 90,
-                        color: Colors.grey.shade300,
-                        child: const Icon(Icons.image_not_supported),
-                      ),
-                    );
+                    return _imageBox(null);
                   }
-                  return ClipRRect(
-                    borderRadius: BorderRadius.circular(14),
-                    child: Image.network(
-                      images[index],
-                      width: 90,
-                      height: 90,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
-                        width: 90,
-                        height: 90,
-                        color: Colors.grey.shade300,
-                        child: const Icon(Icons.broken_image),
-                      ),
-                    ),
-                  );
+                  return _imageBox(images[index]);
                 },
               ),
             ),
+
             const SizedBox(height: 20),
 
-            // Location section
+            /// 🔹 Location
             const Text(
               "Location",
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             ),
             const SizedBox(height: 10),
+
             ClipRRect(
               borderRadius: BorderRadius.circular(18),
               child: Image.asset(
@@ -227,7 +213,9 @@ class DonationDetailsScreen extends StatelessWidget {
                 fit: BoxFit.cover,
               ),
             ),
-            const SizedBox(height: 14),
+
+            const SizedBox(height: 12),
+
             Row(
               children: [
                 const Icon(Icons.location_on, color: Colors.red),
@@ -238,31 +226,120 @@ class DonationDetailsScreen extends StatelessWidget {
                     style: const TextStyle(fontSize: 14),
                   ),
                 ),
+                const SizedBox(width: 8),
+                const Text(
+                  "1.2 km",
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
               ],
             ),
+
+            const SizedBox(height: 6),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: const [
+                Text(
+                  "Estimated Time",
+                  style: TextStyle(color: Colors.grey),
+                ),
+                Text(
+                  "2 mins",
+                  style: TextStyle(
+                      color: Colors.orange, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+
             const Divider(height: 30),
 
+            /// 🔹 Info Rows
             _infoRow("Donor", donation.donorName),
-            _infoRow("NGO", ngoName),
+            _infoRow("Serving Plate", "Serving Plate"),
             _infoRow("Servings", donation.quantity),
-            _infoRow("Location", location),
-            _infoRow("Precaution", precaution),
-            _infoRow("Description", description),
-            const SizedBox(height: 16),
+
+            /// ✅ CHANGED (Contact → Accepted by)
+            _infoRow("Accepted by", ngoName),
+
+            const SizedBox(height: 20),
+
+            /// 🔹 Description
+            const Text(
+              "Description",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+
+            const SizedBox(height: 10),
+
+            Container(
+              width: double.infinity,
+              constraints: const BoxConstraints(
+                minHeight: 70, // 🔥 always 2 lines space
+              ),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: Text(
+                description.isEmpty
+                    ? "No description provided"
+                    : description,
+                style: const TextStyle(fontSize: 14),
+              ),
+            ),
+
+            const SizedBox(height: 30),
           ],
         ),
       ),
     );
   }
 
+  /// 🔹 Image Box
+  Widget _imageBox(String? url) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: url == null
+          ? Container(
+              width: 90,
+              height: 90,
+              color: Colors.grey.shade300,
+              child: const Icon(Icons.image_not_supported),
+            )
+          : Image.network(
+              url,
+              width: 90,
+              height: 90,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                width: 90,
+                height: 90,
+                color: Colors.grey.shade300,
+                child: const Icon(Icons.broken_image),
+              ),
+            ),
+    );
+  }
+
+  /// 🔹 Info Row
   Widget _infoRow(String title, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
         children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text(
+            title,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
           const Spacer(),
-          Text(value),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+            ),
+          ),
         ],
       ),
     );

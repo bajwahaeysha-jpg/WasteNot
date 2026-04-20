@@ -139,7 +139,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
                                 overflow: TextOverflow.ellipsis,
                               ),
                               trailing: SizedBox(
-                                width: 52,
+                                width: 70,
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   crossAxisAlignment: CrossAxisAlignment.end,

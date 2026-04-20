@@ -247,56 +247,71 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  Widget _messageContent(ConversationMessage message) {
+  Widget _messageContent(ConversationMessage message, bool fromPeer) {
     if (message.type == 'concern_reference' && message.concernReference != null) {
       final reference = message.concernReference!;
       return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: const [
-              Icon(Icons.campaign, size: 16, color: Colors.black54),
-              SizedBox(width: 6),
-              Text(
-                'Concern',
-                style: TextStyle(fontWeight: FontWeight.w700, color: Colors.black87),
-              ),
-            ],
+  crossAxisAlignment: CrossAxisAlignment.start,
+  children: [
+    Row(
+      children: [
+        Icon(
+          Icons.campaign,
+          size: 16,
+          color: fromPeer ? Colors.black54 : Colors.white,
+        ),
+        const SizedBox(width: 6),
+        Text(
+          'Concern',
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            color: fromPeer ? Colors.black87 : Colors.white,
           ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: Image.network(
-              reference.concernImageUrl,
-              width: 160,
-              height: 90,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                width: 160,
-                height: 90,
-                color: Colors.grey.shade200,
-                alignment: Alignment.center,
-                child: const Icon(Icons.image_not_supported),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            reference.concernTitle,
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-          if (message.text.trim().isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Text(
-              message.text,
-              style: const TextStyle(color: Colors.black87),
-            ),
-          ],
-        ],
-      );
+        ),
+      ],
+    ),
+
+    const SizedBox(height: 8),
+
+    ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: Image.network(
+        reference.concernImageUrl,
+        width: double.infinity, // 🔥 FULL WIDTH
+        height: 140,
+        fit: BoxFit.cover,
+      ),
+    ),
+
+    const SizedBox(height: 8),
+
+    Text(
+      reference.concernTitle,
+      style: TextStyle(
+        fontWeight: FontWeight.bold,
+        fontSize: 15,
+        color: fromPeer ? Colors.black : Colors.white,
+      ),
+    ),
+
+    const SizedBox(height: 4),
+
+    Text(
+      message.text,
+      style: TextStyle(
+        color: fromPeer ? Colors.black87 : Colors.white70,
+      ),
+    ),
+  ],
+);
     }
 
-    return Text(message.text);
+    return Text(
+  message.text,
+  style: TextStyle(
+    color: fromPeer ? Colors.black : Colors.white, // 🔥
+  ),
+);
   }
 
   bool _isSameDay(DateTime? first, DateTime? second) {
@@ -508,41 +523,44 @@ class _ChatScreenState extends State<ChatScreen> {
                                   padding: const EdgeInsets.all(10),
                                   decoration: BoxDecoration(
                                     color: selected
-                                        ? const Color(0xFF0B4B3F).withValues(alpha: 0.35)
-                                        : fromPeer
-                                            ? Colors.white
-                                            : const Color(0xFFDCF8C6),
+    ? const Color(0xFF0B4B3F).withValues(alpha: 0.35)
+    : fromPeer
+        ? Colors.white
+        : const Color(0xFF0B4B3F), // 🔥 green
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  child: IntrinsicWidth(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        _messageContent(message),
-                                        const SizedBox(height: 4),
-                                        Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text(
-                                              _timeOnly(message.sentAt),
-                                              style: const TextStyle(
-                                                fontSize: 11,
-                                                color: Colors.black54,
-                                              ),
-                                            ),
-                                            if (!fromPeer && !message.hasPendingWrites) ...[
-                                              const SizedBox(width: 4),
-                                              const Icon(
-                                                Icons.check,
-                                                size: 14,
-                                                color: Colors.black54,
-                                              ),
-                                            ],
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
+                                  child: ConstrainedBox(
+  constraints: BoxConstraints(
+    maxWidth: MediaQuery.of(context).size.width * 0.75,
+  ),
+  child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _messageContent(message, fromPeer),
+      const SizedBox(height: 4),
+      Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            _timeOnly(message.sentAt),
+            style: TextStyle(
+              fontSize: 11,
+              color: fromPeer ? Colors.black54 : Colors.white, // 🔥
+            ),
+          ),
+          if (!fromPeer && !message.hasPendingWrites) ...[
+            const SizedBox(width: 4),
+            Icon(
+              Icons.check,
+              size: 14,
+              color: fromPeer ? Colors.black54 : Colors.white, // 🔥
+            ),
+          ],
+        ],
+      ),
+    ],
+  ),
+),
                                 ),
                               ),
                             ),

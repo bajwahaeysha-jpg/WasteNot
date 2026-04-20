@@ -163,7 +163,7 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  Widget _messageContent(ConversationMessage message) {
+  Widget _messageContent(ConversationMessage message, bool fromPeer) {
     if (message.type == 'concern_reference' && message.concernReference != null) {
       final reference = message.concernReference!;
       return Column(
@@ -213,12 +213,12 @@ class _ChatScreenState extends State<ChatScreen> {
     }
 
     return Text(
-      message.text,
-      style: const TextStyle(
-        color: Colors.black,
-        fontSize: 14,
-      ),
-    );
+  message.text,
+  style: TextStyle(
+    color: fromPeer ? Colors.black : Colors.white, // 🔥
+    fontSize: 14,
+  ),
+);
   }
 
   bool _isSameDay(DateTime? first, DateTime? second) {
@@ -398,6 +398,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         final previousTime = index == 0 ? null : messages[index - 1].sentAt;
                         final showHeader = index == 0 || !_isSameDay(message.sentAt, previousTime);
                         final fromPeer = message.senderId == peerUser.uid;
+                        
 
                         return Column(
                           children: [
@@ -433,31 +434,34 @@ class _ChatScreenState extends State<ChatScreen> {
                                           ? Colors.red.shade100
                                           : fromPeer
                                               ? Colors.white
-                                              : const Color(0xFFDCF8C6),
+                                              : const Color(0xFF0B4B3F),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
-                                    child: IntrinsicWidth(
+                                    child: ConstrainedBox(
+                                     constraints: BoxConstraints(
+                                     maxWidth: MediaQuery.of(context).size.width * 0.75, // 🔥 max width
+                                     ),
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          _messageContent(message),
+                                          _messageContent(message, fromPeer),
                                           const SizedBox(height: 4),
                                           Row(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
                                               Text(
-                                                _timeOnly(message.sentAt),
-                                                style: const TextStyle(
-                                                  fontSize: 11,
-                                                  color: Colors.black54,
-                                                ),
-                                              ),
+  _timeOnly(message.sentAt),
+  style: TextStyle(
+    fontSize: 11,
+    color: fromPeer ? Colors.black54 : Colors.white, // 🔥
+  ),
+),
                                               if (!fromPeer && !message.hasPendingWrites) ...[
                                                 const SizedBox(width: 4),
-                                                const Icon(
+                                                Icon(
                                                   Icons.check,
                                                   size: 14,
-                                                  color: Colors.black54,
+                                                  color: fromPeer ? Colors.black54 : Colors.white,
                                                 ),
                                               ],
                                             ],
@@ -485,7 +489,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             decoration: InputDecoration(
                               hintText: 'Type a message...',
                               border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(25),
+                               borderRadius: BorderRadius.circular(25),
                                 borderSide: BorderSide.none,
                               ),
                               filled: true,

@@ -159,16 +159,35 @@ class _DonorNavigationScreenState extends State<DonorNavigationScreen> {
                 );
               },
 
-              child: CircleAvatar(
-                backgroundColor: Colors.white,
-                child: Text(
-                  SessionService.initials(),
-                  style: TextStyle(
-                    color: mainGreen,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+              child: Builder(
+  builder: (context) {
+    final user = SessionService.user;
+
+    return CircleAvatar(
+      radius: 18,
+      backgroundColor: Colors.white,
+
+      // 🔥 IMAGE
+      backgroundImage:
+          (user?.profileImageUrl != null &&
+                  user!.profileImageUrl!.isNotEmpty)
+              ? NetworkImage(user.profileImageUrl!)
+              : null,
+
+      // 🔥 FALLBACK (initials)
+      child: (user?.profileImageUrl == null ||
+              user!.profileImageUrl!.isEmpty)
+          ? Text(
+              SessionService.initials(),
+              style: TextStyle(
+                color: mainGreen,
+                fontWeight: FontWeight.bold,
               ),
+            )
+          : null,
+    );
+  },
+),
             ),
           )
 

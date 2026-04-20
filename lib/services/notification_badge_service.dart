@@ -82,7 +82,7 @@ class NotificationBadgeService {
   }) {
     if (uid != null && uid.trim().isNotEmpty) {
       return _notifications
-          .where('uid', isEqualTo: uid.trim())
+          .where('receiverId', isEqualTo: uid.trim())
           .limit(limit + 1)
           .snapshots()
           .map(_unreadCountFromSnapshot);

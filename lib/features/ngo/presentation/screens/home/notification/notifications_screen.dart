@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:wastenot/services/admin_notification_read_receipt_service.dart';
 import 'package:wastenot/services/auth_service.dart';
 import 'package:wastenot/services/ngo_notification_service.dart';
 import 'package:wastenot/services/notification_read_service.dart';
@@ -59,6 +58,9 @@ class NotificationsScreen extends StatelessWidget {
               final date = createdAt is Timestamp
                   ? createdAt.toDate()
                   : DateTime.now();
+              final donationId = notification['donationId']?.toString().trim() ?? '';
+              final isRead =
+                  notification['isRead'] == true || notification['read'] == true;
 
               final title =
                   notification['title']?.toString().trim().isNotEmpty == true
@@ -75,24 +77,13 @@ class NotificationsScreen extends StatelessWidget {
                 child: InkWell(
                   borderRadius: BorderRadius.circular(14),
                   onTap: () {
-                    final uid = currentUser?.uid;
                     final notifId = notification['id']?.toString() ?? '';
-                    final targetAudience =
-                        notification['targetAudience']?.toString().trim().toLowerCase() ?? '';
 
                     // Mark as read to remove badge in real time.
-                    if (uid != null && uid.trim().isNotEmpty && notifId.trim().isNotEmpty) {
-                      if (targetAudience == 'ngo' || targetAudience == 'both') {
-                        AdminNotificationReadReceiptService().markBroadcastNotificationRead(
-                          uid: uid,
-                          notificationId: notifId,
-                          audience: 'ngo',
-                        );
-                      } else {
-                        NotificationReadService().markUserNotificationRead(
-                          notificationId: notifId,
-                        );
-                      }
+                    if (notifId.trim().isNotEmpty) {
+                      NotificationReadService().markUserNotificationRead(
+                        notificationId: notifId,
+                      );
                     }
 
                     Navigator.push(
@@ -104,6 +95,7 @@ class NotificationsScreen extends StatelessWidget {
                           title: title,
                           message: message,
                           time: DateFormat('dd MMM, hh:mm a').format(date),
+                          donationId: donationId,
                         ),
                       ),
                     );
@@ -112,7 +104,9 @@ class NotificationsScreen extends StatelessWidget {
                     icon: _resolveIcon(title),
                     iconColor: _resolveColor(title),
                     title: title,
+                    message: message,
                     time: DateFormat('dd MMM, hh:mm a').format(date),
+                    isRead: isRead,
                   ),
                 ),
               );
@@ -148,13 +142,17 @@ class _NotificationTile extends StatelessWidget {
   final IconData icon;
   final Color iconColor;
   final String title;
+  final String message;
   final String time;
+  final bool isRead;
 
   const _NotificationTile({
     required this.icon,
     required this.iconColor,
     required this.title,
+    required this.message,
     required this.time,
+    required this.isRead,
   });
 
   @override
@@ -199,6 +197,16 @@ class _NotificationTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
+                  message,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.black54,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
                   time,
                   style: const TextStyle(
                     color: Colors.grey,
@@ -209,6 +217,16 @@ class _NotificationTile extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
+          if (!isRead)
+            Container(
+              width: 10,
+              height: 10,
+              decoration: const BoxDecoration(
+                color: Colors.red,
+                shape: BoxShape.circle,
+              ),
+            ),
+          if (!isRead) const SizedBox(width: 8),
           const Icon(
             Icons.arrow_forward_ios_rounded,
             size: 16,
@@ -226,6 +244,7 @@ class NotificationDetailScreen extends StatelessWidget {
   final String title;
   final String message;
   final String time;
+  final String donationId;
 
   const NotificationDetailScreen({
     super.key,
@@ -234,6 +253,7 @@ class NotificationDetailScreen extends StatelessWidget {
     required this.title,
     required this.message,
     required this.time,
+    required this.donationId,
   });
 
   @override
@@ -314,6 +334,24 @@ class NotificationDetailScreen extends StatelessWidget {
                   height: 1.5,
                 ),
               ),
+              if (donationId.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                const Text(
+                  'Related Donation',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  donationId,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
             ],
           ),
         ),

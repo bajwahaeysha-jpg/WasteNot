@@ -1,15 +1,33 @@
-import 'package:wastenot/features/admin/activity_log/services/activity_log_notification_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class NgoNotificationService {
-  NgoNotificationService({ActivityLogNotificationService? activityService})
-      : _activityService = activityService ?? ActivityLogNotificationService();
+  NgoNotificationService({FirebaseFirestore? firestore})
+      : _firestore = firestore ?? FirebaseFirestore.instance;
 
-  final ActivityLogNotificationService _activityService;
+  final FirebaseFirestore _firestore;
 
   Stream<List<Map<String, dynamic>>> notificationsForNgo({
     required String? uid,
     required String? email,
   }) {
-    return _activityService.notificationsForNgo(uid: uid, email: email);
+    final ngoId = uid?.trim() ?? '';
+    if (ngoId.isEmpty) {
+      return Stream<List<Map<String, dynamic>>>.value(const <Map<String, dynamic>>[]);
+    }
+
+    return _firestore
+        .collection('notifications')
+        .where('receiverId', isEqualTo: ngoId)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs.map((doc) {
+            final data = doc.data();
+            return <String, dynamic>{
+              'id': doc.id,
+              ...data,
+            };
+          }).toList();
+        });
   }
 }

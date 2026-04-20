@@ -48,6 +48,8 @@ class _DonorHomeScreenState extends State<DonorHomeScreen>
   final DonationService _donationService = DonationService();
   Timer? _goalMonthTimer;
   late final Future<List<NgoModel>> _localOpportunitiesFuture;
+  bool _isCheckingOverdueDonations = false;
+  bool _isShowingOverdueDialogs = false;
 
   Future<void> _loadGoal() async {
     final user = SessionService.currentUser.value;
@@ -121,6 +123,9 @@ class _DonorHomeScreenState extends State<DonorHomeScreen>
       const Duration(minutes: 1),
       (_) => _refreshGoalForNewMonth(),
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkOverdueDonationsOnOpen();
+    });
   }
 
   @override
@@ -135,6 +140,7 @@ class _DonorHomeScreenState extends State<DonorHomeScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _refreshGoalForNewMonth();
+      _checkOverdueDonationsOnOpen();
     }
   }
 
@@ -180,6 +186,129 @@ class _DonorHomeScreenState extends State<DonorHomeScreen>
 
   void _refreshRecentDonations() {
     setState(() {});
+  }
+
+  Future<void> _checkOverdueDonationsOnOpen() async {
+    if (!mounted || _isCheckingOverdueDonations || _isShowingOverdueDialogs) {
+      return;
+    }
+
+    final donor = SessionService.user;
+    if (donor == null) {
+      return;
+    }
+
+    _isCheckingOverdueDonations = true;
+
+    try {
+      final donations = await _donationService.getDonorDonations(donorId: donor.uid);
+      final overdue = donations
+          .where((donation) => donation.isOverdueForClosureReminder)
+          .toList()
+        ..sort((a, b) {
+          final aAcceptedAt = a.acceptedAt ?? a.createdAt;
+          final bAcceptedAt = b.acceptedAt ?? b.createdAt;
+          return aAcceptedAt.compareTo(bAcceptedAt);
+        });
+
+      if (!mounted || overdue.isEmpty) {
+        return;
+      }
+
+      _isShowingOverdueDialogs = true;
+
+      for (final donation in overdue) {
+        if (!mounted) {
+          break;
+        }
+
+        final refreshed = await _donationService.getDonationById(donation.donationId);
+        if (!refreshed.isOverdueForClosureReminder || !mounted) {
+          continue;
+        }
+
+        final result = await showDialog<_DonationClosureAction>(
+          context: context,
+          barrierDismissible: false,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Forgot to update donation status?'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  refreshed.foodItems.isEmpty
+                      ? 'Donation'
+                      : refreshed.foodItems.join(', '),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Text('NGO: ${refreshed.acceptedByNgoName ?? 'Unknown NGO'}'),
+                const SizedBox(height: 4),
+                Text(
+                  'Accepted: ${_formatReminderDateTime(refreshed.acceptedAt ?? refreshed.createdAt)}',
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(dialogContext).pop(_DonationClosureAction.notCompleted);
+                },
+                child: const Text('Not Completed'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(dialogContext).pop(_DonationClosureAction.completed);
+                },
+                child: const Text('Complete'),
+              ),
+            ],
+          ),
+        );
+
+        if (result == null || !mounted) {
+          continue;
+        }
+
+        try {
+          if (result == _DonationClosureAction.completed) {
+            await _donationService.markDonationCompleted(
+              donationId: refreshed.donationId,
+            );
+          } else {
+            await _donationService.markDonationNotCompleted(
+              donationId: refreshed.donationId,
+            );
+          }
+
+          if (!mounted) {
+            break;
+          }
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                result == _DonationClosureAction.completed
+                    ? 'Donation marked as completed.'
+                    : 'Donation marked as not completed.',
+              ),
+            ),
+          );
+          _refreshRecentDonations();
+        } on DonationException catch (error) {
+          if (!mounted) {
+            break;
+          }
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(error.message)),
+          );
+        }
+      }
+    } finally {
+      _isCheckingOverdueDonations = false;
+      _isShowingOverdueDialogs = false;
+    }
   }
 
   Future<void> _openNgoChat(NgoModel ngo) async {
@@ -929,4 +1058,16 @@ String _formatRelativeDonationTime(DateTime time) {
     return 'Donated yesterday';
   }
   return 'Donated ${difference.inDays} days ago';
+}
+
+String _formatReminderDateTime(DateTime value) {
+  final hour = value.hour == 0 ? 12 : (value.hour > 12 ? value.hour - 12 : value.hour);
+  final suffix = value.hour >= 12 ? 'PM' : 'AM';
+  final minute = value.minute.toString().padLeft(2, '0');
+  return '${value.day}/${value.month}/${value.year} $hour:$minute $suffix';
+}
+
+enum _DonationClosureAction {
+  completed,
+  notCompleted,
 }

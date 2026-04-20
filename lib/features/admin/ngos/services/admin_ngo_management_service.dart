@@ -63,6 +63,10 @@ class AdminNgoManagementService {
   CollectionReference<Map<String, dynamic>> get _donations =>
       _firestore.collection('donations');
 
+  Stream<AdminNgoStats> getNgoStats(String ngoId) {
+    return _streamNgoDonationDocs(ngoId).map(_calculateNgoStats);
+  }
+
   Stream<List<AdminManagedNgo>> streamNgos({
     NgoStatusFilter filter = NgoStatusFilter.all,
   }) {
@@ -126,10 +130,11 @@ class AdminNgoManagementService {
     late StreamController<AdminManagedNgo?> controller;
 
     StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? userSub;
-    StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? donationSub;
+    StreamSubscription<List<QueryDocumentSnapshot<Map<String, dynamic>>>>?
+        donationSub;
 
     DocumentSnapshot<Map<String, dynamic>>? userDoc;
-    QuerySnapshot<Map<String, dynamic>>? donationSnapshot;
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> donationDocs = const [];
 
     Future<void> emitUpdatedNgo() async {
       if (userDoc == null) return;
@@ -141,7 +146,7 @@ class AdminNgoManagementService {
 
       final ngo = _buildManagedNgoFromSources(
         userDoc: userDoc!,
-        donationDocs: donationSnapshot?.docs ?? const [],
+        donationDocs: donationDocs,
       );
 
       controller.add(ngo);
@@ -154,12 +159,8 @@ class AdminNgoManagementService {
           await emitUpdatedNgo();
         });
 
-        // Assumption: donations store the assigned/accepted NGO id in `ngoId`.
-        donationSub = _donations
-            .where('ngoId', isEqualTo: ngoId)
-            .snapshots()
-            .listen((snapshot) async {
-          donationSnapshot = snapshot;
+        donationSub = _streamNgoDonationDocs(ngoId).listen((snapshotDocs) async {
+          donationDocs = snapshotDocs;
           await emitUpdatedNgo();
         });
       },
@@ -330,23 +331,7 @@ class AdminNgoManagementService {
   }) {
     final user = AppUserModel.fromFirestore(userDoc);
     final data = userDoc.data() ?? <String, dynamic>{};
-
-    var totalMeals = 0;
-    var completed = 0;
-    final totalDonations = donationDocs.length;
-
-    for (final donationDoc in donationDocs) {
-      final donation = donationDoc.data();
-      totalMeals += _mealCountFromDonation(donation);
-      if (_isCompletedDonation(donation['status'])) {
-        completed += 1;
-      }
-    }
-
-    // Reasonable default formula: completed / total donations.
-    final successRate = totalDonations == 0
-        ? 0
-        : ((completed / totalDonations) * 100).round();
+    final stats = _calculateNgoStats(donationDocs);
 
     final status = (data['status'] as String?)?.toLowerCase();
     final suspended = (data['isSuspended'] as bool?) ?? status == 'suspended';
@@ -358,8 +343,8 @@ class AdminNgoManagementService {
 
     return AdminManagedNgo(
       user: normalizedUser,
-      totalMealsReceived: totalMeals,
-      successRate: successRate,
+      totalMealsReceived: stats.totalMeals,
+      successRate: stats.successRate,
       city: _stringValue(data, const ['city', 'location', 'address']),
       about: _stringValue(data, const [
         'about',
@@ -382,7 +367,13 @@ class AdminNgoManagementService {
   }
 
   int _mealCountFromDonation(Map<String, dynamic> donation) {
-    for (final key in const ['servings', 'meals', 'mealCount', 'totalMeals']) {
+    for (final key in const [
+      'servings',
+      'quantity',
+      'meals',
+      'mealCount',
+      'totalMeals',
+    ]) {
       final parsed = parseMealValue(donation[key]);
       if (parsed > 0) {
         return parsed;
@@ -400,6 +391,100 @@ class AdminNgoManagementService {
         normalized == 'success';
   }
 
+  bool _isMealEligibleForNgo(Object? value) {
+    final normalized = value?.toString().trim().toLowerCase() ?? '';
+    return normalized == 'accepted' || normalized == 'completed';
+  }
+
+  bool _isAcceptedDonationForSuccess(Object? value) {
+    final normalized = value?.toString().trim().toLowerCase() ?? '';
+    return normalized == 'accepted' ||
+        normalized == 'completed' ||
+        normalized == 'not_completed';
+  }
+
+  Stream<List<QueryDocumentSnapshot<Map<String, dynamic>>>> _streamNgoDonationDocs(
+    String ngoId,
+  ) {
+    late StreamController<List<QueryDocumentSnapshot<Map<String, dynamic>>>>
+        controller;
+    StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? acceptedBySub;
+    StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? legacyNgoSub;
+    var acceptedByDocs = const <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+    var legacyNgoDocs = const <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+
+    void emit() {
+      final merged = <String, QueryDocumentSnapshot<Map<String, dynamic>>>{};
+      for (final doc in acceptedByDocs) {
+        merged[doc.id] = doc;
+      }
+      for (final doc in legacyNgoDocs) {
+        merged[doc.id] = doc;
+      }
+      controller.add(merged.values.toList());
+    }
+
+    controller = StreamController<List<QueryDocumentSnapshot<Map<String, dynamic>>>>.broadcast(
+      onListen: () {
+        acceptedBySub = _donations
+            .where('acceptedByNgoId', isEqualTo: ngoId)
+            .snapshots()
+            .listen((snapshot) {
+          acceptedByDocs = snapshot.docs;
+          emit();
+        }, onError: controller.addError);
+
+        legacyNgoSub = _donations
+            .where('ngoId', isEqualTo: ngoId)
+            .snapshots()
+            .listen((snapshot) {
+          legacyNgoDocs = snapshot.docs;
+          emit();
+        }, onError: controller.addError);
+      },
+      onCancel: () async {
+        await acceptedBySub?.cancel();
+        await legacyNgoSub?.cancel();
+      },
+    );
+
+    return controller.stream;
+  }
+
+  AdminNgoStats _calculateNgoStats(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> donationDocs,
+  ) {
+    var totalMeals = 0;
+    var acceptedCount = 0;
+    var completedCount = 0;
+
+    for (final donationDoc in donationDocs) {
+      final donation = donationDoc.data();
+      final status = donation['status'];
+
+      if (_isMealEligibleForNgo(status)) {
+        totalMeals += _mealCountFromDonation(donation);
+      }
+      if (_isAcceptedDonationForSuccess(status)) {
+        acceptedCount += 1;
+      }
+      if (_isCompletedDonation(status)) {
+        completedCount += 1;
+      }
+    }
+
+    final successRate = acceptedCount == 0
+        ? 0
+        : ((completedCount / acceptedCount) * 100).round();
+
+    return AdminNgoStats(
+      totalMeals: totalMeals,
+      acceptedCount: acceptedCount,
+      completedCount: completedCount,
+      successRate: successRate,
+    );
+  }
+
   String? _stringValue(Map<String, dynamic> data, List<String> keys) {
     for (final key in keys) {
       final value = data[key];
@@ -409,5 +494,19 @@ class AdminNgoManagementService {
     }
     return null;
   }
+}
+
+class AdminNgoStats {
+  const AdminNgoStats({
+    required this.totalMeals,
+    required this.acceptedCount,
+    required this.completedCount,
+    required this.successRate,
+  });
+
+  final int totalMeals;
+  final int acceptedCount;
+  final int completedCount;
+  final int successRate;
 }
 

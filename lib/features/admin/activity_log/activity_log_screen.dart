@@ -13,15 +13,12 @@ class ActivityLogScreen extends StatefulWidget {
 
 class _ActivityLogScreenState extends State<ActivityLogScreen> {
   final _service = AdminDonorManagementService();
-  int selectedIndex = 0;
-
-  final List<String> groups = ["Donors & NGOs", "Donors", "NGOs"];
-
-  Future<void> openSend(String group) async {
+ 
+  Future<void> openSend() async {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => SendNotificationScreen(group: group),
+        builder: (_) => const SendNotificationScreen(),
       ),
     );
 
@@ -41,29 +38,13 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
         titleSpacing: 16,
-        title: Row(
-          children: const [
-            Expanded(
-              child: Text(
-                "Activity Log",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 20,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            SizedBox(width: 10),
-            Text(
-              "Recent Notifications",
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
+        title: const Text(
+          "Activity Log",
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+            fontSize: 20,
+          ),
         ),
       ),
       body: Column(
@@ -72,62 +53,26 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
 
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: List.generate(groups.length, (index) {
-                final isSelected = selectedIndex == index;
-
-                return Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 6),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(30),
-                      onTap: () {
-                        setState(() {
-                          selectedIndex = index;
-                        });
-                        openSend(groups[index]);
-                      },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 220),
-                        curve: Curves.easeInOut,
-                        padding: const EdgeInsets.symmetric(vertical: 13),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? const Color(0xFF0B4B3F)
-                              : Colors.white,
-                          borderRadius: BorderRadius.circular(30),
-                          border: Border.all(
-                            color: const Color(0xFF0B4B3F),
-                            width: 1.3,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha:
-                                isSelected ? 0.12 : 0.05,
-                              ),
-                              blurRadius: isSelected ? 10 : 6,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: Text(
-                            groups[index],
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: isSelected
-                                  ? Colors.white
-                                  : const Color(0xFF0B4B3F),
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13.5,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: openSend,
+                icon: const Icon(Icons.notifications, color: Colors.white),
+                label: const Text(
+                  "Send New Notification",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
                   ),
-                );
-              }),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0B4B3F),
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
             ),
           ),
 

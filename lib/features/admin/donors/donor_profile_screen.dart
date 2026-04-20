@@ -94,6 +94,13 @@ class DonorProfileScreen extends StatelessWidget {
                                   ),
                                 ),
                                 const SizedBox(height: 4),
+                                Text(
+                                  donor.email,
+                                  style: const TextStyle(
+                                    color: Colors.black54,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
                                 Row(
                                   children: [
                                     const Icon(
@@ -139,7 +146,7 @@ class DonorProfileScreen extends StatelessWidget {
                           ),
                           const SizedBox(width: 10),
                           _statBox(
-                            donor.statusLabel,
+                            donor.isSuspended ? "Suspended" : "Active",
                             "Status",
                           ),
                         ],

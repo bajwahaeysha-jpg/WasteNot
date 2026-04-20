@@ -90,18 +90,23 @@ class _DonationProfileScreenState extends State<DonationProfileScreen> {
 
               /// ðŸ”¥ DONOR / NGO
               _info("Donated by", d.donorName),
-              if (d.acceptedByNgoName != null)
-                _info("Accepted by", d.acceptedByNgoName!),
 
-              const SizedBox(height: 10),
+/// ✅ ACCEPTED INFO (only if accepted OR completed)
+if (d.status == 'accepted' || d.status == 'completed') ...[
+  if (d.acceptedByNgoName != null)
+    _info("Accepted by", d.acceptedByNgoName!),
 
-              /// ðŸ”¥ TIMES
-              _info("Donated at", _formatDateTime(d.createdAt)),
-              if (d.acceptedAt != null)
-                _info("Accepted at", _formatDateTime(d.acceptedAt!)),
+  if (d.acceptedAt != null)
+    _info("Accepted at", _formatDateTime(d.acceptedAt!)),
+],
 
-              if (d.expiryAt != null)
-                _info("Expired at", _formatDateTime(d.expiryAt!)),
+const SizedBox(height: 10),
+
+_info("Donated at", _formatDateTime(d.createdAt)),
+
+/// ✅ EXPIRED ONLY WHEN STATUS = expired
+if (d.status == 'expired' && d.expiryAt != null)
+  _info("Expired at", _formatDateTime(d.expiryAt!)),
 
               const SizedBox(height: 20),
 

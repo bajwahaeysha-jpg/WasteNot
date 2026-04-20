@@ -36,6 +36,10 @@ class NotificationService {
     required String receiverId,
     required String title,
     required String body,
+    String? type,
+    String? navigation,
+    String? userRole,
+    Map<String, dynamic> extraData = const <String, dynamic>{},
   }) async {
     final trimmedId = receiverId.trim();
     if (trimmedId.isEmpty) {
@@ -54,6 +58,9 @@ class NotificationService {
       'receiverId': trimmedId,
       'title': title.trim(),
       'body': body.trim(),
+      'type': type?.trim(),
+      'navigation': navigation?.trim(),
+      'userRole': userRole?.trim(),
       'timestamp': FieldValue.serverTimestamp(),
 
       // Compatibility fields for existing UI/services.
@@ -65,6 +72,7 @@ class NotificationService {
       'read': false,
       'sentBy': sender?.uid,
       'sentByName': sender?.displayName,
+      ...extraData,
     });
   }
 }

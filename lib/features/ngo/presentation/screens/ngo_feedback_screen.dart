@@ -139,6 +139,15 @@ class _NgoFeedbackScreenState extends State<NgoFeedbackScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const Text(
+  'Select Donor',
+  style: TextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.w700,
+    color: AppColors.textPrimary,
+  ),
+),
+const SizedBox(height: 10),
                 DropdownButtonFormField<String>(
                   value: donors.any((d) => d.uid == _selectedDonor?.uid)
                       ? _selectedDonor?.uid
@@ -150,34 +159,69 @@ class _NgoFeedbackScreenState extends State<NgoFeedbackScreen> {
                       .map(
                         (donor) => DropdownMenuItem<String>(
                           value: donor.uid,
-                          child: Text(
-                            donor.displayName,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
-                            ),
-                          ),
+                          child: Row(
+  children: [
+    CircleAvatar(
+      radius: 16,
+      backgroundColor: Colors.grey.shade200,
+      backgroundImage:
+          (donor.profileImageUrl != null &&
+                  donor.profileImageUrl!.isNotEmpty)
+              ? NetworkImage(donor.profileImageUrl!)
+              : null,
+      child: (donor.profileImageUrl == null ||
+              donor.profileImageUrl!.isEmpty)
+          ? Text(donor.displayName[0].toUpperCase())
+          : null,
+    ),
+    const SizedBox(width: 10),
+    Expanded(
+      child: Text(
+        donor.displayName,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 14,
+        ),
+      ),
+    ),
+  ],
+),
                         ),
                       )
                       .toList(),
                   selectedItemBuilder: (context) {
-                    return donors
-                        .map(
-                          (donor) => Align(
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                              donor.displayName,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        )
-                        .toList();
-                  },
+  return donors.map((donor) {
+    return Row(
+      children: [
+        CircleAvatar(
+          radius: 16,
+          backgroundColor: Colors.grey.shade200,
+          backgroundImage:
+              (donor.profileImageUrl != null &&
+                      donor.profileImageUrl!.isNotEmpty)
+                  ? NetworkImage(donor.profileImageUrl!)
+                  : null,
+          child: (donor.profileImageUrl == null ||
+                  donor.profileImageUrl!.isEmpty)
+              ? Text(donor.displayName[0].toUpperCase())
+              : null,
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            donor.displayName,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
+  }).toList();
+},
                   onChanged: loading || donors.isEmpty
                       ? null
                       : (value) {
