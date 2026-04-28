@@ -106,9 +106,13 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
   Future<void> pickImages() async {
     final images = await _picker.pickMultiImage(imageQuality: 80);
 
-    if (images != null) {
+    if (images.isNotEmpty) {
       setState(() {
-        pickedImages = images.take(3).toList();
+        final remainingSlots = 4 - pickedImages.length;
+
+if (remainingSlots > 0) {
+  pickedImages.addAll(images.take(remainingSlots));
+}
       });
     }
   }
@@ -272,41 +276,77 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
                 children: [
 
                   // ðŸ”¥ HIDE BUTTON WHEN IMAGES EXIST
-                  if (pickedImages.isEmpty)
-                    GestureDetector(
-                      onTap: pickImages,
-                      child: Container(
-                        height: 85,
-                        width: 85,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade300),
-                          borderRadius: BorderRadius.circular(12),
-                          color: Colors.white,
-                        ),
-                        child: const Icon(Icons.add_a_photo),
-                      ),
-                    ),
+                  Expanded(
+                    child: SizedBox(
+                      height: 85,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: pickedImages.length < 4
+                            ? pickedImages.length + 1
+                            : pickedImages.length,
+                        separatorBuilder: (_, __) =>
+                            const SizedBox(width: 10),
+                        itemBuilder: (_, i) {
+                          if (pickedImages.length < 4 && i == 0) {
+                            return GestureDetector(
+                              onTap: pickImages,
+                              child: Container(
+                                height: 85,
+                                width: 85,
+                                decoration: BoxDecoration(
+                                  border:
+                                      Border.all(color: Colors.grey.shade300),
+                                  borderRadius: BorderRadius.circular(12),
+                                  color: Colors.white,
+                                ),
+                                child: const Icon(Icons.add_a_photo),
+                              ),
+                            );
+                          }
 
-                  if (pickedImages.isNotEmpty)
-                    Expanded(
-                      child: SizedBox(
-                        height: 85,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: pickedImages.length,
-                          separatorBuilder: (_, __) =>
-                              const SizedBox(width: 10),
-                          itemBuilder: (_, i) => ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: Image.file(
-                              File(pickedImages[i].path),
-                              width: 85,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
+                          final imageIndex = pickedImages.length < 4 ? i - 1 : i;
+
+                          return Stack(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: Image.file(
+                                  File(pickedImages[imageIndex].path),
+                                  width: 85,
+                                  height: 85,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                              Positioned(
+                                top: 4,
+                                right: 4,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      pickedImages.removeAt(imageIndex);
+                                    });
+                                  },
+                                  child: Container(
+                                    width: 18,
+                                    height: 18,
+                                    decoration: const BoxDecoration(
+                                      color: Colors.black54,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.close,
+                                      size: 12,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                     ),
+                  ),
                 ],
               ),
 

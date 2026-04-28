@@ -483,50 +483,120 @@ class _DonorHomeScreenState extends State<DonorHomeScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Emergency Help',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        'Live concerns',
-                        style: TextStyle(color: DonorHomeScreen.mainGreen),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
                   StreamBuilder<List<ConcernModel>>(
                     stream: _concernService.getActiveConcerns(),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 18),
-                          child: Center(child: CircularProgressIndicator()),
+                        return const Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Emergency Help',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(
+                                  'Live concerns',
+                                  style: TextStyle(
+                                    color: DonorHomeScreen.mainGreen,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 12),
+                            Padding(
+                              padding: EdgeInsets.symmetric(vertical: 18),
+                              child: Center(child: CircularProgressIndicator()),
+                            ),
+                          ],
                         );
                       }
 
-                      final concerns = snapshot.hasError
+                      final concerns = _sortedVisibleConcerns(
+                        snapshot.hasError
                           ? const <ConcernModel>[]
-                          : (snapshot.data ?? const <ConcernModel>[]);
+                          : (snapshot.data ?? const <ConcernModel>[]),
+                      );
+                      final latestConcern =
+                          concerns.isEmpty ? null : concerns.first;
+                      final hasMultipleConcerns = concerns.length > 1;
+
+                      Widget buildHeader() {
+                        if (hasMultipleConcerns) {
+                          return Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Emergency Help',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => AllConcernsScreen(
+                                      concerns: concerns,
+                                    ),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'View all >',
+                                  style: TextStyle(color: Colors.grey),
+                                ),
+                              ),
+                            ],
+                          );
+                        }
+
+                        return const Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Emergency Help',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              'Live concerns',
+                              style: TextStyle(
+                                color: DonorHomeScreen.mainGreen,
+                              ),
+                            ),
+                          ],
+                        );
+                      }
+
                       if (concerns.isEmpty) {
-                        return const Text(
-                          'No active concerns right now.',
-                          style: TextStyle(color: Colors.grey),
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            buildHeader(),
+                            const SizedBox(height: 12),
+                            const Text(
+                              'No active concerns right now.',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          ],
                         );
                       }
 
                       return Column(
-                        children: concerns.take(3).map((concern) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: _EmergencyConcernCard(concern: concern),
-                          );
-                        }).toList(),
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          buildHeader(),
+                          const SizedBox(height: 12),
+                          _EmergencyConcernCard(concern: latestConcern!),
+                        ],
                       );
                     },
                   ),
@@ -699,6 +769,62 @@ class _DonorHomeScreenState extends State<DonorHomeScreen>
           ],
         ),
       ),
+    );
+  }
+}
+
+List<ConcernModel> _sortedVisibleConcerns(List<ConcernModel> concerns) {
+  final now = DateTime.now();
+  final visibleConcerns = concerns
+      .where((concern) => concern.isActive && concern.expiryTime.isAfter(now))
+      .toList()
+    ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+  return visibleConcerns;
+}
+
+class AllConcernsScreen extends StatelessWidget {
+  const AllConcernsScreen({
+    super.key,
+    required this.concerns,
+  });
+
+  final List<ConcernModel> concerns;
+
+  @override
+  Widget build(BuildContext context) {
+    final visibleConcerns = _sortedVisibleConcerns(concerns);
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF7F9F8),
+      appBar: AppBar(
+        backgroundColor: DonorHomeScreen.mainGreen,
+        elevation: 0,
+        title: const Text(
+          'All Concerns',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      body: visibleConcerns.isEmpty
+          ? const Center(
+              child: Text(
+                'No active concerns right now.',
+                style: TextStyle(color: Colors.grey),
+              ),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+              itemCount: visibleConcerns.length,
+              itemBuilder: (context, index) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _EmergencyConcernCard(
+                  concern: visibleConcerns[index],
+                ),
+              ),
+            ),
     );
   }
 }
