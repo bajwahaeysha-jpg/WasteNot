@@ -92,7 +92,7 @@ class _ActiveDonationsScreenState extends State<ActiveDonationsScreen> {
                       borderRadius: BorderRadius.circular(14),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha:0.05),
                           blurRadius: 8,
                           offset: const Offset(0, 4),
                         ),
@@ -163,7 +163,7 @@ class _DonationThumbnail extends StatelessWidget {
             width: 70,
             height: 70,
             fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(
+            errorBuilder: (_, _, _) => Container(
               width: 70,
               height: 70,
               color: Colors.grey.shade200,

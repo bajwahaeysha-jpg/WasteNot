@@ -83,7 +83,7 @@ class ImpactServices {
       final totalCompletedDonations = completedDocs.length;
       final totalMeals = completedDocs.fold<int>(
         0,
-        (sum, doc) => sum + parseMealValue(doc.data()['quantity']),
+        (int sum, doc) => sum + parseMealValue(doc.data()['quantity']),
       );
       final weeklyActivity = _buildWeeklyActivity(completedDocs);
 

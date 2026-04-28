@@ -134,7 +134,7 @@ class AdminAnalyticsService {
     final successfulCount = successfulDonations.length;
     final totalMeals = completedDonations.fold<int>(
       0,
-      (sum, doc) => sum + quantityToMeals(doc.data()['quantity']),
+      (int sum, doc) => sum + quantityToMeals(doc.data()['quantity']),
     );
     final successRate = totalDonations == 0
         ? 0

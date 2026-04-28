@@ -257,7 +257,7 @@ class _DonorGlobalSearchScreenState extends State<DonorGlobalSearchScreen> {
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       itemCount: tiles.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (_, index) => tiles[index],
     );
   }
@@ -331,7 +331,7 @@ class _ResultTile extends StatelessWidget {
                 height: 42,
                 width: 42,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0B4B3F).withOpacity(0.10),
+                  color: const Color(0xFF0B4B3F).withValues(alpha:0.10),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(

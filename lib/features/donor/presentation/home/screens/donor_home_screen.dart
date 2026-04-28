@@ -447,7 +447,7 @@ class _DonorHomeScreenState extends State<DonorHomeScreen>
                       child: const _SummaryCard(
                         'Accepted Donations',
                         Icons.check_circle,
-                        const Color(0xFF0B4B3F),
+                         Color(0xFF0B4B3F),
                       ),
                     ),
                   ),
@@ -645,7 +645,7 @@ class _DonorHomeScreenState extends State<DonorHomeScreen>
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     itemCount: ngos.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 12),
+                    separatorBuilder: (_, _) => const SizedBox(width: 12),
                     itemBuilder: (context, index) {
                       final ngo = ngos[index];
                       return SizedBox(
@@ -868,7 +868,7 @@ class _EmergencyConcernCard extends StatelessWidget {
                       height: 74,
                       width: 74,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Image.asset(
+                      errorBuilder: (_, _, _) => Image.asset(
                         'assets/images/emergency.jpg',
                         height: 74,
                         width: 74,
@@ -949,7 +949,7 @@ class _SummaryCard extends StatelessWidget {
       height: 120,
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -999,7 +999,7 @@ class _DonationCard extends StatelessWidget {
                 height: 90,
                 width: double.infinity,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _NgoImageFallback(initial: initial),
+                errorBuilder: (_, _, _) => _NgoImageFallback(initial: initial),
               ),
             )
           else
@@ -1055,7 +1055,7 @@ class _NgoImageFallback extends StatelessWidget {
         style: const TextStyle(
           fontSize: 28,
           fontWeight: FontWeight.bold,
-          color: const Color(0xFF0B4B3F),
+          color:  Color(0xFF0B4B3F),
         ),
       ),
     );

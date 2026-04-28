@@ -97,7 +97,7 @@ class ActiveScreen extends StatelessWidget {
                       width: 70,
                       height: 70,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
+                      errorBuilder: (_, _, _) => Container(
                         width: 70,
                         height: 70,
                         color: Colors.grey.shade300,
@@ -313,7 +313,7 @@ class DonationDetailsScreen extends StatelessWidget {
               width: 90,
               height: 90,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
+              errorBuilder: (_, _, _) => Container(
                 width: 90,
                 height: 90,
                 color: Colors.grey.shade300,

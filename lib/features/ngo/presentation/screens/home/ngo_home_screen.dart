@@ -536,7 +536,7 @@ class _NgoHomeScreenState extends State<NgoHomeScreen>
                 backgroundColor: Colors.white,
                 elevation: 0,
                 selectedItemColor: AppColors.primary,
-                unselectedItemColor: AppColors.primary.withOpacity(0.35),
+                unselectedItemColor: AppColors.primary.withValues(alpha:0.35),
                 showUnselectedLabels: true,
                 type: BottomNavigationBarType.fixed,
                 items: const [
@@ -677,7 +677,7 @@ class _NgoHomeScreenState extends State<NgoHomeScreen>
                       width: 60,
                       height: 60,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
+                      errorBuilder: (_, _, _) => Container(
                         width: 60,
                         height: 60,
                         color: Colors.grey.shade200,
@@ -800,7 +800,7 @@ class _ConcernSummaryCard extends StatelessWidget {
                       height: 120,
                       width: double.infinity,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
+                      errorBuilder: (_, _, _) => Container(
                         height: 120,
                         color: Colors.grey.shade200,
                         alignment: Alignment.center,

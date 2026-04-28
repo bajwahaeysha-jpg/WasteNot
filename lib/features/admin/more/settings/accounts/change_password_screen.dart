@@ -197,7 +197,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 padding: EdgeInsets.only(top: 6),
                 child: Text(
                   "Password updated successfully",
-                  style: TextStyle(color: const Color(0xFF0B4B3F)),
+                  style: TextStyle(color:  Color(0xFF0B4B3F)),
                 ),
               ),
 

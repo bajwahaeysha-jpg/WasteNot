@@ -189,7 +189,7 @@ class ImpactScreen extends StatelessWidget {
                                     const Text(
                                       "+ Today",
                                       style: TextStyle(
-                                        color: const Color(0xFF0B4B3F),
+                                        color:  Color(0xFF0B4B3F),
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),

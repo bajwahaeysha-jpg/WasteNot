@@ -204,7 +204,7 @@ if (d.status == 'expired' && d.expiryAt != null)
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: urls.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        separatorBuilder: (_, _) => const SizedBox(width: 10),
         itemBuilder: (_, i) => ClipRRect(
           borderRadius: BorderRadius.circular(12),
           child: Image.network(

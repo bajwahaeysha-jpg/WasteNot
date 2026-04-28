@@ -136,16 +136,17 @@ class AdminMoreSheet extends StatelessWidget {
                 backgroundColor: Colors.red,
               ),
 
-              onPressed: () async {
-                await AuthService().logout();
+             onPressed: () async {
+  final navigator = Navigator.of(context); 
 
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const WelcomeScreen(),
-                  ),
-                  (route) => false,
-                );
+  await AuthService().logout();
+
+  navigator.pushAndRemoveUntil(
+    MaterialPageRoute(
+      builder: (_) => const WelcomeScreen(),
+    ),
+    (route) => false,
+  );
               },
 
               child: const Text("Log Out"),

@@ -187,7 +187,7 @@ class _ChatScreenState extends State<ChatScreen> {
               width: 160,
               height: 90,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
+              errorBuilder: (_, _, _) => Container(
                 width: 160,
                 height: 90,
                 color: Colors.grey.shade200,

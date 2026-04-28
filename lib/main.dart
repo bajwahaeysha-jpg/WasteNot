@@ -4,7 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:wastenot/core/constants/app_colors.dart';
-import 'package:wastenot/screens/splash_screen.dart';
+import 'package:wastenot/routes/app_routes.dart';
 import 'package:wastenot/services/fcm_service.dart';
 import 'package:wastenot/services/session_service.dart';
 
@@ -34,7 +34,8 @@ class WasteNotApp extends StatelessWidget {
         scaffoldBackgroundColor: const Color(0xFFF7F9F8),
         useMaterial3: true,
       ),
-      home: const SplashScreen(),
+      initialRoute: AppRoutes.welcome,
+      onGenerateRoute: AppRoutes.generateRoute,
     );
   }
 }

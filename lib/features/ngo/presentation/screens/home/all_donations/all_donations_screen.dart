@@ -247,7 +247,7 @@ class _DonationImage extends StatelessWidget {
               width: 85,
               height: 85,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => placeholder,
+              errorBuilder: (_, _, _) => placeholder,
             ),
     );
   }

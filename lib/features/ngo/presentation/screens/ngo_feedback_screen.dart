@@ -149,7 +149,7 @@ class _NgoFeedbackScreenState extends State<NgoFeedbackScreen> {
 ),
 const SizedBox(height: 10),
                 DropdownButtonFormField<String>(
-                  value: donors.any((d) => d.uid == _selectedDonor?.uid)
+                  initialValue: donors.any((d) => d.uid == _selectedDonor?.uid)
                       ? _selectedDonor?.uid
                       : null,
                   isExpanded: true,

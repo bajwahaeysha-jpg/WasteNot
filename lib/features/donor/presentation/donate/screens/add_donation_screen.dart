@@ -284,7 +284,7 @@ if (remainingSlots > 0) {
                         itemCount: pickedImages.length < 4
                             ? pickedImages.length + 1
                             : pickedImages.length,
-                        separatorBuilder: (_, __) =>
+                        separatorBuilder: (_, _) =>
                             const SizedBox(width: 10),
                         itemBuilder: (_, i) {
                           if (pickedImages.length < 4 && i == 0) {
@@ -370,7 +370,7 @@ if (remainingSlots > 0) {
                           horizontal: 14, vertical: 8),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? mainGreen.withOpacity(0.1)
+                            ? mainGreen.withValues(alpha: .1)
                             : Colors.grey.shade100,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
@@ -506,7 +506,7 @@ if (remainingSlots > 0) {
 
   Widget _servingDropdown() {
   return DropdownButtonFormField<String>(
-    value: selectedServing,
+    initialValue: selectedServing,
     dropdownColor: Colors.white, // ðŸ”¥ dropdown bg fix
 
     hint: const Text(

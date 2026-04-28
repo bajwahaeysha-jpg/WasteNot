@@ -396,7 +396,7 @@ Future<GoalProgress> getCurrentUserMonthlyGoalProgressOnce({
     if (user.isNgo) {
       return donations.fold<int>(
         0,
-        (sum, donation) => donation.status == DonationStatus.completed.value
+        (int sum, donation) => donation.status == DonationStatus.completed.value
             ? sum + parseMealRange(donation.quantity)
             : sum,
       );

@@ -538,6 +538,18 @@ class AuthService {
     }
   }
 
+  Future<void> sendPasswordResetEmail({
+    required String email,
+  }) async {
+    try {
+      await _auth.sendPasswordResetEmail(
+        email: email.trim().toLowerCase(),
+      );
+    } on FirebaseAuthException catch (error) {
+      throw AuthFailure(_mapFirebaseAuthError(error));
+    }
+  }
+
   Future<void> deleteCurrentAccount() async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
@@ -571,6 +583,10 @@ class AuthService {
         return 'Invalid email or password.';
       case 'invalid-email':
         return 'Please enter a valid email address.';
+      case 'network-request-failed':
+        return 'Network error. Please check your internet connection.';
+      case 'too-many-requests':
+        return 'Too many attempts. Please wait a moment and try again.';
       case 'weak-password':
         return 'Password is too weak.';
       case 'user-not-found':

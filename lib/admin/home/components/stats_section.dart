@@ -85,7 +85,7 @@ class StatsSection extends StatelessWidget {
             change: "+2.5%",
             isUp: true,
             icon: Icons.group,
-            iconColor: const Color(0xFF0B4B3F),
+            iconColor: Color(0xFF0B4B3F),
           ),
         );
 

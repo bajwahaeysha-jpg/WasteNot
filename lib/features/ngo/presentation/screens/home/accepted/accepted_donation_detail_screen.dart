@@ -108,7 +108,7 @@ class AcceptedDonationDetailScreen extends StatelessWidget {
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     itemCount: donation.imageUrls.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 10),
+                    separatorBuilder: (_, _) => const SizedBox(width: 10),
                     itemBuilder: (context, index) =>
                         _PhotoTile(donation.imageUrls[index]),
                   ),
@@ -172,7 +172,7 @@ class _PhotoTile extends StatelessWidget {
         width: 90,
         height: 90,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => Container(
+        errorBuilder: (_, _, _) => Container(
           width: 90,
           height: 90,
           color: Colors.grey.shade200,

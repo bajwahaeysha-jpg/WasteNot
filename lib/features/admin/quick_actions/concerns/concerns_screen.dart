@@ -109,7 +109,7 @@ class _ConcernsScreenState extends State<ConcernsScreen> {
                       height: 180,
                       width: double.infinity,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _imagePlaceholder(),
+                      errorBuilder: (_, _, _) => _imagePlaceholder(),
                     )
                   : _imagePlaceholder(),
             ),

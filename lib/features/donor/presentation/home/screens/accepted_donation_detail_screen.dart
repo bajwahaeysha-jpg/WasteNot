@@ -124,7 +124,7 @@ class _AcceptedDonationDetailScreenState
                           child: ListView.separated(
                             scrollDirection: Axis.horizontal,
                             itemCount: donation.imageUrls.length,
-                            separatorBuilder: (_, __) =>
+                            separatorBuilder: (_, _) =>
                                 const SizedBox(width: 10),
                             itemBuilder: (context, index) => ClipRRect(
                               borderRadius: BorderRadius.circular(12),
@@ -133,7 +133,7 @@ class _AcceptedDonationDetailScreenState
                                 child: Image.network(
                                   donation.imageUrls[index],
                                   fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) =>
+                                  errorBuilder: (_, _, _) =>
                                       const Icon(Icons.broken_image),
                                 ),
                               ),

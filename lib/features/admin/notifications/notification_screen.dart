@@ -8,7 +8,6 @@ import 'package:wastenot/models/admin_registration_notification_model.dart';
 import 'package:wastenot/services/admin_registration_notification_service.dart';
 import '../../../core/constants/app_colors.dart';
 
-/// ðŸ”‘ SHARED COLOR (FIX)
 const Color mainGreen = Color(0xFF0B4B3F);
 
 class NotificationScreen extends StatelessWidget {
@@ -18,10 +17,9 @@ class NotificationScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final service = AdminRegistrationNotificationService();
     final targetService = AdminNotificationTargetService();
+
     return Scaffold(
       backgroundColor: AppColors.background,
-
-      /// ðŸŸ¢ APP BAR
       appBar: AppBar(
         backgroundColor: mainGreen,
         elevation: 0,
@@ -31,12 +29,10 @@ class NotificationScreen extends StatelessWidget {
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w600,
-            letterSpacing: 0.3,
           ),
         ),
       ),
 
-      /// ðŸ”” NOTIFICATIONS LIST
       body: StreamBuilder<List<AdminRegistrationNotification>>(
         stream: service.streamAdminRegistrationNotifications(),
         builder: (context, snapshot) {
@@ -51,6 +47,7 @@ class NotificationScreen extends StatelessWidget {
 
           final items =
               snapshot.data ?? const <AdminRegistrationNotification>[];
+
           if (items.isEmpty) {
             return const Center(child: Text("No notifications yet"));
           }
@@ -98,16 +95,22 @@ class NotificationScreen extends StatelessWidget {
     AdminRegistrationNotification item,
     AdminNotificationTargetService targetService,
   ) async {
-    // Mark as read for admin badge removal (admin-only registration notifications).
-    await AdminRegistrationNotificationService().markRegistrationNotificationRead(
+
+    await AdminRegistrationNotificationService()
+        .markRegistrationNotificationRead(
       notificationId: item.id,
     );
 
-    if (item.type == 'new_donor_registered' && item.relatedUserId.isNotEmpty) {
+    if (!context.mounted) return; // ✅ FIX ADDED
+
+    if (item.type == 'new_donor_registered' &&
+        item.relatedUserId.isNotEmpty) {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => DonorProfileScreen(donorId: item.relatedUserId),
+          builder: (_) => DonorProfileScreen(
+            donorId: item.relatedUserId,
+          ),
         ),
       );
       return;
@@ -115,6 +118,7 @@ class NotificationScreen extends StatelessWidget {
 
     if (item.type == 'new_ngo_registered') {
       final email = item.relatedUserId.trim();
+
       if (email.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('NGO details not available.')),
@@ -125,13 +129,17 @@ class NotificationScreen extends StatelessWidget {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (_) => const Center(child: CircularProgressIndicator()),
+        builder: (_) =>
+            const Center(child: CircularProgressIndicator()),
       );
+
       var loaderOpen = true;
 
       try {
         final ngoUid = await targetService.findUserIdByEmail(email);
+
         if (!context.mounted) return;
+
         if (loaderOpen) {
           Navigator.pop(context);
           loaderOpen = false;
@@ -140,47 +148,54 @@ class NotificationScreen extends StatelessWidget {
         if (ngoUid != null && ngoUid.trim().isNotEmpty) {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => NGOProfileScreen(ngoId: ngoUid)),
+            MaterialPageRoute(
+              builder: (_) => NGOProfileScreen(ngoId: ngoUid),
+            ),
           );
           return;
         }
 
-        final request = await targetService.findNgoRequestByEmail(email);
+        final request =
+            await targetService.findNgoRequestByEmail(email);
+
         if (!context.mounted) return;
+
         if (request != null) {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => RequestDetailScreen(request: request),
+              builder: (_) =>
+                  RequestDetailScreen(request: request),
             ),
           );
           return;
         }
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('NGO details not available yet.')),
+          const SnackBar(
+              content: Text('NGO details not available yet.')),
         );
       } catch (_) {
         if (!context.mounted) return;
+
         if (loaderOpen) {
           Navigator.pop(context);
           loaderOpen = false;
         }
+
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Unable to open details right now.')),
+          const SnackBar(
+              content: Text('Unable to open details right now.')),
         );
       } finally {
-        if (!context.mounted) return;
-        if (loaderOpen) {
-          Navigator.pop(context);
-          loaderOpen = false;
-        }
+  if (context.mounted && loaderOpen) {
+    Navigator.pop(context);
+    loaderOpen = false;
+  }
       }
     }
   }
 }
-
-/// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ NOTIFICATION TILE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class _NotificationTile extends StatelessWidget {
   final IconData icon;
@@ -211,7 +226,6 @@ class _NotificationTile extends StatelessWidget {
       ),
       child: Row(
         children: [
-          /// ðŸ”” ICON
           Container(
             width: 44,
             height: 44,
@@ -219,15 +233,9 @@ class _NotificationTile extends StatelessWidget {
               color: mainGreen.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(
-              icon,
-              color: mainGreen,
-            ),
+            child: Icon(icon, color: mainGreen),
           ),
-
           const SizedBox(width: 12),
-
-          /// ðŸ“ TEXT
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

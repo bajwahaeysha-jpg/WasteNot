@@ -123,10 +123,10 @@ class _AllDonationsScreenState extends State<AllDonationsScreen> {
     final status = donation.status;
     final statusColor = _statusColor(status);
 
-    final imageUrl =
-        (donation.imageUrls != null && donation.imageUrls!.isNotEmpty)
-            ? donation.imageUrls!.first
-            : null;
+   final imageUrl =
+    donation.imageUrls.isNotEmpty
+        ? donation.imageUrls.first
+        : null;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -160,7 +160,7 @@ class _AllDonationsScreenState extends State<AllDonationsScreen> {
                       width: 60,
                       height: 60,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _fallbackImage(),
+                      errorBuilder: (_, _, _) => _fallbackImage(),
                     )
                   : _fallbackImage(),
             ),

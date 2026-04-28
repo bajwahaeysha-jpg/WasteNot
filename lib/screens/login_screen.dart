@@ -3,6 +3,7 @@ import 'package:wastenot/core/constants/app_colors.dart';
 import 'package:wastenot/models/app_user_model.dart';
 import 'package:wastenot/navigation/app_navigation_handler.dart';
 import 'package:wastenot/repositories/auth_repository.dart';
+import 'package:wastenot/routes/app_routes.dart';
 import 'package:wastenot/screens/role_selection_screen.dart';
 import 'package:wastenot/services/auth_service.dart';
 
@@ -18,6 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
   final AuthRepository _authRepository = AuthRepository();
   final AuthService _authService = AuthService();
 
@@ -59,12 +61,17 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: TextStyle(color: Colors.black54),
                   ),
                   const SizedBox(height: 32),
+
+                  /// NAME
                   _input(
                     label: 'Name',
                     controller: _nameController,
                     validator: (_) => null,
                   ),
+
                   const SizedBox(height: 16),
+
+                  /// EMAIL
                   _input(
                     label: 'Email',
                     controller: _emailController,
@@ -79,7 +86,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       return null;
                     },
                   ),
+
                   const SizedBox(height: 16),
+
+                  /// PASSWORD
                   _input(
                     label: 'Password',
                     controller: _passwordController,
@@ -92,12 +102,36 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                     suffix: IconButton(
                       icon: Icon(
-                        _obscure ? Icons.visibility_off : Icons.visibility,
+                        _obscure
+                            ? Icons.visibility_off
+                            : Icons.visibility,
                       ),
-                      onPressed: () => setState(() => _obscure = !_obscure),
+                      onPressed: () =>
+                          setState(() => _obscure = !_obscure),
                     ),
                   ),
+
+                  /// FORGOT PASSWORD
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: _loading
+                          ? null
+                          : () {
+                              Navigator.pushNamed(
+                                context,
+                                AppRoutes.forgotPassword,
+                                arguments:
+                                    _emailController.text.trim(), // ✅ pass email
+                              );
+                            },
+                      child: const Text('Forgot Password?'),
+                    ),
+                  ),
+
                   const SizedBox(height: 28),
+
+                  /// LOGIN BUTTON
                   SizedBox(
                     height: 54,
                     child: ElevatedButton(
@@ -118,7 +152,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           : const Text('Login'),
                     ),
                   ),
+
                   const SizedBox(height: 12),
+
+                  /// SIGN UP
                   TextButton(
                     onPressed: () {
                       Navigator.push(
@@ -131,7 +168,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                     child: const Text('Need an account? Sign up'),
                   ),
+
                   const SizedBox(height: 8),
+
                   const Text(
                     'Shared login for donor, NGO, and admin.',
                     textAlign: TextAlign.center,
@@ -172,6 +211,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  /// 🔥 LOGIN FUNCTION (SAFE)
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -179,8 +219,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final user = await _authRepository.signIn(
-        name: _nameController.text,
-        email: _emailController.text,
+        name: _nameController.text.trim(),
+        email: _emailController.text.trim(),
         password: _passwordController.text,
       );
 
@@ -188,6 +228,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
       _goToDashboard(user);
     } on AuthFailure catch (error) {
+      if (!mounted) return;
+
       if (error.message.contains('verify your email')) {
         _showVerifyDialog();
       } else if (error.message.contains('Waiting for admin approval')) {
@@ -196,6 +238,7 @@ class _LoginScreenState extends State<LoginScreen> {
         _showMessage(error.message, isError: true);
       }
     } catch (error) {
+      if (!mounted) return;
       _showMessage(error.toString(), isError: true);
     } finally {
       if (mounted) {
@@ -207,28 +250,29 @@ class _LoginScreenState extends State<LoginScreen> {
   void _showVerifyDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Email Not Verified'),
         content: const Text(
-          'Please verify your email. If the link expired or is invalid, send a new verification email.',
+          'Please verify your email. If expired, resend verification email.',
         ),
         actions: [
           TextButton(
             onPressed: () async {
-              Navigator.pop(context);
+              Navigator.pop(dialogContext);
 
               try {
-                await _authService.resendVerificationEmailForCredentials(
-                  email: _emailController.text,
+                await _authService
+                    .resendVerificationEmailForCredentials(
+                  email: _emailController.text.trim(),
                   password: _passwordController.text,
                 );
 
+                if (!mounted) return;
                 _showMessage('Verification email sent again');
-              } on AuthFailure catch (error) {
-                _showMessage(error.message, isError: true);
-              } catch (_) {
+              } catch (e) {
+                if (!mounted) return;
                 _showMessage(
-                  'Failed to send verification email. Try again.',
+                  'Failed to send verification email',
                   isError: true,
                 );
               }
@@ -237,7 +281,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           TextButton(
             onPressed: () async {
-              Navigator.pop(context);
+              Navigator.pop(dialogContext);
               await _authService.signOut();
             },
             child: const Text('OK'),

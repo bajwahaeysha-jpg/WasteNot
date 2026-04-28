@@ -153,7 +153,7 @@ class _EmergencyDetailScreenState extends State<EmergencyDetailScreen> {
                       height: 210,
                       width: double.infinity,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Image.asset(
+                      errorBuilder: (_, _, _) => Image.asset(
                         'assets/images/emergency.jpg',
                         height: 210,
                         width: double.infinity,

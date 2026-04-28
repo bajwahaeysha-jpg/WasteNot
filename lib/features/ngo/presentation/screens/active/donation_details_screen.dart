@@ -33,7 +33,7 @@ class _DonationDetailsScreenState
   void _openImage(String url) {
     showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.9),
+      barrierColor: Colors.black.withValues(alpha:0.9),
       builder: (_) => Stack(
         children: [
           Center(child: InteractiveViewer(child: Image.network(url))),

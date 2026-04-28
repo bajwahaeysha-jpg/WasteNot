@@ -127,6 +127,12 @@ class AuthRepository {
     return user;
   }
 
+  Future<void> sendPasswordResetEmail({
+    required String email,
+  }) {
+    return _authService.sendPasswordResetEmail(email: email);
+  }
+
   Future<void> signOut() async {
     await _authService.signOut();
     await clearSession();

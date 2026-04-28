@@ -418,12 +418,12 @@ if (initialMessage != null) {
     final tokenDoc = userDoc.collection('fcm_tokens').doc(normalizedToken);
     final platform = _platformName();
 
-    final snapshots = await Future.wait([
-      tokenDoc.get(),
-      userDoc.get(),
-    ]);
-    final tokenSnapshot = snapshots[0] as DocumentSnapshot<Map<String, dynamic>>;
-    final userSnapshot = snapshots[1] as DocumentSnapshot<Map<String, dynamic>>;
+    // Start both reads together, then await them separately to keep the types
+    // explicit without relying on index-based casts.
+    final tokenSnapshotFuture = tokenDoc.get();
+    final userSnapshotFuture = userDoc.get();
+    final tokenSnapshot = await tokenSnapshotFuture;
+    final userSnapshot = await userSnapshotFuture;
     final tokenData = tokenSnapshot.data() ?? <String, dynamic>{};
     final latestUserToken =
         (userSnapshot.data()?['latestFcmToken'] as String? ?? '').trim();

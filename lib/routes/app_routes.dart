@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:wastenot/screens/forgot_password_screen.dart';
 import 'package:wastenot/screens/admin_signup_screen.dart';
 import 'package:wastenot/screens/login_screen.dart';
 import 'package:wastenot/screens/role_selection_screen.dart';
@@ -8,6 +9,7 @@ class AppRoutes {
   static const String welcome = '/';
   static const String roleSelection = '/roleSelection';
   static const String login = '/login';
+  static const String forgotPassword = '/forgotPassword';
   static const String signup = '/signup';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -25,6 +27,13 @@ class AppRoutes {
       case login:
         return MaterialPageRoute(
           builder: (_) => const LoginScreen(),
+        );
+
+      case forgotPassword:
+        final initialEmail =
+            settings.arguments is String ? settings.arguments as String : null;
+        return MaterialPageRoute(
+          builder: (_) => ForgotPasswordScreen(initialEmail: initialEmail),
         );
 
       case signup:
