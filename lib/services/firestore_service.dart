@@ -55,6 +55,13 @@ class FirestoreService {
       await ref.putFile(imageFile);
       return await ref.getDownloadURL();
     } on FirebaseException catch (error) {
+      if (error.code == 'unauthorized') {
+        throw FirebaseException(
+          plugin: error.plugin,
+          code: error.code,
+          message: 'You do not have permission to upload donation images.',
+        );
+      }
       if (error.code == 'object-not-found') {
         return null;
       }

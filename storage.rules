@@ -1,0 +1,36 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn() &&
+          request.auth.token.email == 'wastenotapplication@gmail.com';
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    match /donation_images/{donorId}/{fileName} {
+      allow read: if signedIn();
+      allow write: if isOwner(donorId) || isAdmin();
+    }
+
+    match /profile_images/{folder}/{fileName} {
+      allow read: if signedIn();
+      allow write: if signedIn() || isAdmin();
+    }
+
+    match /concerns/{ngoId}/{fileName} {
+      allow read: if signedIn();
+      allow write: if isOwner(ngoId) || isAdmin();
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

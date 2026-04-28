@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:wastenot/models/app_location.dart';
 import 'package:wastenot/services/donation_services.dart';
 import 'package:wastenot/services/firestore_service.dart';
@@ -178,8 +179,14 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
       );
 
       Navigator.pop(context, true);
-    } catch (e) {
-      _showError('Error submitting donation');
+    } on DonationException catch (e, stackTrace) {
+      debugPrint('DonationException while submitting donation: ${e.message}');
+      debugPrintStack(stackTrace: stackTrace);
+      _showError(e.message);
+    } catch (e, stackTrace) {
+      debugPrint('Unexpected error while submitting donation: $e');
+      debugPrintStack(stackTrace: stackTrace);
+      _showError('Error submitting donation: $e');
     } finally {
       setState(() => _isSubmitting = false);
     }
