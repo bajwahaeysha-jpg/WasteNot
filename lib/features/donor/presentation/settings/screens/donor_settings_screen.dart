@@ -94,34 +94,94 @@ class DonorSettingsScreen extends StatelessWidget {
   }
 
   Future<void> _confirmLogout(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-          context: context,
-          builder: (dialogContext) => AlertDialog(
-            title: const Text('Log out'),
-            content: const Text('Are you sure you want to log out?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext, false),
-                child: const Text('Cancel'),
+  final confirmed = await showDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (dialogContext) {
+      return Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF3F6F5),
+            borderRadius: BorderRadius.circular(28),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              /// TITLE
+              const Text(
+                "Log out",
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-              FilledButton(
-                onPressed: () => Navigator.pop(dialogContext, true),
-                child: const Text('Log out'),
+
+              const SizedBox(height: 10),
+
+              /// DESCRIPTION
+              const Text(
+                "Are you sure you want to log out from your account?",
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.black54,
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              /// BUTTONS
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  /// CANCEL
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogContext, false),
+                    child: const Text(
+                      "Cancel",
+                      style: TextStyle(
+                        color: Color(0xFF0B4B3F),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 10),
+
+                  /// LOGOUT BUTTON
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0B4B3F),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 22, vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                    onPressed: () =>
+                        Navigator.pop(dialogContext, true),
+                    child: const Text(
+                      "Log out",
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ) ??
-        false;
+        ),
+      );
+    },
+  ) ?? false;
 
-    if (!confirmed || !context.mounted) {
-      return;
-    }
+  if (!confirmed || !context.mounted) return;
 
-    await AuthService().logout();
-    if (!context.mounted) {
-      return;
-    }
+  await AuthService().logout();
 
-    AppNavigationHandler.goToWelcome(context);
-  }
+  if (!context.mounted) return;
+
+  AppNavigationHandler.goToWelcome(context);
+}
 }

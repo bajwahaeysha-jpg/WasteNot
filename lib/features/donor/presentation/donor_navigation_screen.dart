@@ -6,7 +6,6 @@ import 'donate/screens/donate_screen.dart';
 import 'messages/screens/messages_screen.dart';
 import 'profile/screens/donor_profile_screen.dart';
 import 'settings/screens/donor_settings_screen.dart';
-import 'auth/screens/donor_logout_screen.dart';
 import 'package:wastenot/features/donor/presentation/notifications/screens/notification_screen.dart';
 import 'package:wastenot/features/donor/presentation/feedback/screens/feedback_screen.dart';
 import 'package:wastenot/services/auth_service.dart';
@@ -320,28 +319,10 @@ class _DonorNavigationScreenState extends State<DonorNavigationScreen> {
                 );
               },
             ),
-
-            ListTile(
-              leading: const Icon(Icons.logout, color: Colors.red),
-              title: const Text(
-                "Logout",
-                style: TextStyle(color: Colors.red),
-              ),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const DonorLogoutScreen(),
-                  ),
-                );
-              },
-            ),
-
           ],
         ),
       ),
     );
   }
+  
 }

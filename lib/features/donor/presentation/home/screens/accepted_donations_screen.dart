@@ -173,14 +173,22 @@ class _AcceptedDonationsScreenState extends State<AcceptedDonationsScreen> {
           Row(
             children: [
               Container(
-                height: 48,
-                width: 48,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.fastfood),
-              ),
+  height: 60,
+  width: 60,
+  decoration: BoxDecoration(
+    borderRadius: BorderRadius.circular(12), // square rounded (NOT circle)
+    color: Colors.grey.shade200,
+    image: donation.imageUrls.isNotEmpty
+        ? DecorationImage(
+            image: NetworkImage(donation.imageUrls.first),
+            fit: BoxFit.cover,
+          )
+        : null,
+  ),
+  child: donation.imageUrls.isEmpty
+      ? const Icon(Icons.fastfood)
+      : null,
+),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -208,17 +216,7 @@ class _AcceptedDonationsScreenState extends State<AcceptedDonationsScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: onNotCompleted,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.redAccent,
-                side: const BorderSide(color: Colors.redAccent),
-              ),
-              child: const Text('Not Completed'),
-            ),
-          ),
+          
         ],
       ),
     );

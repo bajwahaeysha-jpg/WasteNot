@@ -96,94 +96,123 @@ class NotificationScreen extends StatelessWidget {
   }
 
   Widget _notificationTile(
-    BuildContext context,
-    IconData icon,
-    Color color,
-    String title,
-    String subtitle,
-    String time,
-    DonorNotificationModel item,
-  ) {
-    final currentUid = SessionService.user?.uid;
-    return InkWell(
-      borderRadius: BorderRadius.circular(14),
-      onTap: () {
-        // Mark as read to remove badge in real time.
-        if (currentUid != null && currentUid.trim().isNotEmpty) {
-          final audience = item.targetAudience.trim().toLowerCase();
-          if (audience == 'donor' || audience == 'both') {
-            AdminNotificationReadReceiptService().markBroadcastNotificationRead(
-              uid: currentUid,
-              notificationId: item.id,
-              audience: 'donor',
-            );
-          } else {
-            NotificationReadService().markUserNotificationRead(
-              notificationId: item.id,
-            );
-          }
-        }
+  BuildContext context,
+  IconData icon,
+  Color color,
+  String title,
+  String message,
+  String time,
+  DonorNotificationModel item,
+) {
+  final currentUid = SessionService.user?.uid;
 
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => NotificationDetailScreen(
-              icon: icon,
-              color: color,
-              title: title,
-              description: subtitle,
-              time: time,
+  return InkWell(
+    borderRadius: BorderRadius.circular(14),
+    onTap: () {
+      if (currentUid != null && currentUid.trim().isNotEmpty) {
+        final audience = item.targetAudience.trim().toLowerCase();
+
+        if (audience == 'donor' || audience == 'both') {
+          AdminNotificationReadReceiptService().markBroadcastNotificationRead(
+            uid: currentUid,
+            notificationId: item.id,
+            audience: 'donor',
+          );
+        } else {
+          NotificationReadService().markUserNotificationRead(
+            notificationId: item.id,
+          );
+        }
+      }
+    },
+    child: Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x14000000),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          /// ICON
+          Container(
+            height: 42,
+            width: 42,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color),
+          ),
+
+          const SizedBox(width: 12),
+
+          /// TEXT
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  message,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.black54,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  time,
+                  style: const TextStyle(
+                    color: Colors.grey,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
             ),
           ),
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Row(
-          children: [
-            CircleAvatar(
-              backgroundColor: color.withValues(alpha:0.15),
-              child: Icon(icon, color: color),
+
+          const SizedBox(width: 8),
+
+          /// (optional) unread dot
+          Container(
+            width: 10,
+            height: 10,
+            decoration: const BoxDecoration(
+              color: Colors.red,
+              shape: BoxShape.circle,
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    time,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            const Icon(
-              Icons.arrow_forward_ios,
-              size: 16,
-              color: Colors.grey,
-            ),
-          ],
-        ),
+          ),
+
+          const SizedBox(width: 8),
+
+          const Icon(
+            Icons.arrow_forward_ios_rounded,
+            size: 16,
+            color: Colors.grey,
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   IconData _iconForType(String? type) {
     switch (type) {

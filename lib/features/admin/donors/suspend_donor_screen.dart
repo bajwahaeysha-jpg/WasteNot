@@ -200,25 +200,37 @@ class _SuspendDonorScreenState extends State<SuspendDonorScreen> {
   }
 
   Widget _detailRow(String label, String value) {
-    return Row(
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 6),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
+        SizedBox(
+          width: 90, // fixed width for alignment
           child: Text(
             label,
             style: TextStyle(
               color: Colors.grey.shade600,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ),
-        Text(
-          value,
-          style: const TextStyle(
-            fontWeight: FontWeight.w500,
+        const SizedBox(width: 10),
+
+        /// VALUE SIDE (FIXED)
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.right, // right align like your UI
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ],
-    );
-  }
+    ),
+  );
+}
 
   @override
   void dispose() {

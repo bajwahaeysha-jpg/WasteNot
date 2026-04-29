@@ -7,6 +7,7 @@ import 'package:wastenot/services/donation_services.dart';
 import 'package:wastenot/services/firestore_service.dart';
 import 'package:wastenot/services/location_service.dart';
 import 'package:wastenot/services/session_service.dart';
+import 'package:file_picker/file_picker.dart';
 
 const Color mainGreen = Color(0xFF0B4B3F);
 
@@ -18,7 +19,6 @@ class AddDonationScreen extends StatefulWidget {
 }
 
 class _AddDonationScreenState extends State<AddDonationScreen> {
-  final ImagePicker _picker = ImagePicker();
   final DonationService _donationService = DonationService();
   final FirestoreService _firestoreService = FirestoreService();
   final LocationService _locationService = const LocationService();
@@ -104,18 +104,26 @@ class _AddDonationScreenState extends State<AddDonationScreen> {
   }
 
   Future<void> pickImages() async {
-    final images = await _picker.pickMultiImage(imageQuality: 80);
+  final result = await FilePicker.platform.pickFiles(
+    type: FileType.image,
+    allowMultiple: true,
+  );
 
-    if (images.isNotEmpty) {
-      setState(() {
-        final remainingSlots = 4 - pickedImages.length;
+  if (result != null) {
+    final files = result.files;
 
-if (remainingSlots > 0) {
-  pickedImages.addAll(images.take(remainingSlots));
-}
-      });
-    }
+    final remainingSlots = 4 - pickedImages.length;
+    if (remainingSlots <= 0) return;
+
+    final selected = files.take(remainingSlots).map((file) {
+      return XFile(file.path!);
+    }).toList();
+
+    setState(() {
+      pickedImages.addAll(selected);
+    });
   }
+}
 
   Future<void> _submitDonation() async {
     if (_isSubmitting) return;

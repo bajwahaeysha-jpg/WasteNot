@@ -58,7 +58,6 @@ class NotificationsScreen extends StatelessWidget {
               final date = createdAt is Timestamp
                   ? createdAt.toDate()
                   : DateTime.now();
-              final donationId = notification['donationId']?.toString().trim() ?? '';
               final isRead =
                   notification['isRead'] == true || notification['read'] == true;
 
@@ -86,19 +85,6 @@ class NotificationsScreen extends StatelessWidget {
                       );
                     }
 
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => NotificationDetailScreen(
-                          icon: _resolveIcon(title),
-                          iconColor: _resolveColor(title),
-                          title: title,
-                          message: message,
-                          time: DateFormat('dd MMM, hh:mm a').format(date),
-                          donationId: donationId,
-                        ),
-                      ),
-                    );
                   },
                   child: _NotificationTile(
                     icon: _resolveIcon(title),

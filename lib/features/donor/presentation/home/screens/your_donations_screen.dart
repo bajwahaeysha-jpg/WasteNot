@@ -330,7 +330,17 @@ class DonationCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                const CircleAvatar(child: Icon(Icons.groups)),
+                CircleAvatar(
+  backgroundColor: Colors.grey.shade200,
+  backgroundImage: donation.acceptedByNgoProfileImageUrl != null &&
+          donation.acceptedByNgoProfileImageUrl!.isNotEmpty
+      ? NetworkImage(donation.acceptedByNgoProfileImageUrl!)
+      : null,
+  child: donation.acceptedByNgoProfileImageUrl == null ||
+          donation.acceptedByNgoProfileImageUrl!.isEmpty
+      ? const Icon(Icons.groups)
+      : null,
+),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
