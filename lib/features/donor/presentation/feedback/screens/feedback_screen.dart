@@ -267,13 +267,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                                       ),
                                     ),
                                     const SizedBox(height: 2),
-                                    Text(
-                                      'NGO ID: ${_selectedNgo!.uid}',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: AppColors.textSecondary,
-                                      ),
-                                    ),
+                                    
                                   ],
                                 ),
                               ),

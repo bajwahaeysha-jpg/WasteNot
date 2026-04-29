@@ -197,25 +197,35 @@ class _SuspendNGOScreenState extends State<SuspendNGOScreen> {
   }
 
   Widget _detailRow(String label, String value) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            label,
-            style: TextStyle(
-              color: Colors.grey.shade600,
-            ),
-          ),
-        ),
-        Text(
-          value,
-          style: const TextStyle(
+  return Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      SizedBox(
+        width: 80, // FIXED WIDTH (important for alignment)
+        child: Text(
+          label,
+          style: TextStyle(
+            color: Colors.grey.shade600,
             fontWeight: FontWeight.w500,
           ),
         ),
-      ],
-    );
-  }
+      ),
+      const SizedBox(width: 10),
+
+      // VALUE SIDE
+      Expanded(
+        child: Text(
+          value,
+          maxLines: 1, // 👈 single line only
+          overflow: TextOverflow.ellipsis, // 👈 ... at end
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    ],
+  );
+}
 
   @override
   void dispose() {
