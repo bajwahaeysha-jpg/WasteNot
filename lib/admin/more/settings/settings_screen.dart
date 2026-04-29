@@ -5,7 +5,8 @@ import 'package:wastenot/features/admin/more/settings/contacts/contact_screen.da
 import 'package:wastenot/features/admin/more/settings/about/about_screen.dart';
 import 'package:wastenot/features/admin/more/settings/FAQ/faq_screen.dart';
 import 'package:wastenot/features/admin/more/settings/Privacy_Policy/privacy_policy_screen.dart';
-import '../../../../screens/welcome_screen.dart';
+import 'package:wastenot/services/auth_service.dart';
+import 'package:wastenot/navigation/app_navigation_handler.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -15,17 +16,17 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: true, // âœ… MUST be true
+      canPop: true,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
 
-        /// ðŸ”™ Always go back to Admin Home (root)
+        /// 🔙 Always go back to Admin Home
         Navigator.popUntil(context, (route) => route.isFirst);
       },
       child: Scaffold(
         backgroundColor: const Color(0xFFF7F9F8),
         appBar: AppBar(
-          backgroundColor: const Color(0xFF0B4B3F),
+          backgroundColor: mainGreen,
           elevation: 0,
           iconTheme: const IconThemeData(color: Colors.white),
           title: const Text(
@@ -45,7 +46,7 @@ class SettingsScreen extends StatelessWidget {
 
               const SizedBox(height: 12),
 
-              /// ðŸ§‘ PROFILE HEADER
+              /// 👤 PROFILE HEADER
               Row(
                 children: [
                   const CircleAvatar(
@@ -82,25 +83,15 @@ class SettingsScreen extends StatelessWidget {
               const SizedBox(height: 24),
 
               _tile(context, Icons.person_outline, "Account", const AccountScreen()),
-              _tile(
-                context,
-                Icons.notifications_none,
-                "Notifications & Reminders",
-                const NotificationsScreen(),
-              ),
+              _tile(context, Icons.notifications_none, "Notifications & Reminders", const NotificationsScreen()),
               _tile(context, Icons.mail_outline, "Contact Us", const ContactScreen()),
               _tile(context, Icons.info_outline, "About App", const AboutScreen()),
               _tile(context, Icons.help_outline, "FAQ", const FaqScreen()),
-              _tile(
-                context,
-                Icons.privacy_tip_outlined,
-                "Privacy Policy",
-                const PrivacyPolicyScreen(),
-              ),
+              _tile(context, Icons.privacy_tip_outlined, "Privacy Policy", const PrivacyPolicyScreen()),
 
               const Spacer(),
 
-              /// ðŸšª LOGOUT
+              /// 🚪 LOGOUT (UPDATED ✅)
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.logout, color: Colors.red),
@@ -111,7 +102,7 @@ class SettingsScreen extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                onTap: () => _showLogoutSheet(context),
+                onTap: () => _confirmLogout(context),
               ),
 
               const SizedBox(height: 20),
@@ -122,7 +113,7 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  /// ðŸ”¹ REUSABLE TILE
+  /// 🔹 REUSABLE TILE
   static Widget _tile(
     BuildContext context,
     IconData icon,
@@ -143,79 +134,90 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  /// ðŸšª LOGOUT SHEET
-  static void _showLogoutSheet(BuildContext context) {
-    showModalBottomSheet(
+  /// 🔥 DONOR STYLE LOGOUT DIALOG
+  static Future<void> _confirmLogout(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-
-            Row(
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF3F6F5),
+              borderRadius: BorderRadius.circular(28),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  "Logout",
+                  "Log out",
                   style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                const Spacer(),
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close),
+
+                const SizedBox(height: 10),
+
+                const Text(
+                  "Are you sure you want to log out from your account?",
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.black54,
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogContext, false),
+                      child: const Text(
+                        "Cancel",
+                        style: TextStyle(
+                          color: mainGreen,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 10),
+
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: mainGreen,
+                        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                      onPressed: () => Navigator.pop(dialogContext, true),
+                      child: const Text(
+                        "Log out",
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
+          ),
+        );
+      },
+    ) ?? false;
 
-            const SizedBox(height: 12),
+    if (!confirmed || !context.mounted) return;
 
-            const Text(
-              "Are you sure you want to logout from your admin account?",
-              style: TextStyle(color: Colors.black54),
-            ),
+    /// 🔥 SAME AS DONOR
+    await AuthService().logout();
 
-            const SizedBox(height: 24),
+    if (!context.mounted) return;
 
-            OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 52),
-                side: const BorderSide(color: Colors.red),
-              ),
-              onPressed: () {
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-                  (route) => false,
-                );
-              },
-              child: const Text(
-                "Yes, Logout",
-                style: TextStyle(
-                  color: Colors.red,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 52),
-                backgroundColor: mainGreen,
-              ),
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
-            ),
-          ],
-        ),
-      ),
-    );
+    AppNavigationHandler.goToWelcome(context);
   }
 }
