@@ -122,19 +122,24 @@ class _ProtectedHomeScreenState extends State<_ProtectedHomeScreen> {
 
   void _handleSessionStateChanged() {
     final user = SessionService.user;
-    if (user != null && !user.isSuspended) {
+    if (user != null && !user.isSuspended && !user.isDeleted) {
       return;
     }
 
-    _navigateOut();
+    _navigateOut(toLogin: user?.isDeleted == true);
   }
 
-  void _navigateOut() {
+  void _navigateOut({bool toLogin = false}) {
     if (!mounted || _redirecting) {
       return;
     }
 
     _redirecting = true;
+    if (toLogin) {
+      AppNavigationHandler.goToLogin(context);
+      return;
+    }
+
     AppNavigationHandler.goToWelcome(context);
   }
 

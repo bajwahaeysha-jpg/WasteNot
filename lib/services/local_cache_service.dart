@@ -262,10 +262,12 @@ class LocalCacheService {
       'emailVerified': user.emailVerified,
       'approvedByAdmin': user.approvedByAdmin,
       'status': user.status,
+      'isActive': user.isActive,
       'isSuspended': user.isSuspended,
       'suspensionReason': user.suspensionReason,
       'suspendedAt': user.suspendedAt?.toIso8601String(),
       'suspendedBy': user.suspendedBy,
+      'deletedAt': user.deletedAt?.toIso8601String(),
     };
   }
 
@@ -291,10 +293,12 @@ class LocalCacheService {
       emailVerified: _asBool(json['emailVerified']),
       approvedByAdmin: _asBool(json['approvedByAdmin']),
       status: _asString(json['status']),
+      isActive: _asBool(json['isActive'], fallback: true),
       isSuspended: _asBool(json['isSuspended']),
       suspensionReason: _asString(json['suspensionReason']),
       suspendedAt: DateTime.tryParse(_asString(json['suspendedAt']) ?? ''),
       suspendedBy: _asString(json['suspendedBy']),
+      deletedAt: DateTime.tryParse(_asString(json['deletedAt']) ?? ''),
     );
   }
 

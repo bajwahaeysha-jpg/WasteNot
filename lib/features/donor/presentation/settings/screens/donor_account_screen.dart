@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:wastenot/features/donor/presentation/settings/screens/donor_change_password_screen.dart';
 import 'package:wastenot/features/donor/presentation/settings/screens/donor_personal_information_screen.dart';
-import 'package:wastenot/screens/welcome_screen.dart';
+import 'package:wastenot/navigation/app_navigation_handler.dart';
 import 'package:wastenot/services/account_service.dart';
 
 class DonorAccountScreen extends StatelessWidget {
@@ -41,7 +41,9 @@ class DonorAccountScreen extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const DonorPersonalInformationScreen()),
+                  MaterialPageRoute(
+                    builder: (_) => const DonorPersonalInformationScreen(),
+                  ),
                 );
               },
             ),
@@ -53,7 +55,9 @@ class DonorAccountScreen extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const DonorChangePasswordScreen()),
+                  MaterialPageRoute(
+                    builder: (_) => const DonorChangePasswordScreen(),
+                  ),
                 );
               },
             ),
@@ -63,9 +67,12 @@ class DonorAccountScreen extends StatelessWidget {
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.cancel, color: Colors.red),
-            title: const Text('Delete account', style: TextStyle(color: Colors.red)),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => _confirmDelete(context),
+              title: const Text(
+                'Delete account',
+                style: TextStyle(color: Colors.red),
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _confirmDelete(context),
             ),
           ],
         ),
@@ -79,7 +86,7 @@ class DonorAccountScreen extends StatelessWidget {
           builder: (dialogContext) => AlertDialog(
             title: const Text('Delete account'),
             content: const Text(
-              'This permanently deletes your account. Historical donations, feedback, concerns, and logs stay preserved in an archived detached state and will no longer be linked to you.',
+              'This deletes your Firebase sign-in, but your Firestore history stays archived with a deleted status.',
             ),
             actions: [
               TextButton(
@@ -100,19 +107,22 @@ class DonorAccountScreen extends StatelessWidget {
       return;
     }
 
+    final currentPassword = await _askCurrentPassword(context);
+    if ((currentPassword ?? '').trim().isEmpty || !context.mounted) {
+      return;
+    }
+
     _showBlockingLoader(context);
     try {
-      await AccountService().deleteAccount();
+      await AccountService().deleteAccountWithPassword(
+        currentPassword: currentPassword!,
+      );
       if (!context.mounted) {
         return;
       }
 
       Navigator.of(context, rootNavigator: true).pop();
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-        (route) => false,
-      );
+      await AppNavigationHandler.goToLogin(context);
     } on AccountFailure catch (error) {
       if (!context.mounted) {
         return;
@@ -129,6 +139,56 @@ class DonorAccountScreen extends StatelessWidget {
       context: context,
       barrierDismissible: false,
       builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+  }
+
+  Future<String?> _askCurrentPassword(BuildContext context) async {
+    final controller = TextEditingController();
+    var obscureText = true;
+
+    return showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Confirm password'),
+              content: TextField(
+                controller: controller,
+                obscureText: obscureText,
+                autofocus: true,
+                textInputAction: TextInputAction.done,
+                decoration: InputDecoration(
+                  labelText: 'Current password',
+                  suffixIcon: IconButton(
+                    onPressed: () {
+                      setState(() => obscureText = !obscureText);
+                    },
+                    icon: Icon(
+                      obscureText ? Icons.visibility_off : Icons.visibility,
+                    ),
+                  ),
+                ),
+                onSubmitted: (_) {
+                  Navigator.pop(dialogContext, controller.text.trim());
+                },
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    Navigator.pop(dialogContext, controller.text.trim());
+                  },
+                  child: const Text('Continue'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }

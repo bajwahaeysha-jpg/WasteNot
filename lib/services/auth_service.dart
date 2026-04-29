@@ -26,6 +26,8 @@ class AuthService {
       'Your registration request was rejected by admin.';
   static const suspendedMessage =
       'Your account is suspended for some reason.';
+  static const deletedMessage =
+      'This account was deleted. Please sign up again to create a new account.';
 
   final FirebaseAuth _auth;
   final FirestoreService _firestoreService;
@@ -108,6 +110,12 @@ class AuthService {
 
     await _syncUserEmailVerification(firebaseUser: refreshedUser, profile: profile);
 
+    if (profile.isDeleted) {
+      await _auth.signOut();
+      SessionService.clear();
+      throw AuthFailure(deletedMessage);
+    }
+
     if (profile.isNgo && !profile.approvedByAdmin) {
       await _auth.signOut();
       SessionService.clear();
@@ -186,6 +194,12 @@ class AuthService {
       }
 
       await _syncUserEmailVerification(firebaseUser: refreshedUser, profile: profile);
+
+      if (profile.isDeleted) {
+        await _auth.signOut();
+        SessionService.clear();
+        throw AuthFailure(deletedMessage);
+      }
 
       if (profile.isNgo && !profile.approvedByAdmin) {
         await _auth.signOut();
@@ -332,7 +346,8 @@ class AuthService {
       }
 
       final existingUser = await _firestoreService.getUserByEmail(normalizedEmail);
-      if (existingUser != null || normalizedEmail == adminEmail) {
+      if ((existingUser != null && !existingUser.isDeleted) ||
+          normalizedEmail == adminEmail) {
         throw AuthFailure('This email is already in use.');
       }
 
@@ -481,7 +496,7 @@ class AuthService {
       }
 
       final profile = await _firestoreService.getUserByUid(sessionUser.uid);
-      if (profile == null || profile.isSuspended) {
+      if (profile == null || profile.isSuspended || profile.isDeleted) {
         await signOut();
         return;
       }

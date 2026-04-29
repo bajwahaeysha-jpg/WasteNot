@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:wastenot/core/utils/meal_parser.dart';
 import 'package:wastenot/services/donation_services.dart';
@@ -13,6 +14,7 @@ class AllMealsScreen extends StatefulWidget {
 
 class _AllMealsScreenState extends State<AllMealsScreen> {
   final DonationService _donationService = DonationService();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   late final Future<_ImpactStats> _impactStatsFuture;
 
   @override
@@ -67,12 +69,33 @@ class _AllMealsScreenState extends State<AllMealsScreen> {
   Future<_ImpactStats> _loadImpactStats() async {
     try {
       final completedDonations = await getCompletedDonations();
+      final allDonations = await _donationService.getAllDonations();
+      final ngoSnapshot =
+          await _firestore.collection('users').where('role', isEqualTo: 'ngo').get();
       final totalMeals = calculateTotalMeals(completedDonations);
       final todayMeals = calculateTodayMeals(completedDonations);
       final totalPeopleFed = calculatePeopleFed(totalMeals);
       final todayPeopleFed = calculatePeopleFed(todayMeals);
       final totalFoodWeight = calculateFoodWeight(totalMeals);
       final todayFoodWeight = calculateFoodWeight(todayMeals);
+      final todayMealsAdded = allDonations
+          .where((donation) => _isSameDay(donation.createdAt, DateTime.now()))
+          .fold<int>(
+            0,
+            (sum, donation) => sum + parseMealValue(donation.quantity),
+          );
+      final todayDonations = allDonations
+          .where((donation) => _isSameDay(donation.createdAt, DateTime.now()))
+          .length;
+      final activeNgos = ngoSnapshot.docs.where((doc) {
+        final data = doc.data();
+        final status = (data['status'] as String?)?.trim().toLowerCase();
+        final isDeleted = status == 'deleted' || (data['isActive'] as bool?) == false;
+        final isSuspended =
+            !isDeleted &&
+            ((data['isSuspended'] as bool?) ?? status == 'suspended');
+        return !isDeleted && !isSuspended;
+      }).length;
 
       return _ImpactStats(
         totalMeals: totalMeals,
@@ -81,10 +104,19 @@ class _AllMealsScreenState extends State<AllMealsScreen> {
         todayPeopleFed: todayPeopleFed,
         totalFoodWeight: totalFoodWeight,
         todayFoodWeight: todayFoodWeight,
+        todayMealsAdded: todayMealsAdded,
+        todayDonations: todayDonations,
+        activeNgos: activeNgos,
       );
     } catch (_) {
       return const _ImpactStats.empty();
     }
+  }
+
+  bool _isSameDay(DateTime first, DateTime second) {
+    return first.year == second.year &&
+        first.month == second.month &&
+        first.day == second.day;
   }
 
   String _formatCount(int value) {
@@ -244,47 +276,26 @@ class _AllMealsScreenState extends State<AllMealsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        "Food Distribution",
+                        "Today's Activity",
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 16),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              flex: 80,
-                              child: Container(
-                                height: 12,
-                                color: const Color(0xFF0B4B3F),
-                              ),
-                            ),
-                            Expanded(
-                              flex: 20,
-                              child: Container(
-                                height: 12,
-                                color: Colors.orange,
-                              ),
-                            ),
-                          ],
-                        ),
+                      _activityRow(
+                        title: "Today Meals Added",
+                        value: _formatCount(stats.todayMealsAdded),
                       ),
-                      const SizedBox(height: 14),
-                      const Row(
-                        children: [
-                          _LegendDot(
-                            color: Color(0xFF0B4B3F),
-                            text: "Orphans 80%",
-                          ),
-                          SizedBox(width: 18),
-                          _LegendDot(
-                            color: Colors.orange,
-                            text: "Others 20%",
-                          ),
-                        ],
+                      const Divider(height: 24),
+                      _activityRow(
+                        title: "Today Donations",
+                        value: _formatCount(stats.todayDonations),
+                      ),
+                      const Divider(height: 24),
+                      _activityRow(
+                        title: "Active NGOs",
+                        value: _formatCount(stats.activeNgos),
                       ),
                     ],
                   ),
@@ -338,6 +349,32 @@ class _AllMealsScreenState extends State<AllMealsScreen> {
       ],
     );
   }
+
+  Widget _activityRow({
+    required String title,
+    required String value,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 14,
+            color: Colors.black54,
+          ),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: AllMealsScreen.mainGreen,
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class _ImpactStats {
@@ -348,6 +385,9 @@ class _ImpactStats {
     required this.todayPeopleFed,
     required this.totalFoodWeight,
     required this.todayFoodWeight,
+    required this.todayMealsAdded,
+    required this.todayDonations,
+    required this.activeNgos,
   });
 
   const _ImpactStats.empty()
@@ -356,7 +396,10 @@ class _ImpactStats {
         totalPeopleFed = 0,
         todayPeopleFed = 0,
         totalFoodWeight = const _FoodWeight(totalKg: 0, totalTons: 0),
-        todayFoodWeight = const _FoodWeight(totalKg: 0, totalTons: 0);
+        todayFoodWeight = const _FoodWeight(totalKg: 0, totalTons: 0),
+        todayMealsAdded = 0,
+        todayDonations = 0,
+        activeNgos = 0;
 
   final int totalMeals;
   final int todayMeals;
@@ -364,6 +407,9 @@ class _ImpactStats {
   final int todayPeopleFed;
   final _FoodWeight totalFoodWeight;
   final _FoodWeight todayFoodWeight;
+  final int todayMealsAdded;
+  final int todayDonations;
+  final int activeNgos;
 }
 
 class _FoodWeight {

@@ -38,6 +38,8 @@ class AccountService {
 
       await user.reauthenticateWithCredential(credential);
       await user.updatePassword(newPassword);
+    } on AccountFailure {
+      rethrow;
     } on FirebaseAuthException catch (error) {
       throw AccountFailure(_mapFirebaseAuthError(error));
     } catch (_) {
@@ -48,6 +50,14 @@ class AccountService {
   }
 
   Future<void> deleteAccount() async {
+    throw const AccountFailure(
+      'Current password is required to delete your account.',
+    );
+  }
+
+  Future<void> deleteAccountWithPassword({
+    required String currentPassword,
+  }) async {
     try {
       final sessionUser = SessionService.user;
       if (sessionUser?.isAdmin == true) {
@@ -61,8 +71,12 @@ class AccountService {
         );
       }
 
-      await _userAccountLifecycleService.deleteOwnAccount();
+      await _userAccountLifecycleService.deleteOwnAccount(
+        currentPassword: currentPassword,
+      );
       SessionService.clear();
+    } on AccountFailure {
+      rethrow;
     } on UserAccountLifecycleFailure catch (error) {
       throw AccountFailure(error.message);
     } on FirebaseException catch (error) {

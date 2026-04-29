@@ -122,6 +122,9 @@ class FirestoreService {
       'profileImageUrl': profileImageUrl,
       'role': role,
       'approvedByAdmin': true,
+      'status': 'active',
+      'isActive': true,
+      'deletedAt': null,
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
@@ -263,12 +266,22 @@ class FirestoreService {
   }
 
   Future<AppUserModel?> getUserByEmail(String email) async {
-    final query = await _users.where('email', isEqualTo: email).limit(1).get();
+    final normalizedEmail = email.trim().toLowerCase();
+    final query = await _users.where('email', isEqualTo: normalizedEmail).get();
     if (query.docs.isEmpty) {
       return null;
     }
 
-    return AppUserModel.fromFirestore(query.docs.first);
+    AppUserModel? deletedUser;
+    for (final doc in query.docs) {
+      final user = AppUserModel.fromFirestore(doc);
+      if (!user.isDeleted) {
+        return user;
+      }
+      deletedUser ??= user;
+    }
+
+    return deletedUser;
   }
 
   Future<NgoRequestModel?> getNgoRequestByEmail(String email) async {
@@ -290,7 +303,10 @@ class FirestoreService {
 
     try {
       await for (final snapshot in _users.where('role', isEqualTo: role).snapshots()) {
-        final users = snapshot.docs.map(AppUserModel.fromFirestore).toList()
+        final users = snapshot.docs
+            .map(AppUserModel.fromFirestore)
+            .where((user) => !user.isDeleted)
+            .toList()
           ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
         await _cache.saveMapList(
           cacheKey,
@@ -420,6 +436,9 @@ class FirestoreService {
         'profileImageUrl': request.profileImageUrl,
         'role': 'ngo',
         'approvedByAdmin': true,
+        'status': 'active',
+        'isActive': true,
+        'deletedAt': null,
         'createdAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
@@ -477,6 +496,9 @@ class FirestoreService {
         'profileImageUrl': request.profileImageUrl,
         'role': 'ngo',
         'approvedByAdmin': true,
+        'status': 'active',
+        'isActive': true,
+        'deletedAt': null,
         'createdAt': FieldValue.serverTimestamp(),
       });
 
@@ -523,6 +545,29 @@ class FirestoreService {
 
   Future<void> deleteUserDocument(String uid) {
     return _users.doc(uid).delete();
+  }
+
+  Future<void> markUserAccountDeleted({
+    required String uid,
+  }) {
+    return _users.doc(uid).set({
+      'status': 'deleted',
+      'isActive': false,
+      'isSuspended': false,
+      'deletedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  Future<void> restoreUserAccountState({
+    required String uid,
+    required Map<String, dynamic> previousData,
+  }) {
+    return _users.doc(uid).set({
+      'status': previousData['status'] ?? 'active',
+      'isActive': previousData['isActive'] ?? true,
+      'isSuspended': previousData['isSuspended'] ?? false,
+      'deletedAt': previousData['deletedAt'],
+    }, SetOptions(merge: true));
   }
 
   Future<AppUserModel> updateUserDocument({
@@ -689,10 +734,12 @@ class FirestoreService {
       'emailVerified': user.emailVerified,
       'approvedByAdmin': user.approvedByAdmin,
       'status': user.status,
+      'isActive': user.isActive,
       'isSuspended': user.isSuspended,
       'suspensionReason': user.suspensionReason,
       'suspendedAt': user.suspendedAt?.toIso8601String(),
       'suspendedBy': user.suspendedBy,
+      'deletedAt': user.deletedAt?.toIso8601String(),
     };
   }
 
@@ -717,10 +764,12 @@ class FirestoreService {
       emailVerified: (data['emailVerified'] as bool?) ?? false,
       approvedByAdmin: (data['approvedByAdmin'] as bool?) ?? false,
       status: data['status'] as String?,
+      isActive: (data['isActive'] as bool?) ?? true,
       isSuspended: (data['isSuspended'] as bool?) ?? false,
       suspensionReason: data['suspensionReason'] as String?,
       suspendedAt: DateTime.tryParse(data['suspendedAt']?.toString() ?? ''),
       suspendedBy: data['suspendedBy'] as String?,
+      deletedAt: DateTime.tryParse(data['deletedAt']?.toString() ?? ''),
     );
   }
 

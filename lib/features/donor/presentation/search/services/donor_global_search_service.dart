@@ -108,7 +108,7 @@ class DonorGlobalSearchService {
 
     return snapshot.docs
         .map(AppUserModel.fromFirestore)
-        .where((user) => !user.isSuspended)
+        .where((user) => !user.isSuspended && !user.isDeleted)
         .toList();
   }
 

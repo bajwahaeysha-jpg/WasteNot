@@ -182,6 +182,6 @@ class DonorSettingsScreen extends StatelessWidget {
 
   if (!context.mounted) return;
 
-  AppNavigationHandler.goToWelcome(context);
+  await AppNavigationHandler.goToWelcome(context);
 }
 }

@@ -21,10 +21,12 @@ class AppUserModel {
     this.emailVerified = false,
     this.approvedByAdmin = false,
     this.status,
+    this.isActive = true,
     this.isSuspended = false,
     this.suspensionReason,
     this.suspendedAt,
     this.suspendedBy,
+    this.deletedAt,
   });
 
   final String uid;
@@ -45,16 +47,20 @@ class AppUserModel {
   final bool emailVerified;
   final bool approvedByAdmin;
   final String? status;
+  final bool isActive;
   final bool isSuspended;
   final String? suspensionReason;
   final DateTime? suspendedAt;
   final String? suspendedBy;
+  final DateTime? deletedAt;
 
   String get displayName => organizationName ?? name ?? email;
+  String get normalizedStatus => status?.trim().toLowerCase() ?? 'active';
 
   bool get isDonor => role == 'donor';
   bool get isNgo => role == 'ngo';
   bool get isAdmin => role == 'admin';
+  bool get isDeleted => normalizedStatus == 'deleted' || !isActive;
 
   AppUserModel copyWith({
     String? uid,
@@ -75,10 +81,12 @@ class AppUserModel {
     bool? emailVerified,
     bool? approvedByAdmin,
     String? status,
+    bool? isActive,
     bool? isSuspended,
     String? suspensionReason,
     DateTime? suspendedAt,
     String? suspendedBy,
+    DateTime? deletedAt,
   }) {
     return AppUserModel(
       uid: uid ?? this.uid,
@@ -100,10 +108,12 @@ class AppUserModel {
       emailVerified: emailVerified ?? this.emailVerified,
       approvedByAdmin: approvedByAdmin ?? this.approvedByAdmin,
       status: status ?? this.status,
+      isActive: isActive ?? this.isActive,
       isSuspended: isSuspended ?? this.isSuspended,
       suspensionReason: suspensionReason ?? this.suspensionReason,
       suspendedAt: suspendedAt ?? this.suspendedAt,
       suspendedBy: suspendedBy ?? this.suspendedBy,
+      deletedAt: deletedAt ?? this.deletedAt,
     );
   }
 
@@ -126,10 +136,12 @@ class AppUserModel {
       'role': role,
       'approvedByAdmin': approvedByAdmin,
       'status': status,
+      'isActive': isActive,
       'isSuspended': isSuspended,
       'suspensionReason': suspensionReason,
       'suspendedAt': suspendedAt == null ? null : Timestamp.fromDate(suspendedAt!),
       'suspendedBy': suspendedBy,
+      'deletedAt': deletedAt == null ? null : Timestamp.fromDate(deletedAt!),
       'createdAt': Timestamp.fromDate(createdAt),
     };
   }
@@ -145,6 +157,7 @@ class AppUserModel {
       'location': locationToFirestore(location),
       'profileImageUrl': profileImageUrl,
       'status': status,
+      'isActive': isActive,
       'isSuspended': isSuspended,
       'notificationsEnabled': notificationsEnabled,
     };
@@ -156,11 +169,16 @@ class AppUserModel {
     final data = doc.data() ?? <String, dynamic>{};
     final createdAt = data['createdAt'];
     final suspendedAt = data['suspendedAt'];
+    final deletedAt = data['deletedAt'];
     final location =
         AppLocation.fromDynamic(data['location']) ??
         _locationFromFlatFields(data);
-    final isSuspended = (data['isSuspended'] as bool?) ??
-        ((data['status'] as String?)?.toLowerCase() == 'suspended');
+    final normalizedStatus = (data['status'] as String?)?.trim().toLowerCase();
+    final isDeleted = normalizedStatus == 'deleted';
+    final isActive = (data['isActive'] as bool?) ?? !isDeleted;
+    final isSuspended =
+        !isDeleted &&
+        ((data['isSuspended'] as bool?) ?? normalizedStatus == 'suspended');
 
     return AppUserModel(
       uid: doc.id,
@@ -180,10 +198,12 @@ class AppUserModel {
       role: (data['role'] as String?) ?? 'donor',
       approvedByAdmin: (data['approvedByAdmin'] as bool?) ?? false,
       status: data['status'] as String?,
+      isActive: isActive,
       isSuspended: isSuspended,
       suspensionReason: data['suspensionReason'] as String?,
       suspendedAt: suspendedAt is Timestamp ? suspendedAt.toDate() : null,
       suspendedBy: data['suspendedBy'] as String?,
+      deletedAt: deletedAt is Timestamp ? deletedAt.toDate() : null,
       createdAt: createdAt is Timestamp ? createdAt.toDate() : DateTime.now(),
     );
   }

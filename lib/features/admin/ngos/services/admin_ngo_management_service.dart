@@ -8,7 +8,7 @@ import 'package:wastenot/services/notification_service.dart';
 import 'package:wastenot/services/session_service.dart';
 import 'package:wastenot/services/user_account_lifecycle_service.dart';
 
-enum NgoStatusFilter { all, active, suspended }
+enum NgoStatusFilter { all, active, suspended, deleted }
 
 class AdminManagedNgo {
   const AdminManagedNgo({
@@ -31,7 +31,9 @@ class AdminManagedNgo {
   String get phone => user.phone ?? '';
   String get imageUrl => user.profileImageUrl ?? '';
   bool get isSuspended => user.isSuspended;
-  String get statusLabel => isSuspended ? 'Suspended' : 'Active';
+  bool get isDeleted => user.isDeleted;
+  String get statusLabel =>
+      isDeleted ? 'Deleted' : (isSuspended ? 'Suspended' : 'Active');
   String get locationLabel => city ?? user.address ?? 'Unknown location';
   String get aboutLabel =>
       about?.trim().isNotEmpty == true
@@ -317,11 +319,15 @@ class AdminNgoManagementService {
     final data = userDoc.data() ?? <String, dynamic>{};
     final stats = _calculateNgoStats(donationDocs);
 
-    final status = (data['status'] as String?)?.toLowerCase();
-    final suspended = (data['isSuspended'] as bool?) ?? status == 'suspended';
+    final status = (data['status'] as String?)?.trim().toLowerCase() ?? 'active';
+    final deleted = status == 'deleted' || (data['isActive'] as bool?) == false;
+    final suspended =
+        !deleted &&
+        ((data['isSuspended'] as bool?) ?? status == 'suspended');
 
     final normalizedUser = user.copyWith(
-      status: suspended ? 'suspended' : (status ?? 'active'),
+      status: deleted ? 'deleted' : (suspended ? 'suspended' : status),
+      isActive: !deleted,
       isSuspended: suspended,
     );
 
@@ -342,9 +348,11 @@ class AdminNgoManagementService {
   bool _matchesFilter(AdminManagedNgo ngo, NgoStatusFilter filter) {
     switch (filter) {
       case NgoStatusFilter.active:
-        return !ngo.isSuspended;
+        return !ngo.isDeleted && !ngo.isSuspended;
       case NgoStatusFilter.suspended:
-        return ngo.isSuspended;
+        return !ngo.isDeleted && ngo.isSuspended;
+      case NgoStatusFilter.deleted:
+        return ngo.isDeleted;
       case NgoStatusFilter.all:
         return true;
     }

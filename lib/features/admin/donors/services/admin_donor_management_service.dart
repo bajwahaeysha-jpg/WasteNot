@@ -7,7 +7,7 @@ import 'package:wastenot/services/notification_service.dart';
 import 'package:wastenot/services/session_service.dart';
 import 'package:wastenot/services/user_account_lifecycle_service.dart';
 
-enum DonorStatusFilter { all, active, suspended }
+enum DonorStatusFilter { all, active, suspended, deleted }
 
 class AdminManagedDonor {
   const AdminManagedDonor({
@@ -33,7 +33,9 @@ class AdminManagedDonor {
   String get email => user.email;
   String get phone => user.phone ?? '';
   String get imageUrl => user.profileImageUrl ?? '';
-  String get statusLabel => user.isSuspended ? 'Suspended' : 'Active';
+  bool get isDeleted => user.isDeleted;
+  String get statusLabel =>
+      isDeleted ? 'Deleted' : (user.isSuspended ? 'Suspended' : 'Active');
   bool get isSuspended => user.isSuspended;
   String get locationLabel => city ?? user.address ?? 'Unknown location';
   String get aboutLabel =>
@@ -445,11 +447,15 @@ class AdminDonorManagementService {
 
     final stats = _calculateDonorStats(donationDocs);
 
-    final status = (data['status'] as String?)?.toLowerCase();
-    final suspended = (data['isSuspended'] as bool?) ?? status == 'suspended';
+    final status = (data['status'] as String?)?.trim().toLowerCase() ?? 'active';
+    final deleted = status == 'deleted' || (data['isActive'] as bool?) == false;
+    final suspended =
+        !deleted &&
+        ((data['isSuspended'] as bool?) ?? status == 'suspended');
 
     final normalizedUser = user.copyWith(
-      status: suspended ? 'suspended' : (status ?? 'active'),
+      status: deleted ? 'deleted' : (suspended ? 'suspended' : status),
+      isActive: !deleted,
       isSuspended: suspended,
     );
 
@@ -477,9 +483,11 @@ class AdminDonorManagementService {
   bool _matchesFilter(AdminManagedDonor donor, DonorStatusFilter filter) {
     switch (filter) {
       case DonorStatusFilter.active:
-        return !donor.isSuspended;
+        return !donor.isDeleted && !donor.isSuspended;
       case DonorStatusFilter.suspended:
-        return donor.isSuspended;
+        return !donor.isDeleted && donor.isSuspended;
+      case DonorStatusFilter.deleted:
+        return donor.isDeleted;
       case DonorStatusFilter.all:
         return true;
     }

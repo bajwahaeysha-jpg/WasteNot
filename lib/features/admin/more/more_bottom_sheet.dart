@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:wastenot/navigation/app_navigation_handler.dart';
-import 'package:wastenot/services/auth_service.dart';
 
 import 'feedback/admin_feedback_screen.dart';
 import 'profile/admin_profile_screen.dart';
@@ -42,23 +40,6 @@ class AdminMoreSheet extends StatelessWidget {
               "Feedback",
               const AdminFeedbackScreen(),
             ),
-            const Divider(),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.logout, color: Colors.red),
-              title: const Text(
-                "Log Out",
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.red,
-                ),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                _showLogoutDialog(context);
-              },
-            ),
           ],
         ),
       ),
@@ -88,44 +69,5 @@ class AdminMoreSheet extends StatelessWidget {
         );
       },
     );
-  }
-
-  void _showLogoutDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          title: const Text("Log Out"),
-          content: const Text("Are you sure you want to log out?"),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(dialogContext);
-              },
-              child: const Text("Cancel"),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-              ),
-              onPressed: () => _logout(dialogContext),
-              child: const Text("Log Out"),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Future<void> _logout(BuildContext context) async {
-    await AuthService().logout();
-    if (!context.mounted) {
-      return;
-    }
-
-    await AppNavigationHandler.goToWelcome(context);
   }
 }

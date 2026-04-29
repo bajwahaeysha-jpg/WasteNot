@@ -34,7 +34,7 @@ class _AllDonorsScreenState extends State<AllDonorsScreen> {
         children: [
           statusFilterBar(
             selectedStatus: selectedStatus,
-            filters: const ["All", "Active", "Suspended"],
+            filters: const ["All", "Active", "Suspended", "Deleted"],
             onChanged: (value) {
               setState(() => selectedStatus = value);
             },
@@ -79,13 +79,14 @@ class _AllDonorsScreenState extends State<AllDonorsScreen> {
         return DonorStatusFilter.active;
       case 'Suspended':
         return DonorStatusFilter.suspended;
+      case 'Deleted':
+        return DonorStatusFilter.deleted;
       default:
         return DonorStatusFilter.all;
     }
   }
 
   Widget donorCard(AdminManagedDonor donor) {
-    final active = !donor.isSuspended;
     final donorType = donor.donorType;
     final infoLine = <String>[
       if (donorType != null && donorType.isNotEmpty) donorType,
@@ -178,23 +179,60 @@ class _AllDonorsScreenState extends State<AllDonorsScreen> {
               ),
             ),
             const SizedBox(width: 10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: active ? const Color(0x1A0B4B3F) : Colors.red.shade100,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                donor.statusLabel,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: active ? const Color(0xFF0B4B3F) : Colors.red.shade700,
-                ),
-              ),
-            ),
+            DonorStatusBadge(donor: donor),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class DonorStatusBadge extends StatelessWidget {
+  const DonorStatusBadge({
+    super.key,
+    required this.donor,
+  });
+
+  final AdminManagedDonor donor;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isDeleted =
+        donor.user.normalizedStatus == 'deleted' || donor.isDeleted;
+    final bool isSuspended = !isDeleted && donor.isSuspended;
+    final Color backgroundColor = isDeleted
+        ? const Color(0xFFFDE8E8)
+        : (isSuspended ? Colors.red.shade100 : const Color(0x1A0B4B3F));
+    final Color foregroundColor = isDeleted
+        ? Colors.red
+        : (isSuspended ? Colors.red.shade700 : const Color(0xFF0B4B3F));
+    final IconData icon = isDeleted
+        ? Icons.flag
+        : (isSuspended ? Icons.block : Icons.check_circle);
+    final String label = isDeleted
+        ? 'Deleted'
+        : (isSuspended ? 'Suspended' : 'Active');
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: foregroundColor),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: foregroundColor,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -20,6 +20,8 @@ class _AllNGOsScreenState extends State<AllNGOsScreen> {
         return NgoStatusFilter.active;
       case 'Suspended':
         return NgoStatusFilter.suspended;
+      case 'Deleted':
+        return NgoStatusFilter.deleted;
       default:
         return NgoStatusFilter.all;
     }
@@ -90,6 +92,7 @@ class _AllNGOsScreenState extends State<AllNGOsScreen> {
             _statusChip("All"),
             _statusChip("Active"),
             _statusChip("Suspended"),
+            _statusChip("Deleted"),
           ],
         ),
       ),
@@ -122,8 +125,6 @@ class _AllNGOsScreenState extends State<AllNGOsScreen> {
   }
 
   Widget _ngoCard(AdminManagedNgo ngo) {
-    final bool approved = !ngo.isSuspended;
-
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(14),
@@ -202,23 +203,59 @@ class _AllNGOsScreenState extends State<AllNGOsScreen> {
                 ],
               ),
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: approved ? const Color(0x1A0B4B3F) : Colors.red.shade100,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                ngo.statusLabel,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: approved ? const Color(0xFF0B4B3F) : Colors.red.shade700,
-                ),
-              ),
-            ),
+            NgoStatusBadge(ngo: ngo),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class NgoStatusBadge extends StatelessWidget {
+  const NgoStatusBadge({
+    super.key,
+    required this.ngo,
+  });
+
+  final AdminManagedNgo ngo;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isDeleted = ngo.user.normalizedStatus == 'deleted' || ngo.isDeleted;
+    final bool isSuspended = !isDeleted && ngo.isSuspended;
+    final Color backgroundColor = isDeleted
+        ? const Color(0xFFFDE8E8)
+        : (isSuspended ? Colors.red.shade100 : const Color(0x1A0B4B3F));
+    final Color foregroundColor = isDeleted
+        ? Colors.red
+        : (isSuspended ? Colors.red.shade700 : const Color(0xFF0B4B3F));
+    final IconData icon = isDeleted
+        ? Icons.flag
+        : (isSuspended ? Icons.block : Icons.check_circle);
+    final String label = isDeleted
+        ? 'Deleted'
+        : (isSuspended ? 'Suspended' : 'Active');
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: foregroundColor),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: foregroundColor,
+            ),
+          ),
+        ],
       ),
     );
   }

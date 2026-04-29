@@ -145,9 +145,9 @@ class DonorProfileScreen extends StatelessWidget {
                             "Success",
                           ),
                           const SizedBox(width: 10),
-                          _statBox(
-                            donor.isSuspended ? "Suspended" : "Active",
-                            "Status",
+                          _statusBox(
+                            isDeleted: donor.isDeleted,
+                            isSuspended: donor.isSuspended,
                           ),
                         ],
                       ),
@@ -227,60 +227,78 @@ class DonorProfileScreen extends StatelessWidget {
                         );
                       },
                     ),
-                    ListTile(
-                      leading: Icon(
-                        donor.isSuspended ? Icons.check_circle : Icons.block,
-                        color: donor.isSuspended ? const Color(0xFF0B4B3F) : Colors.red,
-                      ),
-                      title: Text(
-                        donor.isSuspended
-                            ? "Unsuspend Donor"
-                            : "Suspend Donor",
-                        style: TextStyle(
-                          color:
-                              donor.isSuspended ? const Color(0xFF0B4B3F) : Colors.red,
+                    Opacity(
+                      opacity: donor.isDeleted ? 0.45 : 1,
+                      child: ListTile(
+                        leading: Icon(
+                          donor.isSuspended ? Icons.check_circle : Icons.block,
+                          color: donor.isDeleted
+                              ? Colors.grey
+                              : (donor.isSuspended ? primary : Colors.red),
                         ),
-                      ),
-                      onTap: () async {
-                        if (donor.isSuspended) {
-                          await service.unsuspendDonor(
-                            donorId: donor.id,
-                            donorName: donor.name,
-                          );
-
-                          if (!context.mounted) {
-                            return;
-                          }
-
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Donor re-enabled successfully"),
-                            ),
-                          );
-                          return;
-                        }
-
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => SuspendDonorScreen(donor: donor),
+                        title: Text(
+                          donor.isSuspended
+                              ? "Unsuspend Donor"
+                              : "Suspend Donor",
+                          style: TextStyle(
+                            color: donor.isDeleted
+                                ? Colors.grey
+                                : (donor.isSuspended ? primary : Colors.red),
                           ),
-                        );
-                      },
+                        ),
+                        onTap: donor.isDeleted
+                            ? null
+                            : () async {
+                                if (donor.isSuspended) {
+                                  await service.unsuspendDonor(
+                                    donorId: donor.id,
+                                    donorName: donor.name,
+                                  );
+
+                                  if (!context.mounted) {
+                                    return;
+                                  }
+
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        "Donor re-enabled successfully",
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        SuspendDonorScreen(donor: donor),
+                                  ),
+                                );
+                              },
+                      ),
                     ),
-                    ListTile(
-                      leading: const Icon(
-                        Icons.delete_forever,
-                        color: Colors.red,
-                      ),
-                      title: const Text(
-                        "Delete Account",
-                        style: TextStyle(color: Colors.red),
-                      ),
-                      onTap: () => _confirmDeleteDonor(
-                        context,
-                        service,
-                        donor,
+                    Opacity(
+                      opacity: donor.isDeleted ? 0.45 : 1,
+                      child: ListTile(
+                        leading: Icon(
+                          Icons.delete_forever,
+                          color: donor.isDeleted ? Colors.grey : Colors.red,
+                        ),
+                        title: Text(
+                          "Delete Account",
+                          style: TextStyle(
+                            color: donor.isDeleted ? Colors.grey : Colors.red,
+                          ),
+                        ),
+                        onTap: donor.isDeleted
+                            ? null
+                            : () => _confirmDeleteDonor(
+                                context,
+                                service,
+                                donor,
+                              ),
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -316,6 +334,69 @@ class DonorProfileScreen extends StatelessWidget {
               label,
               style: const TextStyle(
                 color: Colors.black54,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _statusBox({
+    required bool isDeleted,
+    required bool isSuspended,
+  }) {
+    final backgroundColor = isDeleted
+        ? const Color(0xFFFDECEC)
+        : const Color(0xFFEDEDED);
+    final textColor = isDeleted
+        ? Colors.red
+        : (isSuspended ? Colors.red.shade700 : primary);
+    final IconData icon = isDeleted
+        ? Icons.flag
+        : (isSuspended ? Icons.block : Icons.check_circle);
+    final String status = isDeleted
+        ? 'Deleted'
+        : (isSuspended ? 'Suspended' : 'Active');
+    final String subtitle = isDeleted ? "Account Deleted" : "Status";
+
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(12),
+          border: isDeleted
+              ? Border.all(color: const Color(0xFFF5B5B5))
+              : null,
+        ),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 16, color: textColor),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    status,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: textColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: TextStyle(
+                color: isDeleted ? const Color(0xFFC62828) : Colors.black54,
               ),
             ),
           ],
