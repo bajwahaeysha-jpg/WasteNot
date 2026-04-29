@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:wastenot/features/admin/navigation/admin_bottom_navigation.dart';
 import 'package:wastenot/features/donor/presentation/donor_navigation_screen.dart';
 import 'package:wastenot/features/ngo/presentation/screens/home/ngo_home_screen.dart';
@@ -62,6 +63,10 @@ class AppNavigationHandler {
     }
 
     await Navigator.of(context).push(homeRoute(user));
+  }
+
+  static Future<void> exitApp() {
+    return SystemNavigator.pop();
   }
 
   static Widget homeForUser(AppUserModel user) {

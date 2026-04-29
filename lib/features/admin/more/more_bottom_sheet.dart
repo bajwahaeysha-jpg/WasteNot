@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:wastenot/navigation/app_navigation_handler.dart';
+import 'package:wastenot/services/auth_service.dart';
+
 import 'feedback/admin_feedback_screen.dart';
 import 'profile/admin_profile_screen.dart';
 import 'settings/settings_screen.dart';
-import 'package:wastenot/screens/welcome_screen.dart';
-import 'package:wastenot/services/auth_service.dart';
 
 class AdminMoreSheet extends StatelessWidget {
-
   final Map<String, dynamic> user;
 
   const AdminMoreSheet({
@@ -18,42 +18,34 @@ class AdminMoreSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-
             _item(
               context,
               Icons.person_outline,
               "Profile",
               AdminProfileScreen(user: user),
             ),
-
             _item(
               context,
               Icons.settings_outlined,
               "Settings",
-              SettingsScreen(user: user)
+              SettingsScreen(user: user),
             ),
             _item(
-  context,
-  Icons.feedback_outlined,
-  "Feedback",
-  const AdminFeedbackScreen(),
-),
-
+              context,
+              Icons.feedback_outlined,
+              "Feedback",
+              const AdminFeedbackScreen(),
+            ),
             const Divider(),
-
-            /// LOGOUT
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.logout, color: Colors.red),
-
               title: const Text(
                 "Log Out",
                 style: TextStyle(
@@ -62,7 +54,6 @@ class AdminMoreSheet extends StatelessWidget {
                   color: Colors.red,
                 ),
               ),
-
               onTap: () {
                 Navigator.pop(context);
                 _showLogoutDialog(context);
@@ -80,11 +71,9 @@ class AdminMoreSheet extends StatelessWidget {
     String title,
     Widget screen,
   ) {
-
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: Icon(icon, color: mainGreen),
-
       title: Text(
         title,
         style: const TextStyle(
@@ -92,11 +81,8 @@ class AdminMoreSheet extends StatelessWidget {
           fontWeight: FontWeight.w500,
         ),
       ),
-
       onTap: () {
-
         Navigator.of(context).pop();
-
         Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => screen),
         );
@@ -105,55 +91,41 @@ class AdminMoreSheet extends StatelessWidget {
   }
 
   void _showLogoutDialog(BuildContext context) {
-
     showDialog(
       context: context,
-      builder: (context) {
-
+      builder: (dialogContext) {
         return AlertDialog(
-
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
-
           title: const Text("Log Out"),
-
-          content: const Text(
-            "Are you sure you want to log out?",
-          ),
-
+          content: const Text("Are you sure you want to log out?"),
           actions: [
-
             TextButton(
               onPressed: () {
-                Navigator.pop(context);
+                Navigator.pop(dialogContext);
               },
               child: const Text("Cancel"),
             ),
-
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
               ),
-
-             onPressed: () async {
-  final navigator = Navigator.of(context); 
-
-  await AuthService().logout();
-
-  navigator.pushAndRemoveUntil(
-    MaterialPageRoute(
-      builder: (_) => const WelcomeScreen(),
-    ),
-    (route) => false,
-  );
-              },
-
+              onPressed: () => _logout(dialogContext),
               child: const Text("Log Out"),
             ),
           ],
         );
       },
     );
+  }
+
+  Future<void> _logout(BuildContext context) async {
+    await AuthService().logout();
+    if (!context.mounted) {
+      return;
+    }
+
+    await AppNavigationHandler.goToWelcome(context);
   }
 }

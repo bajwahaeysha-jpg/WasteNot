@@ -28,11 +28,11 @@ class _SplashScreenState extends State<SplashScreen> {
     }
 
     if (user != null) {
-      Navigator.of(context).pushReplacement(AppNavigationHandler.homeRoute(user));
+      AppNavigationHandler.goToHome(context, user);
       return;
     }
 
-    Navigator.of(context).pushReplacement(AppNavigationHandler.welcomeRoute());
+    AppNavigationHandler.goToWelcome(context);
   }
 
   @override

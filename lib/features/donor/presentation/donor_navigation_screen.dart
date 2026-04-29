@@ -8,7 +8,6 @@ import 'profile/screens/donor_profile_screen.dart';
 import 'settings/screens/donor_settings_screen.dart';
 import 'package:wastenot/features/donor/presentation/notifications/screens/notification_screen.dart';
 import 'package:wastenot/features/donor/presentation/feedback/screens/feedback_screen.dart';
-import 'package:wastenot/services/auth_service.dart';
 import 'package:wastenot/services/notification_badge_service.dart';
 import 'package:wastenot/services/session_service.dart';
 
@@ -25,8 +24,6 @@ class DonorNavigationScreen extends StatefulWidget {
 }
 
 class _DonorNavigationScreenState extends State<DonorNavigationScreen> {
-  final AuthService _authService = AuthService();
-
   int _currentIndex = 0;
 
   static const Color mainGreen = Color(0xFF0B4B3F);
@@ -236,13 +233,7 @@ class _DonorNavigationScreenState extends State<DonorNavigationScreen> {
   }
 
   Future<void> _handleRootBack() async {
-    await _authService.signOut();
-
-    if (!mounted) {
-      return;
-    }
-
-    await AppNavigationHandler.goToWelcome(context);
+    await AppNavigationHandler.exitApp();
   }
 
   void _openMoreSheet(BuildContext context) {

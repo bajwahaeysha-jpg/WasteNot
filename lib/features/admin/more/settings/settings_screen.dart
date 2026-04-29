@@ -1,17 +1,17 @@
 import 'dart:io';
-import 'package:flutter/material.dart';
 
-import 'accounts/account_screen.dart';
-import 'notifications/notifications_screen.dart';
-import 'contacts/contact_screen.dart';
-import 'about/about_screen.dart';
+import 'package:flutter/material.dart';
+import 'package:wastenot/navigation/app_navigation_handler.dart';
+
+import '../../../../services/auth_service.dart';
 import 'FAQ/faq_screen.dart';
 import 'Privacy_Policy/privacy_policy_screen.dart';
-import '../../../../screens/welcome_screen.dart';
-import '../../../../services/auth_service.dart';
+import 'about/about_screen.dart';
+import 'accounts/account_screen.dart';
+import 'contacts/contact_screen.dart';
+import 'notifications/notifications_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
-
   final Map<String, dynamic> user;
 
   const SettingsScreen({
@@ -23,7 +23,6 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     File? profileImage;
 
     if (user['image'] != null) {
@@ -32,15 +31,12 @@ class SettingsScreen extends StatelessWidget {
 
     return PopScope(
       canPop: true,
-
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
         Navigator.popUntil(context, (route) => route.isFirst);
       },
-
       child: Scaffold(
         backgroundColor: const Color(0xFFF7F9F8),
-
         appBar: AppBar(
           backgroundColor: const Color(0xFF0B4B3F),
           elevation: 0,
@@ -54,27 +50,18 @@ class SettingsScreen extends StatelessWidget {
             ),
           ),
         ),
-
         body: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
-
           child: Column(
             children: [
-
               const SizedBox(height: 12),
-
-              /// PROFILE HEADER
               Row(
                 children: [
-
                   CircleAvatar(
                     radius: 26,
                     backgroundColor: mainGreen,
                     backgroundImage:
-                        profileImage != null
-                            ? FileImage(profileImage)
-                            : null,
-
+                        profileImage != null ? FileImage(profileImage) : null,
                     child: profileImage == null
                         ? Text(
                             (user['name'] ?? "A")[0].toUpperCase(),
@@ -85,13 +72,10 @@ class SettingsScreen extends StatelessWidget {
                           )
                         : null,
                   ),
-
                   const SizedBox(width: 12),
-
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-
                       Text(
                         user['name'] ?? "",
                         style: const TextStyle(
@@ -99,7 +83,6 @@ class SettingsScreen extends StatelessWidget {
                           fontSize: 16,
                         ),
                       ),
-
                       Text(
                         user['email'] ?? "",
                         style: const TextStyle(color: Colors.grey),
@@ -108,55 +91,47 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ],
               ),
-
               const SizedBox(height: 24),
-
-              _tile(context, Icons.person_outline, "Account",
-                const  AccountScreen(),
+              _tile(
+                context,
+                Icons.person_outline,
+                "Account",
+                const AccountScreen(),
               ),
-
               _tile(
                 context,
                 Icons.notifications_none,
                 "Notifications & Reminders",
                 const NotificationsScreen(),
               ),
-
               _tile(
                 context,
                 Icons.mail_outline,
                 "Contact Us",
                 const ContactScreen(),
               ),
-
               _tile(
                 context,
                 Icons.info_outline,
                 "About App",
                 const AboutScreen(),
               ),
-
               _tile(
                 context,
                 Icons.help_outline,
                 "FAQ",
                 const FaqScreen(),
               ),
-
               _tile(
                 context,
                 Icons.privacy_tip_outlined,
                 "Privacy Policy",
                 const PrivacyPolicyScreen(),
               ),
-
               const Spacer(),
-
-              /// LOGOUT
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.logout, color: Colors.red),
-
                 title: const Text(
                   "Logout",
                   style: TextStyle(
@@ -164,10 +139,8 @@ class SettingsScreen extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-
                 onTap: () => _showLogoutSheet(context),
               ),
-
               const SizedBox(height: 20),
             ],
           ),
@@ -176,7 +149,6 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  /// SETTINGS TILE
   static Widget _tile(
     BuildContext context,
     IconData icon,
@@ -188,7 +160,6 @@ class SettingsScreen extends StatelessWidget {
       leading: Icon(icon),
       title: Text(text),
       trailing: const Icon(Icons.chevron_right),
-
       onTap: () {
         Navigator.push(
           context,
@@ -198,26 +169,19 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  /// LOGOUT SHEET
   static void _showLogoutSheet(BuildContext context) {
-
     showModalBottomSheet(
       context: context,
-
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-
       builder: (_) => Padding(
         padding: const EdgeInsets.all(24),
-
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-
             Row(
               children: [
-
                 const Text(
                   "Logout",
                   style: TextStyle(
@@ -225,42 +189,25 @@ class SettingsScreen extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-
                 const Spacer(),
-
                 IconButton(
                   onPressed: () => Navigator.pop(context),
                   icon: const Icon(Icons.close),
                 ),
               ],
             ),
-
             const SizedBox(height: 12),
-
             const Text(
               "Are you sure you want to logout from your admin account?",
               style: TextStyle(color: Colors.black54),
             ),
-
             const SizedBox(height: 24),
-
             OutlinedButton(
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 52),
                 side: const BorderSide(color: Colors.red),
               ),
-
-              onPressed: () async {
-  final navigator = Navigator.of(context); // ✅ pehle store karo
-
-  await AuthService().logout();
-
-  navigator.pushAndRemoveUntil(
-    MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-    (route) => false,
-  );
-},
-
+              onPressed: () => _logout(context),
               child: const Text(
                 "Yes, Logout",
                 style: TextStyle(
@@ -269,22 +216,27 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
             ),
-
             const SizedBox(height: 12),
-
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 52),
                 backgroundColor: mainGreen,
               ),
-
               onPressed: () => Navigator.pop(context),
-
               child: const Text("Cancel"),
             ),
           ],
         ),
       ),
     );
+  }
+
+  static Future<void> _logout(BuildContext context) async {
+    await AuthService().logout();
+    if (!context.mounted) {
+      return;
+    }
+
+    await AppNavigationHandler.goToWelcome(context);
   }
 }

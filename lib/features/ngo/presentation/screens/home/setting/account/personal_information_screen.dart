@@ -26,7 +26,6 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
   late final TextEditingController _phoneController;
   late final TextEditingController _addressController;
   late final TextEditingController _registrationNumberController;
-  late final TextEditingController _organizationDescriptionController;
   late final TextEditingController _aboutController;
 
   bool _isEditing = false;
@@ -43,7 +42,6 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
     _phoneController = TextEditingController();
     _addressController = TextEditingController();
     _registrationNumberController = TextEditingController();
-    _organizationDescriptionController = TextEditingController();
     _aboutController = TextEditingController();
     _loadUser(SessionService.user);
   }
@@ -55,15 +53,12 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
     _phoneController.dispose();
     _addressController.dispose();
     _registrationNumberController.dispose();
-    _organizationDescriptionController.dispose();
     _aboutController.dispose();
     super.dispose();
   }
 
   void _loadUser(AppUserModel? user) {
-    if (user == null) {
-      return;
-    }
+    if (user == null) return;
 
     final shouldReplaceControllers =
         _lastLoadedUser == null ||
@@ -71,20 +66,19 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
         (!_isEditing && _didUserChange(user));
 
     _lastLoadedUser = user;
-    if (!shouldReplaceControllers) {
-      return;
-    }
 
-    _organizationNameController.text = user.organizationName ?? user.displayName;
+    if (!shouldReplaceControllers) return;
+
+    _organizationNameController.text =
+        user.organizationName ?? user.displayName;
     _emailController.text = user.email;
     _phoneController.text = user.phone ?? '';
     _selectedLocation = user.location;
     _addressController.text = user.location?.address ?? user.address ?? '';
     _registrationNumberController.text = user.registrationNumber ?? '';
-    _organizationDescriptionController.text =
-        user.organizationDescription ?? '';
     _aboutController.text =
         user.about ?? user.organizationDescription ?? '';
+
     _selectedImage = null;
   }
 
@@ -94,17 +88,14 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
         _emailController.text != user.email ||
         _phoneController.text != (user.phone ?? '') ||
         _addressController.text != (user.address ?? '') ||
-        _registrationNumberController.text != (user.registrationNumber ?? '') ||
-        _organizationDescriptionController.text !=
-            (user.organizationDescription ?? '') ||
+        _registrationNumberController.text !=
+            (user.registrationNumber ?? '') ||
         _aboutController.text !=
             (user.about ?? user.organizationDescription ?? '');
   }
 
   Future<void> _toggleEditSave() async {
-    if (_isSaving) {
-      return;
-    }
+    if (_isSaving) return;
 
     if (!_isEditing) {
       setState(() => _isEditing = true);
@@ -112,6 +103,7 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
     }
 
     setState(() => _isSaving = true);
+
     try {
       await _authService.updateCurrentUserProfile(
         email: _emailController.text,
@@ -120,38 +112,30 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
         location: _selectedLocation,
         organizationName: _organizationNameController.text,
         registrationNumber: _registrationNumberController.text,
-        organizationDescription: _organizationDescriptionController.text,
+        organizationDescription: _aboutController.text,
         profileImage: _selectedImage,
       );
 
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       setState(() {
         _isEditing = false;
         _selectedImage = null;
       });
-    } on AuthFailure catch (error) {
-      _showMessage(error.message, isError: true);
-    } catch (error) {
-      _showMessage(error.toString(), isError: true);
+
+      _showMessage("Profile updated successfully");
+    } catch (e) {
+      _showMessage(e.toString(), isError: true);
     } finally {
-      if (mounted) {
-        setState(() => _isSaving = false);
-      }
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 
   Future<void> _pickImage() async {
-    if (!_isEditing) {
-      return;
-    }
+    if (!_isEditing) return;
 
     final image = await _picker.pickImage(source: ImageSource.gallery);
-    if (image == null) {
-      return;
-    }
+    if (image == null) return;
 
     setState(() {
       _selectedImage = File(image.path);
@@ -159,19 +143,15 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
   }
 
   Future<void> _pickLocation() async {
-    if (!_isEditing) {
-      return;
-    }
+    if (!_isEditing) return;
 
     final location = await _locationService.pickLocation(
       context,
       initialLocation: _selectedLocation,
-      title: 'Update NGO Location',
+      title: 'Update Location',
     );
 
-    if (location == null || !mounted) {
-      return;
-    }
+    if (location == null || !mounted) return;
 
     setState(() {
       _selectedLocation = location;
@@ -188,7 +168,21 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
     );
   }
 
-  Widget _field(
+  Widget _sectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 22, bottom: 10),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 19,
+          fontWeight: FontWeight.bold,
+          color: Colors.black,
+        ),
+      ),
+    );
+  }
+
+  Widget _profileField(
     String label,
     TextEditingController controller, {
     int maxLines = 1,
@@ -196,48 +190,60 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
     VoidCallback? onTap,
     Widget? suffixIcon,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            color: Colors.black,
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: _isEditing ? Colors.white : Colors.grey.shade100,
+
+        // ✅ SHADOW
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.15),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
           ),
+        ],
+
+        borderRadius: BorderRadius.circular(16),
+
+        // ✅ BORDER
+        border: Border.all(
+          color: _isEditing
+              ? const Color(0xFF0B4B3F)
+              : Colors.grey.shade200,
+          width: 1.2,
         ),
-        const SizedBox(height: 6),
-        TextField(
-          controller: controller,
-          enabled: _isEditing && !_isSaving,
-          readOnly: readOnly,
-          onTap: onTap,
-          maxLines: maxLines,
-          style: const TextStyle(color: Colors.black),
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: Colors.white,
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: _isEditing
-                    ? const Color(0xFF0B4B3F)
-                    : Colors.grey.shade300,
-                width: _isEditing ? 1.6 : 1,
-              ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.grey,
             ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Color(0xFF0B4B3F),
-                width: 1.8,
-              ),
-            ),
-            suffixIcon: suffixIcon,
           ),
-        ),
-        const SizedBox(height: 18),
-      ],
+          const SizedBox(height: 6),
+          TextField(
+            controller: controller,
+            enabled: _isEditing && !_isSaving,
+            readOnly: readOnly,
+            onTap: onTap,
+            maxLines: maxLines,
+            decoration: InputDecoration(
+              border: InputBorder.none,
+              suffixIcon: suffixIcon,
+            ),
+            style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w500,
+              color: Colors.black,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -250,21 +256,20 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
 
         final profileImage = _selectedImage != null
             ? FileImage(_selectedImage!)
-            : (user?.profileImageUrl != null && user!.profileImageUrl!.isNotEmpty)
+            : (user?.profileImageUrl != null &&
+                    user!.profileImageUrl!.isNotEmpty)
                 ? NetworkImage(user.profileImageUrl!)
                 : null;
 
         return Scaffold(
           backgroundColor: const Color(0xFFF5F7F6),
+
           appBar: AppBar(
             backgroundColor: const Color(0xFF0B4B3F),
             iconTheme: const IconThemeData(color: Colors.white),
             title: const Text(
               'Personal Information',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(color: Colors.white),
             ),
             actions: [
               TextButton(
@@ -282,86 +287,63 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
                         _isEditing ? 'Save' : 'Edit',
                         style: const TextStyle(
                           color: Colors.white,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
                         ),
                       ),
               ),
             ],
           ),
+
           body: user == null
-              ? const Center(child: Text('NGO profile not found.'))
+              ? const Center(child: Text('Profile not found'))
               : SingleChildScrollView(
                   padding: const EdgeInsets.all(20),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          GestureDetector(
-                            onTap: _pickImage,
-                            child: CircleAvatar(
-                              radius: 50,
-                              backgroundColor:
-                                  const Color(0xFF0B4B3F).withValues(alpha: .15),
-                              backgroundImage: profileImage as ImageProvider?,
-                              child: profileImage == null
-                                  ? Text(
-                                      SessionService.initials(),
-                                      style: const TextStyle(
-                                        fontSize: 26,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFF0B4B3F),
-                                      ),
-                                    )
-                                  : null,
-                            ),
+                      /// IMAGE
+                      Center(
+                        child: GestureDetector(
+                          onTap: _pickImage,
+                          child: CircleAvatar(
+                            radius: 65,
+                            backgroundColor: Colors.grey.shade200,
+                            backgroundImage:
+                                profileImage as ImageProvider?,
+                            child: profileImage == null
+                                ? Text(
+                                    SessionService.initials(),
+                                    style: const TextStyle(
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  )
+                                : null,
                           ),
-                          if (_isEditing)
-                            Positioned(
-                              bottom: 4,
-                              right: 4,
-                              child: Container(
-                                height: 28,
-                                width: 28,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFF0B4B3F),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.edit,
-                                  color: Colors.white,
-                                  size: 16,
-                                ),
-                              ),
-                            ),
-                        ],
+                        ),
                       ),
-                      const SizedBox(height: 24),
-                      _field('Organization Name', _organizationNameController),
-                      _field(
-                        'About',
-                        _aboutController,
-                        maxLines: 4,
-                        readOnly: true,
-                      ),
-                      _field('Email', _emailController),
-                      _field('Phone Number', _phoneController),
-                      _field(
-                        'Address',
+
+                      const SizedBox(height: 25),
+
+                      _sectionTitle("Personal Info"),
+                      _profileField(
+                          "Organization Name", _organizationNameController),
+                      _profileField("Registration Number",
+                          _registrationNumberController),
+
+                      _sectionTitle("Contact Info"),
+                      _profileField("Phone Number", _phoneController),
+                      _profileField("Email", _emailController),
+                      _profileField(
+                        "Location",
                         _addressController,
                         readOnly: true,
                         onTap: _pickLocation,
                         suffixIcon: const Icon(Icons.map_outlined),
                       ),
-                      _field(
-                        'Registration Number',
-                        _registrationNumberController,
-                      ),
-                      _field(
-                        'Organization Description',
-                        _organizationDescriptionController,
-                        maxLines: 4,
-                      ),
+
+                      _sectionTitle("About"),
+                      _profileField("About", _aboutController, maxLines: 4),
                     ],
                   ),
                 ),
