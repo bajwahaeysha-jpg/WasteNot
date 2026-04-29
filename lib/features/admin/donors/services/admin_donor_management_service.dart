@@ -365,22 +365,10 @@ class AdminDonorManagementService {
     required String donorId,
     required String donorName,
   }) async {
-    final admin = SessionService.user;
     await _userAccountLifecycleService.adminDeleteUserAccount(
       uid: donorId,
       role: 'donor',
     );
-
-    await _adminActivityLogs.doc().set({
-      'actionType': 'admin_deleted_donor',
-      'targetUserId': donorId,
-      'receiverName': donorName,
-      'title': 'Donor Deleted',
-      'message': 'Admin permanently deleted the donor account.',
-      'createdAt': FieldValue.serverTimestamp(),
-      'adminId': admin?.uid ?? 'admin',
-      'adminName': admin?.displayName ?? 'System Admin',
-    });
   }
 
   Future<void> sendNotificationToDonor({

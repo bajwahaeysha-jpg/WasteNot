@@ -401,7 +401,7 @@ const SizedBox(height: 10),
           builder: (dialogContext) => AlertDialog(
             title: const Text('Delete NGO account'),
             content: const Text(
-              'This deletes the NGO auth account and profile only. Donations and historical records will remain.',
+              'This permanently deletes the NGO account. Historical records stay preserved for admin review, but all live links to the NGO are detached.',
             ),
             actions: [
               TextButton(

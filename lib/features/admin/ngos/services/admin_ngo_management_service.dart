@@ -289,26 +289,10 @@ class AdminNgoManagementService {
     required String ngoId,
     required String ngoName,
   }) async {
-    final admin = SessionService.user;
     await _userAccountLifecycleService.adminDeleteUserAccount(
       uid: ngoId,
       role: 'ngo',
     );
-
-    await _adminActivityLogs.doc().set(<String, dynamic>{
-      'actionType': 'admin_deleted_ngo',
-      'type': 'ngo_deletion',
-      'targetUserId': ngoId,
-      'targetUserRole': 'ngo',
-      'receiverName': ngoName,
-      'title': 'NGO Deleted',
-      'message': 'Admin permanently deleted the NGO account.',
-      'createdAt': FieldValue.serverTimestamp(),
-      'createdBy': admin?.uid ?? 'admin',
-      'adminId': admin?.uid ?? 'admin',
-      'adminName': admin?.displayName ?? 'System Admin',
-      'source': 'admin_ngo_management',
-    });
   }
 
   Future<void> sendNotificationToNgo({

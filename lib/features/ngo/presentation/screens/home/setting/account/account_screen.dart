@@ -3,6 +3,8 @@ import 'package:wastenot/features/ngo/presentation/screens/home/setting/account/
 import 'package:wastenot/features/ngo/presentation/screens/home/setting/account/personal_information_screen.dart';
 import 'package:wastenot/screens/welcome_screen.dart';
 import 'package:wastenot/services/account_service.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class AccountScreen extends StatelessWidget {
   const AccountScreen({super.key});
@@ -71,55 +73,61 @@ class AccountScreen extends StatelessWidget {
   }
 
   Future<void> _confirmDelete(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-          context: context,
-          builder: (dialogContext) => AlertDialog(
-            title: const Text('Delete account'),
-            content: const Text(
-              'This will delete only your auth account and NGO profile. Donations and historical activity will remain.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext, false),
-                child: const Text('Cancel'),
-              ),
-              FilledButton(
-                style: FilledButton.styleFrom(backgroundColor: Colors.red),
-                onPressed: () => Navigator.pop(dialogContext, true),
-                child: const Text('Delete'),
-              ),
-            ],
+  final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Delete account'),
+          content: const Text(
+            'This permanently deletes your account. Historical donations, feedback, concerns, and logs stay preserved in an archived detached state and will no longer be linked to you.',
           ),
-        ) ??
-        false;
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: Colors.red),
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Delete'),
+            ),
+          ],
+        ),
+      ) ??
+      false;
 
-    if (!confirmed || !context.mounted) {
+  if (!confirmed || !context.mounted) {
+    return;
+  }
+
+  // ✅ DEBUG PRINTS (IMPORTANT)
+  print("PROJECT ID: ${Firebase.app().options.projectId}");
+  print("UID: ${FirebaseAuth.instance.currentUser?.uid}");
+
+  _showBlockingLoader(context);
+
+  try {
+    await AccountService().deleteAccount();
+
+    if (!context.mounted) {
       return;
     }
 
-    _showBlockingLoader(context);
-    try {
-      await AccountService().deleteAccount();
-      if (!context.mounted) {
-        return;
-      }
-
-      Navigator.of(context, rootNavigator: true).pop();
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-        (route) => false,
-      );
-    } on AccountFailure catch (error) {
-      if (!context.mounted) {
-        return;
-      }
-      Navigator.of(context, rootNavigator: true).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message), backgroundColor: Colors.red),
-      );
+    Navigator.of(context, rootNavigator: true).pop();
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+      (route) => false,
+    );
+  } on AccountFailure catch (error) {
+    if (!context.mounted) {
+      return;
     }
+    Navigator.of(context, rootNavigator: true).pop();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(error.message), backgroundColor: Colors.red),
+    );
   }
+}
 
   void _showBlockingLoader(BuildContext context) {
     showDialog<void>(

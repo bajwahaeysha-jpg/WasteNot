@@ -88,14 +88,6 @@ class NotificationBadgeService {
           .map(_unreadCountFromSnapshot);
     }
 
-    if (email != null && email.trim().isNotEmpty) {
-      return _notifications
-          .where('email', isEqualTo: email.trim())
-          .limit(limit + 1)
-          .snapshots()
-          .map(_unreadCountFromSnapshot);
-    }
-
     return const Stream<int>.empty();
   }
 

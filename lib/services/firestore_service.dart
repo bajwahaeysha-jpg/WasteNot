@@ -584,29 +584,6 @@ class FirestoreService {
       return;
     }
 
-    if (email != null && email.isNotEmpty) {
-      try {
-        await for (final snapshot
-            in _notifications.where('email', isEqualTo: email).snapshots()) {
-          final items =
-              snapshot.docs.map((doc) => _notificationToMap(doc)).toList();
-          items.sort((a, b) {
-            final aDate = _notificationCreatedAt(a);
-            final bDate = _notificationCreatedAt(b);
-            return bDate.compareTo(aDate);
-          });
-          await _cache.saveMapList(cacheKey, items);
-          yield items;
-        }
-      } on FirebaseException {
-        final fallback = await _cache.getMapList(cacheKey);
-        if (fallback.isNotEmpty) {
-          yield fallback;
-        }
-      }
-      return;
-    }
-
     yield const <Map<String, dynamic>>[];
   }
 

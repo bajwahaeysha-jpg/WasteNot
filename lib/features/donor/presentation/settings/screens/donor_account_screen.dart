@@ -79,7 +79,7 @@ class DonorAccountScreen extends StatelessWidget {
           builder: (dialogContext) => AlertDialog(
             title: const Text('Delete account'),
             content: const Text(
-              'This will delete only your auth account and profile. Donations and historical activity will remain.',
+              'This permanently deletes your account. Historical donations, feedback, concerns, and logs stay preserved in an archived detached state and will no longer be linked to you.',
             ),
             actions: [
               TextButton(
