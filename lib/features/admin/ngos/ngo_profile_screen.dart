@@ -234,16 +234,8 @@ class NGOProfileScreen extends StatelessWidget {
                     Opacity(
                       opacity: ngo.isDeleted ? 0.45 : 1,
                       child: ListTile(
-                        leading: Icon(
-                          Icons.delete_forever,
-                          color: ngo.isDeleted ? Colors.grey : Colors.red,
-                        ),
-                        title: Text(
-                          "Delete Account",
-                          style: TextStyle(
-                            color: ngo.isDeleted ? Colors.grey : Colors.red,
-                          ),
-                        ),
+                        
+                      
                         onTap: ngo.isDeleted
                             ? null
                             : () => _confirmDeleteNgo(context, service, ngo),

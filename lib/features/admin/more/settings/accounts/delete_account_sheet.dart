@@ -11,15 +11,7 @@ class DeleteAccountSheet extends StatelessWidget {
 
         Row(
           children: [
-            const Text(
-              "Delete account",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const Spacer(),
-            IconButton(
-              onPressed: () => Navigator.pop(context),
-              icon: const Icon(Icons.close),
-            ),
+            
           ],
         ),
 

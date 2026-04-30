@@ -282,16 +282,7 @@ class DonorProfileScreen extends StatelessWidget {
                     Opacity(
                       opacity: donor.isDeleted ? 0.45 : 1,
                       child: ListTile(
-                        leading: Icon(
-                          Icons.delete_forever,
-                          color: donor.isDeleted ? Colors.grey : Colors.red,
-                        ),
-                        title: Text(
-                          "Delete Account",
-                          style: TextStyle(
-                            color: donor.isDeleted ? Colors.grey : Colors.red,
-                          ),
-                        ),
+                        
                         onTap: donor.isDeleted
                             ? null
                             : () => _confirmDeleteDonor(
