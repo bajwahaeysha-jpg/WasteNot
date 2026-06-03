@@ -31,11 +31,7 @@ class LocalCacheService {
     await prefs.setString(_sessionUserKey, jsonEncode(_appUserToJson(user)));
     await saveAppUser(user);
     await saveAuthSession(
-      AuthSessionCache(
-        isLoggedIn: true,
-        uid: user.uid,
-        role: user.role,
-      ),
+      AuthSessionCache(isLoggedIn: true, uid: user.uid, role: user.role),
     );
   }
 
@@ -92,13 +88,14 @@ class LocalCacheService {
     return _decodeObject(raw, _appUserFromJson);
   }
 
-  Future<void> saveDonationList(String key, List<DonationModel> donations) async {
+  Future<void> saveDonationList(
+    String key,
+    List<DonationModel> donations,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
       '$_donationListPrefix$key',
-      jsonEncode(
-        donations.map(_donationToJson).toList(),
-      ),
+      jsonEncode(donations.map(_donationToJson).toList()),
     );
   }
 
@@ -176,10 +173,7 @@ class LocalCacheService {
     return _decodeList(raw, _concernFromJson);
   }
 
-  Future<void> saveMapList(
-    String key,
-    List<Map<String, dynamic>> items,
-  ) async {
+  Future<void> saveMapList(String key, List<Map<String, dynamic>> items) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('$_mapListPrefix$key', jsonEncode(items));
   }
@@ -207,9 +201,7 @@ class LocalCacheService {
       return decoded
           .whereType<Map>()
           .map(
-            (item) => item.map(
-              (key, value) => MapEntry(key.toString(), value),
-            ),
+            (item) => item.map((key, value) => MapEntry(key.toString(), value)),
           )
           .map(parser)
           .toList();
@@ -277,7 +269,8 @@ class LocalCacheService {
       email: json['email']?.toString() ?? '',
       role: json['role']?.toString() ?? 'donor',
       createdAt:
-          DateTime.tryParse(json['createdAt']?.toString() ?? '') ?? DateTime.now(),
+          DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
+          DateTime.now(),
       name: _asString(json['name']),
       phone: _asString(json['phone']),
       address: _asString(json['address']),
@@ -288,8 +281,10 @@ class LocalCacheService {
       registrationNumber: _asString(json['registrationNumber']),
       organizationDescription: _asString(json['organizationDescription']),
       allowMessages: _asBool(json['allowMessages'], fallback: true),
-      notificationsEnabled:
-          _asBool(json['notificationsEnabled'], fallback: true),
+      notificationsEnabled: _asBool(
+        json['notificationsEnabled'],
+        fallback: true,
+      ),
       emailVerified: _asBool(json['emailVerified']),
       approvedByAdmin: _asBool(json['approvedByAdmin']),
       status: _asString(json['status']),
@@ -325,6 +320,8 @@ class LocalCacheService {
       'acceptedByNgoAddress': donation.acceptedByNgoAddress,
       'acceptedByNgoLocation': donation.acceptedByNgoLocation?.toFirestore(),
       'acceptedByNgoProfileImageUrl': donation.acceptedByNgoProfileImageUrl,
+      'driverName': donation.driverName,
+      'driverPhoneNumber': donation.driverPhoneNumber,
       'createdAt': donation.createdAt.toIso8601String(),
       'acceptedAt': donation.acceptedAt?.toIso8601String(),
       'completedAt': donation.completedAt?.toIso8601String(),
@@ -341,7 +338,8 @@ class LocalCacheService {
       donorName: json['donorName']?.toString() ?? '',
       donorEmail: json['donorEmail']?.toString() ?? '',
       createdAt:
-          DateTime.tryParse(json['createdAt']?.toString() ?? '') ?? DateTime.now(),
+          DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
+          DateTime.now(),
       foodItems: _stringList(json['foodItems']),
       quantity: json['quantity']?.toString() ?? '',
       status: json['status']?.toString() ?? DonationStatus.active.value,
@@ -357,9 +355,14 @@ class LocalCacheService {
       acceptedByNgoEmail: _asString(json['acceptedByNgoEmail']),
       acceptedByNgoPhone: _asString(json['acceptedByNgoPhone']),
       acceptedByNgoAddress: _asString(json['acceptedByNgoAddress']),
-      acceptedByNgoLocation: AppLocation.fromDynamic(json['acceptedByNgoLocation']),
-      acceptedByNgoProfileImageUrl:
-          _asString(json['acceptedByNgoProfileImageUrl']),
+      acceptedByNgoLocation: AppLocation.fromDynamic(
+        json['acceptedByNgoLocation'],
+      ),
+      acceptedByNgoProfileImageUrl: _asString(
+        json['acceptedByNgoProfileImageUrl'],
+      ),
+      driverName: _asString(json['driverName']),
+      driverPhoneNumber: _asString(json['driverPhoneNumber']),
       acceptedAt: DateTime.tryParse(_asString(json['acceptedAt']) ?? ''),
       completedAt: DateTime.tryParse(_asString(json['completedAt']) ?? ''),
       expiryAt: DateTime.tryParse(_asString(json['expiryAt']) ?? ''),
@@ -413,9 +416,11 @@ class LocalCacheService {
       ngoName: json['ngoName']?.toString() ?? '',
       ngoEmail: _asString(json['ngoEmail']),
       createdAt:
-          DateTime.tryParse(json['createdAt']?.toString() ?? '') ?? DateTime.now(),
+          DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
+          DateTime.now(),
       expiryTime:
-          DateTime.tryParse(json['expiryTime']?.toString() ?? '') ?? DateTime.now(),
+          DateTime.tryParse(json['expiryTime']?.toString() ?? '') ??
+          DateTime.now(),
       isActive: _asBool(json['isActive'], fallback: true),
       imageStoragePath: _asString(json['imageStoragePath']),
       durationLabel: _asString(json['durationLabel']),

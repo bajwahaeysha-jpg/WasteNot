@@ -99,6 +99,8 @@ class DonationModel {
     this.acceptedByNgoAddress,
     this.acceptedByNgoLocation,
     this.acceptedByNgoProfileImageUrl,
+    this.driverName,
+    this.driverPhoneNumber,
     this.acceptedAt,
     this.completedAt,
     this.expiryAt,
@@ -127,6 +129,8 @@ class DonationModel {
   final String? acceptedByNgoAddress;
   final AppLocation? acceptedByNgoLocation;
   final String? acceptedByNgoProfileImageUrl;
+  final String? driverName;
+  final String? driverPhoneNumber;
   final DateTime createdAt;
   final DateTime? acceptedAt;
   final DateTime? completedAt;
@@ -148,7 +152,10 @@ class DonationModel {
       );
   bool get isCompleted => status == DonationStatus.completed.value;
   bool get isAwaitingClosure =>
-      (isAccepted || isActive) && acceptedAt != null && !isCompleted && !isNotCompleted;
+      (isAccepted || isActive) &&
+      acceptedAt != null &&
+      !isCompleted &&
+      !isNotCompleted;
   bool get isOverdueForClosureReminder {
     final acceptedTime = acceptedAt;
     if (!isAwaitingClosure || acceptedTime == null) {
@@ -156,6 +163,7 @@ class DonationModel {
     }
     return DateTime.now().difference(acceptedTime).inHours >= 2;
   }
+
   bool get hasAcceptedNgo =>
       acceptedByNgoId != null && acceptedByNgoId!.trim().isNotEmpty;
 
@@ -181,6 +189,8 @@ class DonationModel {
     String? acceptedByNgoAddress,
     AppLocation? acceptedByNgoLocation,
     String? acceptedByNgoProfileImageUrl,
+    String? driverName,
+    String? driverPhoneNumber,
     DateTime? createdAt,
     DateTime? acceptedAt,
     DateTime? completedAt,
@@ -213,6 +223,8 @@ class DonationModel {
           acceptedByNgoLocation ?? this.acceptedByNgoLocation,
       acceptedByNgoProfileImageUrl:
           acceptedByNgoProfileImageUrl ?? this.acceptedByNgoProfileImageUrl,
+      driverName: driverName ?? this.driverName,
+      driverPhoneNumber: driverPhoneNumber ?? this.driverPhoneNumber,
       acceptedAt: acceptedAt ?? this.acceptedAt,
       completedAt: completedAt ?? this.completedAt,
       expiryAt: expiryAt ?? this.expiryAt,
@@ -222,7 +234,8 @@ class DonationModel {
   }
 
   Map<String, dynamic> toFirestore() {
-    final effectiveExpiryAt = expiryAt ?? _defaultExpiryAtForCreatedAt(createdAt);
+    final effectiveExpiryAt =
+        expiryAt ?? _defaultExpiryAtForCreatedAt(createdAt);
     return {
       'donationId': donationId,
       'donorId': donorId,
@@ -246,10 +259,13 @@ class DonationModel {
       'acceptedByNgoAddress': acceptedByNgoAddress,
       'acceptedByNgoLocation': locationToFirestore(acceptedByNgoLocation),
       'acceptedByNgoProfileImageUrl': acceptedByNgoProfileImageUrl,
+      'driverName': driverName,
+      'driverPhoneNumber': driverPhoneNumber,
       'createdAt': Timestamp.fromDate(createdAt),
       'acceptedAt': acceptedAt == null ? null : Timestamp.fromDate(acceptedAt!),
-      'completedAt':
-          completedAt == null ? null : Timestamp.fromDate(completedAt!),
+      'completedAt': completedAt == null
+          ? null
+          : Timestamp.fromDate(completedAt!),
       'expiryAt': Timestamp.fromDate(effectiveExpiryAt),
       'expiresAt': Timestamp.fromDate(effectiveExpiryAt),
       'expired': expired,
@@ -264,9 +280,9 @@ class DonationModel {
     final rawFoodItems = data['foodItems'];
     final normalizedFoodItems = rawFoodItems is List
         ? rawFoodItems
-            .map((item) => item?.toString().trim() ?? '')
-            .where((item) => item.isNotEmpty)
-            .toList()
+              .map((item) => item?.toString().trim() ?? '')
+              .where((item) => item.isNotEmpty)
+              .toList()
         : <String>[
             if ((data['foodItems'] as String?)?.trim().isNotEmpty ?? false)
               (data['foodItems'] as String).trim(),
@@ -274,23 +290,24 @@ class DonationModel {
     final rawImageUrls = data['imageUrls'];
     final normalizedImageUrls = rawImageUrls is List
         ? rawImageUrls
-            .map((item) => item?.toString().trim() ?? '')
-            .where((item) => item.isNotEmpty)
-            .toList()
+              .map((item) => item?.toString().trim() ?? '')
+              .where((item) => item.isNotEmpty)
+              .toList()
         : <String>[];
     final rawRejectedNgoIds = data['rejectedByNgoIds'];
     final normalizedRejectedNgoIds = rawRejectedNgoIds is List
         ? rawRejectedNgoIds
-            .map((item) => item?.toString().trim() ?? '')
-            .where((item) => item.isNotEmpty)
-            .toList()
+              .map((item) => item?.toString().trim() ?? '')
+              .where((item) => item.isNotEmpty)
+              .toList()
         : <String>[];
     final donorId = (data['donorId'] as String?)?.trim();
     final createdAt = _dateFromFirestore(data['createdAt']) ?? DateTime.now();
     final status =
         (data['status'] as String?)?.trim() ?? DonationStatus.active.value;
-    final acceptedByNgoId =
-        _normalizeNullable(data['acceptedByNgoId'] as String?);
+    final acceptedByNgoId = _normalizeNullable(
+      data['acceptedByNgoId'] as String?,
+    );
     final completedAt = _dateFromFirestore(data['completedAt']);
     final resolvedExpiryAt =
         _dateFromFirestore(data['expiresAt']) ??
@@ -310,8 +327,9 @@ class DonationModel {
         AppLocation.fromDynamic(data['location']) ??
         _locationFromLegacyDonationFields(data) ??
         AppLocation.fromDynamic(data['pickupLocation']);
-    final acceptedByNgoLocation =
-        AppLocation.fromDynamic(data['acceptedByNgoLocation']);
+    final acceptedByNgoLocation = AppLocation.fromDynamic(
+      data['acceptedByNgoLocation'],
+    );
 
     return DonationModel(
       donationId: ((data['donationId'] as String?)?.trim().isNotEmpty ?? false)
@@ -322,8 +340,9 @@ class DonationModel {
       donorEmail: (data['donorEmail'] as String?)?.trim() ?? '',
       donorPhone: _normalizeNullable(data['donorPhone'] as String?),
       donorAddress: _normalizeNullable(data['donorAddress'] as String?),
-      donorProfileImageUrl:
-          _normalizeNullable(data['donorProfileImageUrl'] as String?),
+      donorProfileImageUrl: _normalizeNullable(
+        data['donorProfileImageUrl'] as String?,
+      ),
       foodItems: normalizedFoodItems,
       quantity: _resolveQuantity(data),
       description: _normalizeNullable(data['description'] as String?),
@@ -332,17 +351,26 @@ class DonationModel {
       imageUrls: normalizedImageUrls,
       status: resolvedExpired ? DonationStatus.expired.value : status,
       acceptedByNgoId: acceptedByNgoId,
-      acceptedByNgoName:
-          _normalizeNullable(data['acceptedByNgoName'] as String?),
-      acceptedByNgoEmail:
-          _normalizeNullable(data['acceptedByNgoEmail'] as String?),
-      acceptedByNgoPhone:
-          _normalizeNullable(data['acceptedByNgoPhone'] as String?),
-      acceptedByNgoAddress:
-          _normalizeNullable(data['acceptedByNgoAddress'] as String?),
+      acceptedByNgoName: _normalizeNullable(
+        data['acceptedByNgoName'] as String?,
+      ),
+      acceptedByNgoEmail: _normalizeNullable(
+        data['acceptedByNgoEmail'] as String?,
+      ),
+      acceptedByNgoPhone: _normalizeNullable(
+        data['acceptedByNgoPhone'] as String?,
+      ),
+      acceptedByNgoAddress: _normalizeNullable(
+        data['acceptedByNgoAddress'] as String?,
+      ),
       acceptedByNgoLocation: acceptedByNgoLocation,
-      acceptedByNgoProfileImageUrl:
-          _normalizeNullable(data['acceptedByNgoProfileImageUrl'] as String?),
+      acceptedByNgoProfileImageUrl: _normalizeNullable(
+        data['acceptedByNgoProfileImageUrl'] as String?,
+      ),
+      driverName: _normalizeNullable(data['driverName'] as String?),
+      driverPhoneNumber: _normalizeNullable(
+        data['driverPhoneNumber'] as String?,
+      ),
       createdAt: createdAt,
       acceptedAt: _dateFromFirestore(data['acceptedAt']),
       completedAt: completedAt,
@@ -358,9 +386,9 @@ class DonationService {
     FirebaseFirestore? firestore,
     LocationService? locationService,
     NotificationService? notificationService,
-  })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _locationService = locationService ?? const LocationService(),
-        _notificationService = notificationService ?? NotificationService();
+  }) : _firestore = firestore ?? FirebaseFirestore.instance,
+       _locationService = locationService ?? const LocationService(),
+       _notificationService = notificationService ?? NotificationService();
 
   final FirebaseFirestore _firestore;
   final LocationService _locationService;
@@ -380,9 +408,7 @@ class DonationService {
     required DonationCreateRequest request,
   }) async {
     if (!donor.isDonor) {
-      throw const DonationException(
-        'Only donors can create donations.',
-      );
+      throw const DonationException('Only donors can create donations.');
     }
 
     if (request.foodItems.isEmpty) {
@@ -446,8 +472,9 @@ class DonationService {
       if (!doc.exists) {
         throw const DonationException('Donation not found.');
       }
-      var donation =
-          await _resolveDonationLocation(DonationModel.fromFirestore(doc));
+      var donation = await _resolveDonationLocation(
+        DonationModel.fromFirestore(doc),
+      );
       donation = _normalizeDonationForDisplay(donation);
       _syncExpiredDonationIfNeeded(doc.reference, donation);
       await _cache.saveDonationList(
@@ -466,9 +493,7 @@ class DonationService {
     }
   }
 
-  Future<List<DonationModel>> getAllDonations({
-    DonationStatus? status,
-  }) async {
+  Future<List<DonationModel>> getAllDonations({DonationStatus? status}) async {
     try {
       debugPrint(
         '[DonationService] getAllDonations(status: ${status?.value ?? 'all'})',
@@ -523,23 +548,25 @@ class DonationService {
       debugPrint(
         '[DonationService] getDonorDonations(donorId: $normalizedDonorId, status: ${status?.value ?? 'all'})',
       );
-      final query = _donations.where(
-        'donorId',
-        isEqualTo: normalizedDonorId,
-      );
+      final query = _donations.where('donorId', isEqualTo: normalizedDonorId);
       final snapshot = await query.get();
-      final donations = await Future.wait(snapshot.docs.map((doc) async {
-        var donation = await _resolveDonationLocation(
-          DonationModel.fromFirestore(doc),
-        );
-        donation = _normalizeDonationForDisplay(donation);
-        _syncExpiredDonationIfNeeded(doc.reference, donation);
-        return donation;
-      }));
-      final filtered = donations
-          .where((donation) => status == null || donation.status == status.value)
-          .toList()
-        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      final donations = await Future.wait(
+        snapshot.docs.map((doc) async {
+          var donation = await _resolveDonationLocation(
+            DonationModel.fromFirestore(doc),
+          );
+          donation = _normalizeDonationForDisplay(donation);
+          _syncExpiredDonationIfNeeded(doc.reference, donation);
+          return donation;
+        }),
+      );
+      final filtered =
+          donations
+              .where(
+                (donation) => status == null || donation.status == status.value,
+              )
+              .toList()
+            ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
       await _cache.saveDonationList(
         _cacheKeyForDonorDonations(donorId: normalizedDonorId, status: status),
         filtered,
@@ -577,16 +604,19 @@ class DonationService {
           .get();
 
       final referenceTime = now ?? DateTime.now();
-      final donations = await Future.wait(snapshot.docs.map((doc) async {
-        var donation = await _resolveDonationLocation(
-          DonationModel.fromFirestore(doc),
-        );
-        donation = _normalizeDonationForDisplay(donation);
-        _syncExpiredDonationIfNeeded(doc.reference, donation);
-        return donation;
-      }));
+      final donations = await Future.wait(
+        snapshot.docs.map((doc) async {
+          var donation = await _resolveDonationLocation(
+            DonationModel.fromFirestore(doc),
+          );
+          donation = _normalizeDonationForDisplay(donation);
+          _syncExpiredDonationIfNeeded(doc.reference, donation);
+          return donation;
+        }),
+      );
       final filtered = donations.where((donation) {
-        if (donation.status != DonationStatus.active.value || donation.isExpired) {
+        if (donation.status != DonationStatus.active.value ||
+            donation.isExpired) {
           return false;
         }
         if (donation.hasAcceptedNgo) {
@@ -599,8 +629,7 @@ class DonationService {
         }
         final expiryAt = donation.expiryAt;
         return expiryAt == null || !expiryAt.isBefore(referenceTime);
-      }).toList()
-        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      }).toList()..sort((a, b) => b.createdAt.compareTo(a.createdAt));
       await _cache.saveDonationList(
         _cacheKeyForAvailableNgoDonations(ngoId: ngoId),
         filtered,
@@ -655,7 +684,10 @@ class DonationService {
       final filtered = donations.toList()
         ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
       await _cache.saveDonationList(
-        _cacheKeyForNgoAcceptedDonations(ngoId: normalizedNgoId, status: status),
+        _cacheKeyForNgoAcceptedDonations(
+          ngoId: normalizedNgoId,
+          status: status,
+        ),
         filtered,
       );
       debugPrint(
@@ -734,15 +766,27 @@ class DonationService {
   Future<DonationModel> acceptDonation({
     required String donationId,
     required AppUserModel ngo,
+    required String driverName,
+    required String driverPhoneNumber,
   }) async {
     if (!ngo.isNgo) {
-      throw const DonationException(
-        'Only NGO accounts can accept donations.',
-      );
+      throw const DonationException('Only NGO accounts can accept donations.');
     }
 
     if (donationId.trim().isEmpty) {
       throw const DonationException('Donation id is required.');
+    }
+
+    final normalizedDriverName = driverName.trim();
+    final normalizedDriverPhoneNumber = driverPhoneNumber.trim();
+    if (normalizedDriverName.isEmpty) {
+      throw const DonationException('Driver name is required.');
+    }
+    if (normalizedDriverPhoneNumber.isEmpty) {
+      throw const DonationException('Driver phone number is required.');
+    }
+    if (!RegExp(r'^\d{10,15}$').hasMatch(normalizedDriverPhoneNumber)) {
+      throw const DonationException('Enter a valid phone number.');
     }
 
     final docRef = _donations.doc(donationId.trim());
@@ -764,9 +808,7 @@ class DonationService {
         }
 
         if (donation.expiryAt != null && donation.expiryAt!.isBefore(now)) {
-          throw const DonationException(
-            'This donation has already expired.',
-          );
+          throw const DonationException('This donation has already expired.');
         }
 
         if (donation.hasAcceptedNgo) {
@@ -787,6 +829,8 @@ class DonationService {
           'acceptedByNgoProfileImageUrl': _normalizeNullable(
             ngo.profileImageUrl,
           ),
+          'driverName': normalizedDriverName,
+          'driverPhoneNumber': normalizedDriverPhoneNumber,
           'acceptedAt': FieldValue.serverTimestamp(),
         });
       });
@@ -900,9 +944,7 @@ class DonationService {
         }
 
         if (donation.status == DonationStatus.expired.value) {
-          throw const DonationException(
-            'Expired donations cannot be updated.',
-          );
+          throw const DonationException('Expired donations cannot be updated.');
         }
 
         if (!donation.isAwaitingClosure) {
@@ -966,7 +1008,8 @@ class DonationService {
           );
         }
 
-        final effectiveExpiry = expiredAt ?? donation.expiryAt ?? DateTime.now();
+        final effectiveExpiry =
+            expiredAt ?? donation.expiryAt ?? DateTime.now();
         transaction.update(docRef, {
           'status': DonationStatus.expired.value,
           'expired': true,
@@ -991,8 +1034,9 @@ class DonationService {
     bool orderByCreatedAt = true,
   }) async* {
     Query<Map<String, dynamic>> query = _donations;
-    final effectiveStatus =
-        onlyAvailableForNgo ? DonationStatus.active : status;
+    final effectiveStatus = onlyAvailableForNgo
+        ? DonationStatus.active
+        : status;
     final cacheKey = _cacheKeyForStatusStream(
       status: effectiveStatus,
       donorId: donorId,
@@ -1083,12 +1127,13 @@ class DonationService {
     }
 
     try {
-      await for (final snapshot in _donations
-          .where('donorId', isEqualTo: normalizedDonorId)
-          .where('status', isEqualTo: DonationStatus.completed.value)
-          .orderBy('completedAt', descending: true)
-          .limit(limit)
-          .snapshots()) {
+      await for (final snapshot
+          in _donations
+              .where('donorId', isEqualTo: normalizedDonorId)
+              .where('status', isEqualTo: DonationStatus.completed.value)
+              .orderBy('completedAt', descending: true)
+              .limit(limit)
+              .snapshots()) {
         final donations = await Future.wait(
           snapshot.docs
               .map(DonationModel.fromFirestore)
@@ -1132,7 +1177,7 @@ class DonationService {
     }
   }
 
-String _mapFirebaseError(FirebaseException error) {
+  String _mapFirebaseError(FirebaseException error) {
     switch (error.code) {
       case 'permission-denied':
         return 'You do not have permission to perform this donation action.';
@@ -1143,7 +1188,8 @@ String _mapFirebaseError(FirebaseException error) {
       case 'aborted':
         return 'This donation was updated by another user. Please try again.';
       default:
-        return error.message ?? 'Something went wrong while handling donations.';
+        return error.message ??
+            'Something went wrong while handling donations.';
     }
   }
 
@@ -1213,7 +1259,8 @@ String _mapFirebaseError(FirebaseException error) {
     DocumentReference<Map<String, dynamic>> reference,
     DonationModel donation,
   ) {
-    if (!donation.isExpired || donation.status != DonationStatus.expired.value) {
+    if (!donation.isExpired ||
+        donation.status != DonationStatus.expired.value) {
       return;
     }
 
@@ -1241,8 +1288,7 @@ String _mapFirebaseError(FirebaseException error) {
   String _cacheKeyForDonorDonations({
     required String donorId,
     DonationStatus? status,
-  }) =>
-      'donation.donor.$donorId.${status?.value ?? 'all'}';
+  }) => 'donation.donor.$donorId.${status?.value ?? 'all'}';
 
   String _cacheKeyForAvailableNgoDonations({String? ngoId}) =>
       'donation.ngo.available.${ngoId?.trim().isNotEmpty == true ? ngoId!.trim() : 'all'}';
@@ -1250,8 +1296,7 @@ String _mapFirebaseError(FirebaseException error) {
   String _cacheKeyForNgoAcceptedDonations({
     required String ngoId,
     DonationStatus? status,
-  }) =>
-      'donation.ngo.accepted.$ngoId.${status?.value ?? 'all'}';
+  }) => 'donation.ngo.accepted.$ngoId.${status?.value ?? 'all'}';
 
   String _cacheKeyForRecentCompleted({required int limit}) =>
       'donation.completed.recent.$limit';

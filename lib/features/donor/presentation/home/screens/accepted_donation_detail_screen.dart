@@ -62,9 +62,9 @@ class _AcceptedDonationDetailScreenState
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
@@ -159,16 +159,21 @@ class _AcceptedDonationDetailScreenState
                               ? 'Not available'
                               : _formatDateTime(donation.acceptedAt!),
                         ),
+                        if ((donation.driverName?.trim().isNotEmpty ?? false))
+                          _row('Driver Name', donation.driverName!.trim()),
+                        if ((donation.driverPhoneNumber?.trim().isNotEmpty ??
+                            false))
+                          _row(
+                            'Driver Phone',
+                            donation.driverPhoneNumber!.trim(),
+                          ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 16),
                   const Text(
                     'Details',
-                    style: TextStyle(
-                      fontSize: 19,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 10),
                   _sectionCard(
@@ -197,7 +202,9 @@ class _AcceptedDonationDetailScreenState
                     child: OutlinedButton(
                       onPressed: _isSubmitting
                           ? null
-                          : () => _closeDonation(_DonationCloseAction.notCompleted),
+                          : () => _closeDonation(
+                              _DonationCloseAction.notCompleted,
+                            ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.redAccent,
                         side: const BorderSide(color: Colors.redAccent),
@@ -224,7 +231,8 @@ class _AcceptedDonationDetailScreenState
                       ),
                       onPressed: _isSubmitting
                           ? null
-                          : () => _closeDonation(_DonationCloseAction.completed),
+                          : () =>
+                                _closeDonation(_DonationCloseAction.completed),
                       child: _isSubmitting
                           ? const SizedBox(
                               width: 18,
@@ -291,31 +299,22 @@ Widget _row(String title, String value) {
           width: 120,
           child: Text(
             title,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
           ),
         ),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(fontSize: 15),
-          ),
-        ),
+        Expanded(child: Text(value, style: const TextStyle(fontSize: 15))),
       ],
     ),
   );
 }
 
 String _formatDateTime(DateTime value) {
-  final hour = value.hour == 0 ? 12 : (value.hour > 12 ? value.hour - 12 : value.hour);
+  final hour = value.hour == 0
+      ? 12
+      : (value.hour > 12 ? value.hour - 12 : value.hour);
   final suffix = value.hour >= 12 ? 'PM' : 'AM';
   final minute = value.minute.toString().padLeft(2, '0');
   return '${value.day}/${value.month}/${value.year} $hour:$minute $suffix';
 }
 
-enum _DonationCloseAction {
-  completed,
-  notCompleted,
-}
+enum _DonationCloseAction { completed, notCompleted }
